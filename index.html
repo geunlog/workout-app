@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="4">
+<meta name="workout-app-version" content="5">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1816,6 +1816,37 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .stats-card.stats-section:not([open]){padding:12px 20px;}
 .bulk-app .stats-card.stats-section:not([open]) > summary{padding:0;margin:0;}
 .bulk-app .stats-section .stats-range-status{justify-content:flex-end;margin-bottom:6px;}
+
+/* v5: data confirmation and weekly adjustment */
+.data-confirm-dialog{box-sizing:border-box;width:calc(100% - 32px);max-width:440px;max-height:85dvh;padding:22px;border:1px solid #dfe3eb;border-radius:22px;background:#fff;color:#20283b;font-family:var(--ui, sans-serif);overflow:auto;}
+.data-confirm-dialog::backdrop{background:rgba(20,28,45,.55);}
+.data-confirm-dialog h2{font-size:20px;line-height:1.4;margin:0 0 14px;word-break:keep-all;}
+.data-confirm-message{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;font-size:14px;line-height:1.7;}
+.data-confirm-backup{font-size:13px;line-height:1.65;padding:12px;background:#f2f4fb;border-radius:12px;word-break:keep-all;overflow-wrap:anywhere;}
+.data-confirm-actions{position:sticky;bottom:-22px;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 0 22px;background:#fff;}
+.data-confirm-actions button{min-height:46px;padding:10px;border:1px solid #dfe3eb;border-radius:12px;font:600 15px sans-serif;background:#f5f6fa;color:#344054;cursor:pointer;}
+.data-confirm-actions .confirm-destructive{background:#b33d47;border-color:#b33d47;color:#fff;}
+.data-confirm-actions button:focus-visible{outline:2px solid #315bea;outline-offset:3px;}
+.bulk-app .records-disclosure-actions{display:flex;gap:8px;margin:10px 0 16px;}
+.bulk-app .records-disclosure-actions button{flex:1;min-height:44px;}
+.bulk-app .adjustment-card{padding:16px;margin:0 0 16px;border:1px solid var(--line);border-radius:20px;background:var(--raised);}
+.bulk-app .adjustment-card > summary{display:flex;align-items:center;min-height:44px;font-weight:700;cursor:pointer;}
+.bulk-app .adjustment-note{font-size:12px;color:var(--muted);line-height:1.65;word-break:keep-all;}
+.bulk-app .adjustment-card fieldset{border:0;padding:0;margin:14px 0;min-width:0;}
+.bulk-app .adjustment-card legend{font-size:13px;margin-bottom:8px;}
+.bulk-app .adjustment-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
+.bulk-app .adjustment-days button{min-height:48px;min-width:0;padding:6px 1px;border:1px solid var(--line);border-radius:10px;background:var(--sunken);color:var(--ink);font:600 14px var(--ui);cursor:pointer;}
+.bulk-app .adjustment-days button small{display:block;font-size:9px;font-weight:400;margin-top:4px;}
+.bulk-app .adjustment-days button[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:var(--on-primary);}
+.bulk-app .adjustment-days button:disabled{opacity:.35;cursor:default;}
+.bulk-app .adjustment-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.bulk-app .adjustment-fields label,.bulk-app .adjustment-notes{display:flex;flex-direction:column;gap:6px;font-size:13px;min-width:0;}
+.bulk-app .adjustment-card select{appearance:auto;width:100%;min-width:0;min-height:44px;font-size:16px;padding:8px 4px;}
+.bulk-app .adjustment-notes{margin:14px 0;}
+.bulk-app .adjustment-card textarea{box-sizing:border-box;width:100%;font-size:16px;resize:vertical;}
+.bulk-app .adjustment-copy{width:100%;min-height:48px;background:var(--primary);color:var(--on-primary);border-color:var(--primary);}
+.bulk-app #adjustmentFallback[hidden]{display:none;}
+@media(max-width:350px){.bulk-app .adjustment-fields{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -1851,7 +1882,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
   <div class="settings-view" id="settingsView" hidden>
     <div class="settings-card" style="padding:14px;margin-bottom:16px">
-      <strong>앱 버전 4 · 2026-09-13</strong>
+      <strong>앱 버전 5 · 2026-09-13</strong>
       <p id="backupStatus" class="record-export-note"></p>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
@@ -1979,6 +2010,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         <datalist id="recordExerciseSuggestions"></datalist>
       </div>
       <p class="stats-search-empty" id="recordSearchEmpty" hidden>검색한 종목의 기록이 현재 조회 기간에 없어요.</p>
+      <div class="records-disclosure-actions"><button type="button" class="btn-reset" id="btnRecordsExpand">전체 펼치기</button><button type="button" class="btn-reset" id="btnRecordsCollapse">전체 접기</button></div>
       <div id="recordsList"></div>
       <div class="reset-row">
         <button class="btn-reset" id="btnRecordsDeleteAll" type="button">전체 삭제</button>
@@ -4055,11 +4087,10 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       var head = document.createElement('summary');head.className = 'exercise-record-head';
       var title = document.createElement('h3');title.textContent = name;
       var del = document.createElement('button');del.type = 'button';del.className = 'btn-reset exercise-record-delete';del.textContent = '이 종목 기록 전체 삭제';del.setAttribute('aria-label',name + ' 전체 기록 삭제');
-      del.addEventListener('click',function (event) {
+      del.addEventListener('click',async function (event) {
         event.preventDefault();event.stopPropagation();
-        requireSecondClick(del, '전체 기록 삭제 확인', function () {
-          deleteRecords(function(entry){return entry.n===name && muscleFor(entry)===muscle;});
-        });
+        if(!await confirmDataAction('이 종목 기록 전체 삭제',name+' ('+muscle+')의 모든 날짜 기록을 삭제할까요? 현재 검색·기간 필터와 관계없이 삭제하며 되돌릴 수 없어요. 루틴과 운동 관리의 종목은 유지돼요.','전체 삭제'))return;
+        clearRecordUndo();deleteRecords(function(entry){return entry.n===name && muscleFor(entry)===muscle;});
       });
       var arrow=document.createElement('span');arrow.className='exercise-record-chevron';
       var count = document.createElement('span');count.className = 'record-count-badge';count.textContent = visible.length + '세트';
@@ -4621,6 +4652,102 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     });});
   }
 
+  var pendingActionDialog = false;
+  function confirmDataAction(title,message,actionLabel,backupProfile) {
+    if(pendingActionDialog)return Promise.resolve(false);
+    clearConfirmation();pendingActionDialog=true;
+    var owner=activeProfile;
+    return new Promise(function(resolve){
+      var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';
+      dialog.setAttribute('aria-labelledby','dataConfirmTitle');dialog.setAttribute('aria-describedby','dataConfirmMessage dataConfirmBackup');
+      var heading=document.createElement('h2');heading.id='dataConfirmTitle';heading.textContent=title;
+      var body=document.createElement('p');body.id='dataConfirmMessage';body.className='data-confirm-message';body.textContent=message;
+      var backup=document.createElement('p');backup.id='dataConfirmBackup';backup.className='data-confirm-backup';
+      backup.textContent=(backupProfile && backupProfile!==owner?'먼저 취소한 뒤 '+backupProfile+' 프로필로 전환하고, ':'필요한 데이터는 먼저 ')+"설정의 ‘프로필 백업’에서 JSON 파일로 저장하세요.";
+      var actions=document.createElement('div');actions.className='data-confirm-actions';
+      var cancel=document.createElement('button');cancel.type='button';cancel.textContent='취소';
+      var confirm=document.createElement('button');confirm.type='button';confirm.className='confirm-destructive';confirm.textContent=actionLabel;
+      actions.appendChild(cancel);actions.appendChild(confirm);dialog.appendChild(heading);dialog.appendChild(body);dialog.appendChild(backup);dialog.appendChild(actions);
+      var done=false;
+      function finish(accepted){if(done)return;done=true;pendingActionDialog=false;dialog.close();dialog.remove();resolve(accepted && activeProfile===owner);}
+      cancel.addEventListener('click',function(){finish(false);});confirm.addEventListener('click',function(){confirm.disabled=true;finish(true);});
+      dialog.addEventListener('cancel',function(e){e.preventDefault();finish(false);});
+      dialog.addEventListener('keydown',function(e){e.stopPropagation();});
+      dialog.addEventListener('close',function(){finish(false);});
+      document.body.appendChild(dialog);
+      try{dialog.showModal();cancel.focus();}catch(e){pendingActionDialog=false;dialog.remove();showToast('확인창을 열지 못했어요. 작업은 실행하지 않았어요.','error');resolve(false);}
+    });
+  }
+  function setRecordDisclosures(expand) {
+    if(!expand && recordsListEl.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소한 뒤 접어주세요.','pending');return;}
+    recordsListEl.querySelectorAll('details').forEach(function(el){el.open=expand;});
+  }
+  document.getElementById('btnRecordsExpand').addEventListener('click',function(){setRecordDisclosures(true);});
+  document.getElementById('btnRecordsCollapse').addEventListener('click',function(){setRecordDisclosures(false);});
+
+  var weekAdjustmentStates = new Map();
+  function adjustmentWeek(asOf) {
+    var dow=new Date(asOf+'T00:00:00Z').getUTCDay(),from=statsOffset(asOf,-((dow+6)%7));
+    return {from:from,to:statsOffset(from,6),dates:Array.from({length:7},function(_,i){return statsOffset(from,i);})};
+  }
+  function adjustmentState() {
+    var asOf=todayStr(),week=adjustmentWeek(asOf),key=JSON.stringify([activeProfile,week.from]);
+    if(!weekAdjustmentStates.has(key))weekAdjustmentStates.set(key,{dates:[],minutes:'',notes:'',coverage:'unknown',open:false});
+    var state=weekAdjustmentStates.get(key);state.dates=state.dates.filter(function(d){return d>=asOf && d<=week.to;});return state;
+  }
+  function buildAdjustmentText(asOf,routine,source,options,profile) {
+    var week=adjustmentWeek(asOf),labels=['월','화','수','목','금','토','일'];
+    var available=Array.from(new Set(options.dates)).filter(function(d){return week.dates.includes(d) && d>=asOf;}).sort();
+    if(!available.length)throw new Error('남은 운동 가능 요일을 하나 이상 선택해주세요.');
+    var coverage={unknown:'미확인 — 기록 외에 수행한 세트가 있을 수 있음',all:'사용자 확인: 오늘 현재까지 수행한 모든 세트를 기록함',some:'일부 세트만 기록함'};
+    var lines=['[이번 주 남은 운동 루틴 조정 요청]','프로필: '+profile,'오늘: '+asOf,'대상 기간: '+week.from+' ~ '+week.to,
+      '남은 운동 가능일: '+available.map(function(d){return d+' ('+labels[week.dates.indexOf(d)]+'요일)';}).join(', '),
+      '1회 운동 가능 시간: '+(options.minutes?options.minutes==='unlimited'?'제한 없음':options.minutes+'분':'미입력'),
+      '기록 범위: '+(coverage[options.coverage] || coverage.unknown),'추가 조건: '+(options.notes.trim() || '없음'),'',
+      '[현재 주간 루틴 — 실제 수행 내역과 별개]'];
+    routine.forEach(function(day){lines.push(day.letter+'요일 · '+(day.title || '제목 없음'));(day.ex || []).forEach(function(e){lines.push('- '+e.n+' ['+e.m+']: '+e.s+'세트 · '+(e.r || '미설정')+'회 · RIR '+(e.rir || '미설정'));});if(!(day.ex || []).length)lines.push('- 계획 종목 없음');if(day.cardio)lines.push('- 유산소 계획 있음');if(day.note)lines.push('- 메모: '+day.note);});
+    lines.push('','[이번 주 저장 기록 — 오늘 현재까지]');var totals={};
+    week.dates.filter(function(d){return d<=asOf;}).forEach(function(date){
+      lines.push(date+' ('+labels[week.dates.indexOf(date)]+'요일)');var entries=[];
+      source.filter(function(g){return g.date===date;}).forEach(function(g){entries=entries.concat(g.entries || []);});
+      if(!entries.length){lines.push('- 저장 기록 없음 (미실시 여부는 알 수 없음)');return;}
+      var groups=new Map();entries.forEach(function(e){var muscle=e.m || '미분류',key=JSON.stringify([e.n,muscle]);if(!groups.has(key))groups.set(key,{name:e.n,muscle:muscle,values:[]});groups.get(key).values.push((e.w==null || e.w==='' || e.w==='-'?'무게 미입력':e.w+'kg')+' × '+(e.reps==null || e.reps==='' || e.reps==='-'?'횟수 미입력':e.reps+'회'));totals[muscle]=(totals[muscle] || 0)+1;});
+      groups.forEach(function(g){lines.push('- '+g.name+' ['+g.muscle+'] · 기록 '+g.values.length+'세트: '+g.values.join(', '));});
+    });
+    lines.push('','[부위별 저장 세트]');var muscles=Array.from(new Set(MUSCLES.concat(Object.keys(totals))));lines.push(muscles.map(function(m){return m+' '+(totals[m] || 0)+'세트';}).join(' · '));
+    lines.push('','[추천 조건]',
+      '- 저장 기록 1개는 기록한 1세트입니다. 계획 세트나 전체 실제 수행 세트와 혼동하지 마세요.',
+      '- 기록 범위가 일부 또는 미확인이면 빠진 부위·남은 세트 수를 단정하지 말고 실제 수행 내역을 먼저 확인해주세요.',
+      '- 기록 없음은 미실시를 뜻하지 않습니다. 무게·횟수만으로 실제 RIR이나 피로도를 단정하지 마세요.',
+      '- 오늘을 운동 가능일로 선택했다면 오늘 저장 기록은 이미 수행한 기록이며, 추가 운동 계획과 구분해주세요.',
+      '- 현재 주간 루틴은 현재 설정이며, 과거 기록 당시의 계획과 다를 수 있습니다.',
+      '- 빠진 계획을 모두 억지로 보충하지 말고, 남은 요일과 시간·회복·연속 운동·추가 조건을 고려해 우선순위를 정해주세요.',
+      '- 변경할 수 없는 PT 일정 등 중요한 조건이 불명확하면 먼저 확인해주세요.',
+      '- 남은 날짜별 종목·세트·횟수·RIR과 제외하거나 다음 주로 넘길 운동을 텍스트로 추천해주세요.');
+    return lines.join('\n');
+  }
+  function adjustmentHtml() {
+    var asOf=todayStr(),week=adjustmentWeek(asOf),state=adjustmentState(),labels=['월','화','수','목','금','토','일'];
+    return '<details class="adjustment-card" id="weekAdjustment"'+(state.open?' open':'')+'><summary>이번 주 루틴 조정</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+' · 내용을 복사해 ChatGPT에서 추천받으세요.</p><fieldset><legend>남은 운동 가능 요일</legend><div class="adjustment-days">'+week.dates.map(function(date,i){return '<button type="button" data-adjust-date="'+date+'" aria-pressed="'+state.dates.includes(date)+'" aria-label="'+date+' '+labels[i]+'요일"'+(date<asOf?' disabled':'')+'>'+labels[i]+'<small>'+date.slice(5).replace('-','/')+'</small></button>';}).join('')+'</div></fieldset><div class="adjustment-fields"><label>1회 운동 가능 시간<select id="adjustMinutes"><option value="">선택 안 함</option><option value="45">45분</option><option value="60">60분</option><option value="90">90분</option><option value="unlimited">제한 없음</option></select></label><label>기록 범위<select id="adjustCoverage"><option value="unknown">미확인</option><option value="all">모든 세트를 기록함</option><option value="some">일부 세트만 기록함</option></select></label></div><label class="adjustment-notes">추가 조건 (선택)<textarea id="adjustNotes" rows="2" maxlength="1000" placeholder="예: 변경할 수 없는 PT 일정, 운동하지 못한 날">'+statsEscape(state.notes)+'</textarea></label><button class="btn-reset adjustment-copy" id="btnAdjustmentCopy" type="button">루틴 조정 내용 복사</button><p id="adjustmentStatus" class="adjustment-note" role="status"></p><textarea id="adjustmentFallback" rows="8" readonly hidden aria-label="복사할 루틴 조정 내용"></textarea></details>';
+  }
+  function bindAdjustment() {
+    var root=document.getElementById('weekAdjustment'),state=adjustmentState(),renderedOn=todayStr();if(!root)return;
+    root.addEventListener('toggle',function(){if(root.isConnected)state.open=root.open;});
+    root.querySelectorAll('[data-adjust-date]').forEach(function(b){b.addEventListener('click',function(){var date=b.dataset.adjustDate;if(date<todayStr()){renderReport();return;}state.dates=state.dates.includes(date)?state.dates.filter(function(d){return d!==date;}):state.dates.concat(date);b.setAttribute('aria-pressed',String(state.dates.includes(date)));});});
+    var minutes=document.getElementById('adjustMinutes'),coverage=document.getElementById('adjustCoverage'),notes=document.getElementById('adjustNotes');minutes.value=state.minutes;coverage.value=state.coverage;
+    minutes.addEventListener('change',function(){state.minutes=minutes.value;});coverage.addEventListener('change',function(){state.coverage=coverage.value;});notes.addEventListener('input',function(){state.notes=notes.value;});
+    document.getElementById('btnAdjustmentCopy').addEventListener('click',async function(){
+      if(todayStr()!==renderedOn){renderReport();showToast('날짜가 바뀌었어요. 남은 운동 가능 요일을 확인해주세요.','pending');return;}
+      var status=document.getElementById('adjustmentStatus'),fallback=document.getElementById('adjustmentFallback'),text;
+      try{text=buildAdjustmentText(todayStr(),days,logs,state,activeProfile);}catch(e){status.textContent=e.message;return;}
+      if(routineOrderPending)text+='\n\n※ 현재 루틴에는 아직 루틴 저장으로 확정하지 않은 편집 내용이 포함되어 있습니다.';
+      var button=this;button.disabled=true;
+      try{if(!navigator.clipboard || !window.isSecureContext)throw new Error('clipboard');await navigator.clipboard.writeText(text);fallback.hidden=true;status.textContent='복사했어요. ChatGPT에 붙여넣어 남은 루틴을 추천받으세요.';}
+      catch(e){fallback.value=text;fallback.hidden=false;fallback.focus();fallback.select();status.textContent='자동 복사가 안 돼요. 아래 내용을 길게 눌러 복사해주세요.';}
+      finally{button.disabled=false;}
+    });
+  }
+
   function renderReport() {
     var vol = weeklyVolume();
     var barsHtml = volumeBarsHtml(vol);
@@ -4644,7 +4771,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       '</div>';
     }).join('');
 
-    reportViewEl.innerHTML =
+    reportViewEl.innerHTML = adjustmentHtml()+
       '<div class="rep-summary">' +
         '<h2>주간 계획 세트</h2>' +
         '<p class="bar-legend">근비대 참고구간 · 가슴/등/어깨/하체 12–16 · 이두/삼두 6–10</p>' +
@@ -4652,6 +4779,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         '<p class="bar-legend">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +
       '</div>' +
       daysHtml;
+    bindAdjustment();
   }
 
   document.getElementById('btnSaveNow').addEventListener('click', function () {
@@ -4672,13 +4800,13 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     hint._t = setTimeout(function () { hint.textContent = ''; hint.className = 'save-hint'; }, 1400);
   });
 
-  document.getElementById('btnCatalogReset').addEventListener('click', function () {
-    var btn = this;
-    requireSecondClick(btn, '초기화 확인', function () {
+  document.getElementById('btnCatalogReset').addEventListener('click', async function () {
+    if(!await confirmDataAction('기본 종목으로 초기화','직접 추가하거나 수정한 종목 설정이 기본 종목으로 교체돼요. 저장된 운동기록과 요일별 루틴은 유지돼요.','초기화'))return;
+    {
       var next=defaultCatalog();
       if(!writeJSON(CATALOG_KEY,next)){showStorageError('catalogSaveHint');return;}
       catalog=next;renderCatalog();showToast('기본 종목으로 초기화 완료');
-    });
+    }
   });
 
   (function () {
@@ -4708,13 +4836,13 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     });
   })();
 
-  document.getElementById('btnRecordsDeleteAll').addEventListener('click',function(){
+  document.getElementById('btnRecordsDeleteAll').addEventListener('click',async function(){
     var count=Array.isArray(logs)?logs.length:0;
     if(!count){
       showToast('삭제할 운동기록이 없어요.');
       return;
     }
-    var ok=window.confirm('현재 프로필의 운동기록을 모두 삭제할까요?\n\n삭제한 기록은 되돌릴 수 없어요.');
+    var ok=await confirmDataAction('운동기록 전체 삭제',activeProfile+' 프로필의 모든 운동기록을 삭제할까요? 현재 검색·기간 필터와 관계없이 삭제하며 되돌릴 수 없어요. 루틴·종목·메모는 유지돼요.','전체 삭제');
     if(!ok)return;
     if(!writeJSON(LOG_KEY,[])){showStorageError('recordsActionHint');return;}
     clearRecordUndo();
@@ -4802,17 +4930,14 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     document.addEventListener('keydown', keydown);
 
     sheet.querySelectorAll('[data-reset-scope]').forEach(function(btn) {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', async function() {
         var scope = btn.getAttribute('data-reset-scope');
         close();
 
         if (scope === 'day') {
           var target = days[activeIndex];
           var label = target ? target.letter + '요일' : '선택한 요일';
-          var accepted = window.confirm(
-            label + ' 운동 루틴을 초기화할까요?\n\n' +
-            label + '에 등록된 운동이 모두 삭제됩니다. 운동 관리의 종목과 기존 운동 기록은 삭제되지 않습니다.'
-          );
+          var accepted = await confirmDataAction(label+' 루틴 초기화',label+'에 등록된 운동·제목·유산소 계획·요일 메모가 지워져요. 운동 관리의 종목과 저장된 운동기록은 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','초기화');
           if (!accepted) return;
 
           target.ex = [];
@@ -4825,10 +4950,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           renderPrinciples();
           showToast(label + ' 운동 루틴 초기화됨 · 루틴 저장 필요','pending');
         } else {
-          var acceptedAll = window.confirm(
-            '전체 요일의 운동 루틴을 초기화할까요?\n\n' +
-            '월~토의 모든 운동 루틴이 삭제됩니다. 운동 관리의 종목과 기존 운동 기록은 삭제되지 않습니다.'
-          );
+          var acceptedAll = await confirmDataAction('전체 요일 루틴 초기화','월~토의 운동 루틴을 모두 비워요. 운동 관리의 종목과 저장된 운동기록은 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','전체 초기화');
           if (!acceptedAll) return;
 
           days = defaults();
@@ -5089,14 +5211,15 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     document.addEventListener('keydown', keydown);
 
     sheet.querySelectorAll('[data-split]').forEach(function(btn) {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', async function() {
         var split = parseInt(btn.getAttribute('data-split'), 10);
+        close();
+        if(!await confirmDataAction('기본 루틴 설정',split+'분할 기본 루틴으로 현재 월~토 루틴 전체를 교체할까요? 운동기록·운동 관리 종목·설정 메모는 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','루틴 적용'))return;
         days = makeBaseSplitRoutine(split);
         save();
         renderTabs();
         renderPanel();
         renderPrinciples();
-        close();
         showToast(split + '분할 기본 루틴 적용됨 · 루틴 저장 필요', 'pending');
         var saveButton = document.getElementById('btnSaveNow');
         saveButton.hidden = false;
@@ -5244,16 +5367,18 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     });
     profileListEl.querySelectorAll('.btn-hist-del').forEach(function (b) {
       var name = b.getAttribute('data-name');
-      b.addEventListener('click', function (ev) {
+      b.addEventListener('click', async function (ev) {
         ev.preventDefault();
-        requireSecondClick(b,'확인',function(){
+        if(name===activeProfile || profiles.length<=1)return;
+        if(!await confirmDataAction('프로필 삭제',name+' 프로필과 해당 운동기록·루틴·종목·메모·임시 입력값을 삭제할까요? 되돌릴 수 없어요. 다른 프로필은 유지돼요.','프로필 삭제',name))return;
+        {
           if(name===activeProfile || profiles.length<=1)return;
           var next=profiles.filter(function(p){return p!==name;});
           var operations=profileStorageBases().map(function(base){return {key:keyFor(base,name),remove:true};});
           operations.push({key:PROFILES_KEY,value:next});
           if(!storageTransaction(operations)){showStorageError('profileActionHint');return;}
           profiles=next;renderProfileList();showToast('프로필과 해당 데이터 삭제 완료');
-        });
+        }
       });
     });
   }
@@ -5582,7 +5707,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     };
   }
 
-  function mergeRecordsIntoCurrent(data) {
+  async function mergeRecordsIntoCurrent(data) {
     var analysis = analyzeCurrentRecordMerge(data);
     var imported = data && data.profile ? data.profile : null;
 
@@ -5648,7 +5773,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       '기존 운동 관리 데이터는 수정/삭제하지 않고, JSON에만 있는 운동종류만 추가합니다.\n' +
       '계속할까요?';
 
-    if (!window.confirm(message)) return false;
+    if (!await confirmDataAction('현재 프로필에 가져오기',message,'가져오기')) return false;
 
     // 운동 루틴은 병합하지 않고 JSON의 루틴으로 완전히 덮어쓴다.
     var nextRoutine = JSON.parse(JSON.stringify(
@@ -5826,11 +5951,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     });
     document.addEventListener('keydown', keydown);
 
-    dialog.querySelector('.import-choice-overwrite').addEventListener('click', function() {
+    dialog.querySelector('.import-choice-overwrite').addEventListener('click', async function() {
       close(false);
       var hint = document.getElementById('dataTransferHint');
       try {
-        var result = mergeRecordsIntoCurrent(importCandidate);
+        var result = await mergeRecordsIntoCurrent(importCandidate);
         if (!result || !result.ok) return;
         showToast(
           result.added
@@ -6042,11 +6167,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     }catch(e){hint.textContent=e.message;}
   });
   document.getElementById('btnImportCancel').addEventListener('click',function(){importCandidate=null;document.getElementById('dataImportPreview').hidden=true;});
-  document.getElementById('btnImportMergeCurrent').addEventListener('click',function(){
+  document.getElementById('btnImportMergeCurrent').addEventListener('click',async function(){
     if(!importCandidate)return;
     var hint=document.getElementById('dataTransferHint');
     try{
-      var result=mergeRecordsIntoCurrent(importCandidate);
+      var result=await mergeRecordsIntoCurrent(importCandidate);
       if(!result || !result.ok)return;
       showToast(
         result.added
