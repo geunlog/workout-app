@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="workout-app-version" content="1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1311,6 +1312,25 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
 </style>
 <style>
+.bulk-app .quick-actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center;}
+.bulk-app .quick-actions button{min-height:44px;flex:0 1 auto;}
+.bulk-app .saved-set-summary{font-size:12px;color:var(--muted);line-height:1.7;margin-top:10px;}
+.bulk-app .record-context{position:sticky;top:0;z-index:12;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:12px;}
+.bulk-app .record-context.past{border-color:var(--primary);color:var(--primary);font-weight:700;}
+.bulk-app .suggest-hint{white-space:pre-line;}
+.bulk-app .record-edit-trigger::after{content:' ✎';font-size:12px;color:var(--primary);}
+.bulk-app .update-banner{padding:12px;border:1px solid var(--primary);border-radius:12px;background:var(--panel);margin-bottom:12px;}
+.bulk-app .pin-list{display:flex;gap:6px;flex-wrap:wrap;}
+.bulk-app .pin-list button{min-height:44px;flex:0 1 auto;}
+.bulk-app .pin-list button[aria-pressed=true]{border-color:var(--primary);color:var(--primary);}
+.bulk-app .btn-log:disabled{opacity:.45;cursor:default;}
+.bulk-app .record-edit-form{max-width:100%;}
+.bulk-app #dayPanel .log-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.85fr) auto;gap:6px;}
+.bulk-app #dayPanel .log-fields .field{min-width:0;}
+.bulk-app #dayPanel .log-fields input{width:100%;min-width:0;}
+.bulk-app .saved-set-summary button{min-height:44px;margin:6px 4px 0 0;}
+</style>
+<style>
 .bulk-app .routine-mode-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;}
 .bulk-app #dayView.routine-editing .reset-row{margin-bottom:24px;}
 .bulk-app .routine-mode-note{margin:0;color:var(--muted);font-size:13px;line-height:1.6;}
@@ -1731,6 +1751,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 <div id="recordUndoToast" class="record-undo-toast" role="status" aria-live="polite" aria-atomic="true" hidden><span id="recordUndoMessage"></span><button id="recordUndoButton" type="button">되돌리기</button></div>
 
 <div class="bulk-app" id="bulkApp">
+  <div class="update-banner" id="updateBanner" hidden role="status">새 버전을 사용할 수 있어요. 입력 중인 내용을 마친 뒤 적용하세요. <button class="btn-reset" id="btnApplyUpdate" type="button">새 버전 적용</button></div>
   <div class="masthead">
     <div>
       <h1>운동 루틴<span class="profile-tag" id="profileTag"></span></h1>
@@ -1757,6 +1778,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   </section>
 
   <div class="settings-view" id="settingsView" hidden>
+    <div class="settings-card" style="padding:14px;margin-bottom:16px">
+      <strong>앱 버전 1 · 2026-09-13</strong>
+      <p id="backupStatus" class="record-export-note"></p>
+      <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
+      <p id="updateStatus" class="record-export-note" role="status"></p>
+    </div>
     <div class="settings-head">프로필</div>
     <div class="settings-card">
       <div id="profileList"></div>
@@ -1973,7 +2000,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     return ['bulk-routine-v4','bulk-routine-v5','bulk-routine-v6','bulk-routine-v7','bulk-routine-v8','bulk-routine-v9',
       'bulk-routine-pending-v1','bulk-routine-catalog-v2','bulk-routine-catalog-v3','bulk-routine-log-v1',
       'bulk-routine-draft-v1','bulk-routine-draft-v2','bulk-routine-log-recovery-v1','bulk-routine-memos-v1','bulk-catalog-hypertrophy-v1',
-      'bulk-catalog-add-bulgarian-v1','bulk-catalog-expand-all-v2','bulk-catalog-expand-all-v3'];
+      'bulk-catalog-add-bulgarian-v1','bulk-catalog-expand-all-v2','bulk-catalog-expand-all-v3','bulk-workout-pins-v1','bulk-workout-backup-status-v1'];
   }
   function readJSON(key, fallback) {
     try {
@@ -2317,38 +2344,22 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
 
   function suggestNext(ex, name, onOrBeforeDate) {
-    var h = historyFor(name).filter(function(item){
-      return !onOrBeforeDate || item.date <= onOrBeforeDate;
+    var range=parseRepRange(ex.r), byDate=new Map();
+    if(!range)return null;
+    historyFor(name).filter(function(e){return (!onOrBeforeDate || e.date<onOrBeforeDate) && isFinite(parseFloat(e.w)) && parseFloat(e.reps)>0;}).forEach(function(e){
+      var old=byDate.get(e.date);
+      if(!old || Number(e.w)>Number(old.w) || (Number(e.w)===Number(old.w) && Number(e.reps)>Number(old.reps)))byDate.set(e.date,e);
     });
-    if (h.length === 0) return null;
-    var last = h[h.length - 1];
-    var range = parseRepRange(ex.r);
-    if (!range) return null;
-    var doneReps = parseInt(last.reps, 10);
-    var lastW = parseFloat(last.w);
-    if (isNaN(doneReps) || isNaN(lastW)) return null;
-    var bump = weightStepFor(name);
-
-    if (doneReps >= range.hi) {
-      return { text: '반복수 상한(' + range.hi + '회) 도달 · RIR도 목표대로였다면 다음엔 ' + cleanWeightNumber(lastW + bump) + 'kg 시도', type: 'up' };
-    }
-
-    if (doneReps < range.lo) {
-      var misses = 0;
-      for (var i = h.length - 1; i >= 0; i--) {
-        var w = parseFloat(h[i].w);
-        var reps = parseInt(h[i].reps, 10);
-        if (isNaN(w) || w !== lastW) break;
-        if (isNaN(reps) || reps >= range.lo) break;
-        misses++;
-      }
-      if (misses >= 2) {
-        return { text: '반복수 하한(' + range.lo + '회) ' + misses + '회 연속 미달 · 무게를 ' + cleanWeightNumber(lastW - bump) + 'kg로 낮춰보세요', type: 'down' };
-      }
-      return { text: '반복수 하한(' + range.lo + '회) 미달 · 같은 무게 ' + lastW + 'kg로 한 번 더 시도 (다음에도 미달이면 낮추세요)', type: 'hold' };
-    }
-
-    return { text: '범위 안이에요 · 같은 무게 ' + lastW + 'kg로 반복수를 ' + range.hi + '회까지 늘려보세요', type: 'hold' };
+    var recent=Array.from(byDate.values()).sort(function(a,b){return a.date.localeCompare(b.date);}).slice(-2);
+    if(!recent.length)return null;
+    var last=recent[recent.length-1], prior=recent[0], step=weightStepFor(name);
+    var basis='기록일별 최고 중량 세트 기준 · '+recent.map(function(e){return e.date+' '+e.w+'kg × '+e.reps+'회';}).join(' / ');
+    var same=recent.length===2 && Number(prior.w)===Number(last.w);
+    var text='참고 기록이 부족하거나 조건이 달라요 · 다음 운동에서 같은 조건의 기록을 비교해보세요.', type='hold';
+    if(same && Number(last.reps)>=range.hi && Number(prior.reps)>=range.hi){type='up';text='서로 다른 2개 기록일에 반복수 상한 도달 · RIR도 계획대로였다면 '+cleanWeightNumber(Number(last.w)+step)+'kg를 참고하세요.';}
+    else if(same && Number(last.reps)<range.lo && Number(prior.reps)<range.lo){type='down';text='서로 다른 2개 기록일에 반복수 하한 미달 · 컨디션과 수행 조건을 확인하고 '+cleanWeightNumber(Number(last.w)-step)+'kg도 고려해보세요.';}
+    else if(same){text='기록만으로 증감 판단은 어려워요 · 같은 조건에서 '+last.w+'kg의 반복수 변화를 확인해보세요.';}
+    return {type:type,text:basis+'\n'+text+' 기록한 세트만 기준으로 한 참고 안내예요.'};
   }
 
   function loadCatalog() {
@@ -2543,7 +2554,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       value=group[name];delete group[name];
     }
     if(!value || typeof value!=='object' || Array.isArray(value))value={w:'',reps:''};
-    var clean={w:value.w==null?'':String(value.w),reps:value.reps==null?'':String(value.reps)};
+    var clean={w:value.w==null?'':String(value.w),reps:value.reps==null?'':String(value.reps),touched:value.touched===true};
     if(!Object.hasOwn(group,key) || group[key]!==value){
       Object.defineProperty(group,key,{value:clean,writable:true,enumerable:true,configurable:true});
     }
@@ -2551,7 +2562,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
   function lastRecord(name, onOrBeforeDate) {
     for (var i = logs.length - 1; i >= 0; i--) {
-      if (onOrBeforeDate && logs[i].date > onOrBeforeDate) continue;
+      if (onOrBeforeDate && logs[i].date >= onOrBeforeDate) continue;
       var entries = logs[i].entries || [];
       for (var j = entries.length - 1; j >= 0; j--) {
         if (entries[j].n === name) return { date: logs[i].date, w: entries[j].w, reps: entries[j].reps };
@@ -2651,7 +2662,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     if(!el || !prev)return;
     var prevW=parseFloat(prev.w), prevR=parseFloat(prev.reps);
     var curW=parseFloat(weight), curR=parseFloat(reps);
-    var html='직전 <b>'+statsEscape(prev.w)+'kg × '+statsEscape(prev.reps)+'회</b> <span>('+statsEscape(prev.date)+')</span>';
+    var html='이전 기록일 <b>'+statsEscape(prev.w)+'kg × '+statsEscape(prev.reps)+'회</b> <span>('+statsEscape(prev.date)+')</span>';
     var changes=[];
     if(isFinite(curW) && isFinite(prevW)){
       var wd=curW-prevW;
@@ -2700,7 +2711,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
   function openRecentHistoryModal(name,date,trigger) {
     var recent=recentHistoryFor(name,date,5);
-    if(recent.length<2)return;
 
     var overlay=document.createElement('div');
     overlay.className='direct-record-overlay';
@@ -2738,6 +2748,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       '<div class="stats-pr-row"><span>최고 세트 볼륨</span><strong>'+bestSetVolumeText+(pr.setVolume?'<small class="stats-pr-date">'+statsEscape(pr.setVolume.date)+'</small>':'')+'</strong></div>'+
       '<div class="stats-pr-row"><span>추정 1RM</span><strong>'+(pr.e1rm?statsFormatMetric(pr.e1rm.value,'e1rm')+'<small class="stats-pr-date">'+statsEscape(pr.e1rm.date)+'</small>':'-')+'</strong></div>';
     modal.appendChild(prBox);
+    var recentLabel=document.createElement('p');recentLabel.className='stats-note';recentLabel.textContent='최근 기록 5개 · '+date+'까지 (선택일 포함)'+(!recent.length?' · 기록 없음':'');modal.appendChild(recentLabel);
 
     var list=document.createElement('div');
     list.className='recent-history-list';
@@ -3095,6 +3106,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     document.getElementById('recordDate').max=todayStr();
     var d = days[activeIndex];
     panelEl.innerHTML = '';
+    var context=document.createElement('p');context.className='record-context'+(selectedRecordDate!==todayStr()?' past':'');
+    context.textContent=(selectedRecordDate===todayStr()?'오늘':selectedRecordDate)+' 기록 중 · '+d.letter+'요일 루틴 사용';
+    panelEl.appendChild(context);
 
     var stampRow = document.createElement('div');
     stampRow.className = 'stamp-row';
@@ -3115,7 +3129,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     var total = document.createElement('span');
     total.className = 'set-total';
-    total.innerHTML = dayTotal(d) + '<span>세트</span>';
+    total.innerHTML = '<span>루틴 계획</span> '+dayTotal(d) + '<span>세트</span>';
 
     stampRow.appendChild(stampWrap);
     stampRow.appendChild(total);
@@ -3244,7 +3258,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
       var setsIn = makeNumberInput('in-sets', ex.s, 1, 20, 1, function (v, committed) {
         ex.s = v;
-        total.innerHTML = dayTotal(d) + '<span>세트</span>';
+        total.innerHTML = '<span>루틴 계획</span> '+dayTotal(d) + '<span>세트</span>';
         save();
         renderPrinciples();
       }, 1);
@@ -3267,17 +3281,17 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       logRow.className = 'log-fields';
       var dr = getDraft(d.key, ex.n, ex.uid);
       var prev = lastRecord(ex.n, selectedRecordDate);
-      // 새 세트를 입력할 때 최근 기록의 kg를 기본값으로 채워 횟수만 바로 입력할 수 있게 한다.
-      if (!String(dr.w == null ? '' : dr.w).trim() && prev && prev.w !== '-' && !isNaN(parseFloat(prev.w))) {
-        dr.w = String(prev.w);
-        writeJSON(DRAFT_KEY, draft);
-      }
+      // 제안 중량은 화면에만 표시한다. 명시적인 입력 전에는 저장 대상이 아니다.
+      var autoWeight=!String(dr.w || '').trim() && prev && prev.w!=='-' ? String(prev.w) : '';
+      li.dataset.touched=String(dr.touched===true || !!String(dr.reps || '').trim());
 
-      var wIn = makeNumberInput('in-weight', dr.w, 0, 500, 0.5, function (v) { dr.w = v; writeJSON(DRAFT_KEY, draft); });
+      var wIn = makeNumberInput('in-weight', dr.w || autoWeight, 0, 500, 0.5, function (v,committed) { if(committed && li.dataset.touched!=='true')return;dr.w = v; dr.touched=true;li.dataset.touched='true';writeJSON(DRAFT_KEY, draft);updateSaveCount(); });
       wIn.setAttribute('aria-label', '무게 (kg)');
       wIn.placeholder = '–';
 
-      var doneIn = makeNumberInput('in-done', dr.reps, 0, 100, 1, function (v) { dr.reps = v; writeJSON(DRAFT_KEY, draft); });
+      wIn.inputMode='decimal';
+      var doneIn = makeNumberInput('in-done', dr.reps, 0, 100, 1, function (v,committed) { if(committed && li.dataset.touched!=='true')return;dr.reps = v;dr.w=wIn.value;dr.touched=true;li.dataset.touched='true';writeJSON(DRAFT_KEY, draft);updateSaveCount(); });
+      doneIn.inputMode='numeric';
       doneIn.setAttribute('aria-label', '실제 반복수');
       doneIn.placeholder = '–';
 
@@ -3286,7 +3300,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       var addRecordBtn = document.createElement('button');
       addRecordBtn.type = 'button';
       addRecordBtn.className = 'btn-record-one';
-      addRecordBtn.textContent = '+ 추가';
+      addRecordBtn.textContent = '1세트 저장';
       addRecordBtn.setAttribute('aria-label', ex.n + ' 운동 기록 추가');
       addRecordBtn.addEventListener('click', function () { saveExerciseRecords(idx); });
       logRow.appendChild(addRecordBtn);
@@ -3302,6 +3316,21 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       });
       li.appendChild(goal);
       li.appendChild(logRow);
+      var quick=document.createElement('div');quick.className='quick-actions routine-read-only';
+      [-1,1].forEach(function(sign){var b=document.createElement('button');b.type='button';b.className='btn-reset';var step=weightStepFor(ex.n);b.textContent=(sign<0?'−':'+')+step+'kg';b.setAttribute('aria-label',ex.n+' 중량 '+(sign<0?'줄이기':'늘리기'));b.onclick=function(){wIn.value=String(Math.min(500,cleanWeightNumber((parseFloat(wIn.value)||0)+sign*step)));wIn.dispatchEvent(new Event('input',{bubbles:true}));};quick.appendChild(b);});
+      var historyButton=document.createElement('button');historyButton.type='button';historyButton.className='btn-reset';historyButton.textContent='최근 5개 보기';historyButton.onclick=function(){openRecentHistoryModal(ex.n,selectedRecordDate,historyButton);};quick.appendChild(historyButton);
+      li.appendChild(quick);
+      var saved=[];logs.forEach(function(group){if(group.date===selectedRecordDate)(group.entries||[]).forEach(function(e){if(e.n===ex.n)saved.push(Object.assign({},e,{date:group.date}));});});
+      var savedBox=document.createElement('div');savedBox.className='saved-set-summary routine-read-only';
+      if(saved.length){
+        var lastSaved=saved[saved.length-1];
+        var summary=document.createElement('div');summary.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' 기록 '+saved.length+'세트 · 최근 저장 '+(lastSaved.w==='-'?'무게 미입력':lastSaved.w+'kg')+' × '+(lastSaved.reps==='-'?'횟수 미입력':lastSaved.reps+'회');savedBox.appendChild(summary);
+        var edit=document.createElement('button');edit.type='button';edit.className='btn-reset';edit.textContent='✎ 최근 세트 수정';edit.onclick=function(){openRecordEditor(summary,lastSaved,edit);};savedBox.appendChild(edit);
+        var undo=document.createElement('button');undo.type='button';undo.className='btn-reset';undo.textContent='최근 저장 되돌리기';undo.onclick=function(){
+          requireSecondClick(undo,'되돌리기 확인',function(){var next=logs.map(function(g){return Object.assign({},g,{entries:g.entries.filter(function(e){return e.id!==lastSaved.id;})});}).filter(function(g){return g.entries.length;});if(!writeJSON(LOG_KEY,next)){showToast('저장 취소 실패 · 기존 기록 유지','error');return;}clearRecordUndo();logs=next;renderPanel();renderRecords();showToast('선택한 1세트 저장을 되돌렸어요.');});
+        };savedBox.appendChild(undo);
+      }else savedBox.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' 저장한 기록 없음';
+      li.appendChild(savedBox);
 
       if (prev) {
         var hint = document.createElement('p');
@@ -3369,10 +3398,15 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var logBtn = document.createElement('button');
     logBtn.className = 'btn btn-log';
     logBtn.type = 'button';
-    logBtn.textContent = '입력한 운동 기록 추가 (' + selectedRecordDate + ')';
+    function updateSaveCount(){
+      if(!logBtn)return;
+      var count=Array.from(panelEl.querySelectorAll('.ex-row')).filter(function(row){return row.dataset.touched==='true' && (row.querySelector('.in-weight').value.trim() || row.querySelector('.in-done').value.trim());}).length;
+      logBtn.textContent='입력한 '+count+'세트 저장 · '+selectedRecordDate;logBtn.disabled=count===0;
+    }
     logBtn.addEventListener('click', function () { saveExerciseRecords(null); });
     function saveExerciseRecords(selectedIndex) {
       var entries = [];
+      var savedIndexes=[];
       var validationError='';
       var rows = panelEl.querySelectorAll('.ex-row');
 
@@ -3382,6 +3416,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         if (selectedIndex !== null && idx !== selectedIndex) return;
         var dr = getDraft(d.key, ex.n, ex.uid);
         var row = rows[idx];
+        if(!row || row.dataset.touched!=='true')return;
         if (row) {
           var wEl = row.querySelector('.in-weight');
           var repsEl = row.querySelector('.in-done');
@@ -3401,6 +3436,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
             w: weight || '-',
             reps: doneReps || '-'
           });
+          savedIndexes.push(idx);
         }
       });
 
@@ -3409,7 +3445,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       if (entries.length === 0) {
         hint.textContent = '저장할 기록이 없어요 · kg 또는 실제 횟수를 입력해주세요';
         hint.className = 'save-hint';
-        showToast('kg 또는 횟수를 먼저 입력해주세요.','pending');
+        showToast('kg 또는 횟수를 직접 입력해주세요. 제안 중량만으로는 저장하지 않아요.','pending');
         return;
       }
 
@@ -3435,8 +3471,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
       var nextDraft=JSON.parse(JSON.stringify(draft));
       var datedKey=d.key+'@'+selectedRecordDate;
-      if(selectedIndex===null)nextDraft[datedKey]={};
-      else if(nextDraft[datedKey])delete nextDraft[datedKey][draftEntryKey(d.ex[selectedIndex].n,d.ex[selectedIndex].uid)];
+      if(nextDraft[datedKey])savedIndexes.forEach(function(index){delete nextDraft[datedKey][draftEntryKey(d.ex[index].n,d.ex[index].uid)];});
       var ok = storageTransaction([{key:LOG_KEY,value:nextLogs},{key:DRAFT_KEY,value:nextDraft}]);
       var persisted = ok ? readJSON(LOG_KEY, null) : null;
       if (!ok || !Array.isArray(persisted)) {
@@ -3448,9 +3483,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
       // 실제 저장이 확인된 뒤에만 메모리 상태와 입력 초안을 갱신한다.
       logs = persisted;
+      clearRecordUndo();
       draft=nextDraft;
       renderPanel();
       renderPrinciples();
+      if(selectedIndex!==null){var nextInput=panelEl.querySelectorAll('.in-done')[selectedIndex];if(nextInput)nextInput.focus({preventScroll:true});}
 
       hint = document.getElementById('saveHint');
       hint.textContent = date+' · '+entries.length + '세트 기록 저장됨';
@@ -3466,6 +3503,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     if (d.ex.length > 0) actions.appendChild(logBtn);
 
     panelEl.appendChild(actions);
+    updateSaveCount();
 
   }
 
@@ -3696,6 +3734,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     target.entries.push(entry);
     next.sort(function(a,b){return a.date.localeCompare(b.date);});
     if(!writeJSON(LOG_KEY,next))throw new Error('기록을 저장하지 못했어요. 다시 시도해주세요.');
+    clearRecordUndo();
     logs=next;
     return {entry:entry,prUpdates:prUpdates};
   }
@@ -3765,7 +3804,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     actions.appendChild(cancel);actions.appendChild(save);form.appendChild(actions);
     modal.appendChild(form);overlay.appendChild(modal);
 
-    var previous=null,previousName='';
+    var previous=null,previousName='',directTouched=false,weightWasSuggested=false;
     function selectedCatalogItem(){
       var q=name.value.trim().toLocaleLowerCase('ko-KR');
       return options.find(function(item){return item.name.toLocaleLowerCase('ko-KR')===q;}) || null;
@@ -3777,14 +3816,16 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       if(!trimmed){previous=null;previousName='';prevHint.hidden=true;return;}
       if(trimmed!==previousName){
         previousName=trimmed;previous=lastRecord(trimmed,date.value);
-        if(previous && !weight.value && previous.w!=='-')weight.value=previous.w;
+        if(weightWasSuggested)weight.value='';
+        weightWasSuggested=false;
+        if(previous && !weight.value && previous.w!=='-'){weight.value=previous.w;weightWasSuggested=true;}
       }
       if(previous){prevHint.hidden=false;updatePreviousComparison(prevHint,previous,weight.value,reps.value);}
       else prevHint.hidden=true;
     }
     name.addEventListener('input',refreshExercise);name.addEventListener('change',refreshExercise);
     date.addEventListener('change',function(){previousName='';refreshExercise();});
-    weight.addEventListener('input',refreshExercise);reps.addEventListener('input',refreshExercise);
+    weight.addEventListener('input',function(){directTouched=true;weightWasSuggested=false;refreshExercise();});reps.addEventListener('input',function(){directTouched=true;refreshExercise();});
 
     function close(){
       document.removeEventListener('keydown',keydown);overlay.remove();document.body.style.overflow='';
@@ -3796,6 +3837,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     overlay.addEventListener('click',function(e){if(e.target===overlay)close();});
     form.addEventListener('submit',function(e){
       e.preventDefault();hint.textContent='';
+      if(!directTouched){hint.textContent='kg 또는 횟수를 직접 입력해주세요. 제안 중량만으로는 저장하지 않아요.';return;}
       var exerciseName=name.value.trim();
       if(!exerciseName){hint.textContent='운동 종목을 입력해주세요.';showToast(hint.textContent,'error');name.focus();return;}
       try{
@@ -3826,7 +3868,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
   function openRecordEditor(row,entry,trigger) {
     clearConfirmation();
-    recordsListEl.querySelectorAll('.record-edit-form').forEach(function(form){form.remove();});
+    document.querySelectorAll('.record-edit-form').forEach(function(form){form.remove();});
     var form=document.createElement('form');form.className='record-edit-form';
     var date=document.createElement('input');date.type='date';date.value=entry.date;date.max=todayStr();date.required=true;date.setAttribute('aria-label','기록 날짜 수정');
     var weight=document.createElement('input');weight.type='number';weight.min='0';weight.max='500';weight.step='any';weight.inputMode='decimal';weight.value=entry.w==='-'?'':entry.w;weight.setAttribute('aria-label','기록 무게 수정');
@@ -3844,7 +3886,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         var values=cleanRecordValues(date.value,weight.value,reps.value);
         var next=editedRecords(logs,entry.id,values);
         if(!writeJSON(LOG_KEY,next))throw new Error('저장하지 못했어요. 입력값을 유지했으니 다시 시도해주세요.');
-        logs=next;renderRecords();renderPanel();
+        clearRecordUndo();logs=next;renderRecords();renderPanel();
         var message=document.getElementById('recordsActionHint');
         message.textContent='기록 수정 저장됨'+((recFilterFrom && values.date<recFilterFrom)||(recFilterTo && values.date>recFilterTo)?' · 바뀐 날짜는 현재 조회 기간 밖입니다.':'');
         showToast(message.textContent);
@@ -4389,11 +4431,17 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var label='';
     if(statsPeriod==='week') label='이번 주';
     else if(statsPeriod==='month') label='이번 달';
-    else if(statsPeriod==='custom') label=total+'일 중';
+    else if(statsPeriod==='custom') label='선택 기간';
     else label='전체 기간';
     return {label:label,total:total};
   }
 
+  function pinnedExercises(){var p=readJSON(keyFor('bulk-workout-pins-v1',activeProfile),[]);return Array.isArray(p)?p.filter(function(n){return typeof n==='string';}).slice(0,5):[];}
+  function pinnedStatsHtml(){
+    var pins=pinnedExercises(),all=buildStats(logs,catalog,'all',todayStr(),null);
+    var choices=statsRecordedExerciseNames().map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');
+    return '<section class="stats-card"><h3>관심 종목 · 전체 기록</h3><p class="stats-note">최대 5개 고정 · 조회 기간과 관계없이 최근 기록과 역대 PR을 확인해요.</p><div class="quick-actions"><input type="search" id="pinExerciseInput" list="pinExerciseChoices" placeholder="고정할 종목 검색" aria-label="고정할 종목" style="min-width:0;flex:1;width:100%;font-size:16px"><datalist id="pinExerciseChoices">'+choices+'</datalist><button type="button" class="btn-reset" data-pin-add>고정</button></div>'+pins.map(function(n){var g=all.exercises.find(function(e){return e.name===n;});var recent=recentHistoryFor(n,todayStr(),1)[0];return '<details class="stats-exercise" data-stats-key="pin:'+statsEscape(n)+'"><summary><span class="stats-exercise-title">'+statsEscape(n)+'<small>'+(recent?statsEscape(recent.date+' · '+recent.w+'kg × '+recent.reps+'회'):'기록 없음')+'</small></span></summary><div class="stats-exercise-body"><button class="btn-reset" type="button" data-pin-remove="'+statsEscape(n)+'">고정 해제</button>'+(g?statsExerciseMetricsHtml(g):'')+'</div></details>';}).join('')+(!pins.length?'<p class="stats-note">자주 확인하는 종목을 고정해보세요.</p>':'')+'</section>';
+  }
   function renderStats() {
     var opened=new Set();statsViewEl.querySelectorAll('details[data-stats-key]').forEach(function(el){if(el.open)opened.add(el.dataset.statsKey);});
     var asOf=todayStr(),data=buildStats(logs,catalog,statsPeriod,asOf,statsCustomRange);
@@ -4419,12 +4467,15 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var searchList=recordedNames.map(function(name){return '<option value="'+statsEscape(name)+'"></option>';}).join('');
     var searchHtml='<div class="stats-exercise-search"><input type="search" data-stats-exercise-search list="statsExerciseSuggestions" autocomplete="off" placeholder="통계 종목 검색" aria-label="통계 종목 검색" value="'+statsEscape(statsExerciseQuery)+'"><svg class="stats-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><datalist id="statsExerciseSuggestions">'+searchList+'</datalist></div><p class="stats-search-empty" data-stats-search-empty hidden>검색한 종목의 기록이 선택 기간에 없어요.</p>';
     var attendanceDisplay=statsAttendanceDisplay(data,asOf);
-    statsViewEl.innerHTML='<div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><p class="stats-note" role="status">'+(statsRangeAnchor?'직접 선택 · 종료일 선택 중<br>현재 조회: ':statsPeriod==='custom'?'직접 선택 · ':'')+data.from+' ~ '+data.to+'</p><button type="button" data-stats-reset>기간 초기화</button></div>'+
+    statsViewEl.innerHTML=pinnedStatsHtml()+'<div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><p class="stats-note" role="status">'+(statsRangeAnchor?'직접 선택 · 종료일 선택 중<br>현재 조회: ':statsPeriod==='custom'?'직접 선택 · ':'')+data.from+' ~ '+data.to+'</p><button type="button" data-stats-reset>기간 초기화</button></div>'+
       statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+
-      '<section class="stats-card"><div class="stats-attendance"><h3>운동일수</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">'+(statsPeriod==='all'?'일':' / '+attendanceDisplay.total+'일')+'</span></div></div><p class="stats-note">선택 기간의 운동 기록일 수예요.</p></section>'+
+      '<section class="stats-card"><div class="stats-attendance"><h3>기록한 날</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">일</span></div></div><p class="stats-note">선택 기간에 기록을 남긴 날짜 수예요. 실제 운동한 날과 다를 수 있어요.</p></section>'+
       (!data.count?'<p class="stats-note">이 기간에는 기록이 없어요. 운동 탭에서 기록을 추가하거나 조회 기간을 바꿔보세요.</p>':'')+
       '<section class="stats-card"><h3>부위별 기록 세트</h3>'+muscleBars+'<p class="stats-note">저장한 운동 기록 1개를 1세트로 집계해요.</p></section>'+
       '<h3 class="stats-heading">종목별 기록 변화</h3><p class="stats-note">선택한 기간의 추정 1RM·최고 무게·기록 볼륨 변화를 비교해보세요. 카드의 역대 PR은 조회 기간과 관계없이 전체 기록 기준이며, 그래프의 ‘선택 기간 최고’는 현재 조회 기간 안의 최고값이에요. 추정 1RM과 기록 볼륨은 입력한 기록을 바탕으로 한 참고값이에요.</p>'+searchHtml+groups;
+    statsViewEl.querySelectorAll('details[data-stats-key]').forEach(function(el){if(opened.has(el.dataset.statsKey))el.open=true;});
+    statsViewEl.querySelector('[data-pin-add]').onclick=function(){var n=statsViewEl.querySelector('#pinExerciseInput').value.trim(),pins=pinnedExercises();if(!statsRecordedExerciseNames().includes(n)){showToast('기록이 있는 종목을 선택해주세요.','pending');return;}if(pins.includes(n))return;if(pins.length>=5){showToast('최대 5개까지 고정할 수 있어요.','pending');return;}if(writeJSON(keyFor('bulk-workout-pins-v1',activeProfile),pins.concat(n)))renderStats();else showToast('고정 저장 실패','error');};
+    statsViewEl.querySelectorAll('[data-pin-remove]').forEach(function(b){b.onclick=function(){if(writeJSON(keyFor('bulk-workout-pins-v1',activeProfile),pinnedExercises().filter(function(n){return n!==b.dataset.pinRemove;})))renderStats();else showToast('고정 해제 실패','error');};});
     statsViewEl.querySelectorAll('[data-stats-period]').forEach(function(button){button.addEventListener('click',function(){
       chooseStatsPeriod(button.dataset.statsPeriod);renderStats();
       var active=statsViewEl.querySelector('[data-stats-period="'+statsPeriod+'"]');if(active)active.focus({preventScroll:true});
@@ -5127,6 +5178,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     logs = loadLogs();
     showRecordDataStatus();
     draft = readJSON(DRAFT_KEY, {});
+    refreshBackupStatus();
     statsCalendarMonth = '';
     statsPeriod = 'week';statsCustomRange = null;statsRangeAnchor = '';statsExerciseQuery = '';
     loadMemoEditor();
@@ -5155,6 +5207,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   var settingsHistoryActive = false;
 
   function openSettingsView(pushHistory) {
+    refreshBackupStatus();
     mainViewsEl.hidden = true;
     settingsViewEl.hidden = false;
     document.getElementById('bulkApp').classList.add('settings-open');
@@ -5278,6 +5331,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     }
     if(!data || data.format!=='workout-routine-transfer' || data.version!==1 || !data.profile)fail();
     var p=data.profile;if(!text(p.name,100))fail();routine(p.routine);
+    if(p.pins!=null && (!Array.isArray(p.pins)||p.pins.length>5||p.pins.some(function(n){return !text(n,200);})))fail();
     if(p.pending!=null)routine(p.pending);
     if(!p.catalog || typeof p.catalog!=='object')fail();
     MUSCLES.forEach(function(m){if(!Array.isArray(p.catalog[m])||p.catalog[m].length>2000)fail();p.catalog[m].forEach(function(e){
@@ -5304,8 +5358,27 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   function transferSnapshot() {
     return {format:'workout-routine-transfer',version:1,exportedAt:new Date().toISOString(),profile:{
       name:activeProfile,routine:loadSavedRoutine(),pending:routineOrderPending?days:null,
-      catalog:readJSON(CATALOG_KEY,catalog),logs:logs,memos:getMemos(),draft:draft
+      catalog:readJSON(CATALOG_KEY,catalog),logs:logs,memos:getMemos(),draft:draft,pins:pinnedExercises()
     }};
+  }
+  function backupFingerprint(profile){
+    var clean=JSON.parse(JSON.stringify(profile));
+    if(clean.draft)Object.keys(clean.draft).forEach(function(key){Object.keys(clean.draft[key]).forEach(function(n){var d=clean.draft[key][n];if(!String(d.w || '').trim() && !String(d.reps || '').trim())delete clean.draft[key][n];});if(!Object.keys(clean.draft[key]).length)delete clean.draft[key];});
+    var text=JSON.stringify(clean),a=2166136261,b=5381;
+    for(var i=0;i<text.length;i++){a=Math.imul(a^text.charCodeAt(i),16777619);b=Math.imul(b,33)^text.charCodeAt(i);}
+    return text.length+':'+(a>>>0)+':'+(b>>>0);
+  }
+  function noteBackup(data,confirmed){
+    var status={at:new Date().toISOString(),fingerprint:backupFingerprint(data.profile),confirmed:confirmed};
+    if(!writeJSON(keyFor('bulk-workout-backup-status-v1',data.profile.name),status))showToast('파일 내보내기는 처리했지만 백업 상태를 저장하지 못했어요.','error');
+    refreshBackupStatus();
+  }
+  function refreshBackupStatus(){
+    var el=document.getElementById('backupStatus');if(!el)return;
+    var state=readJSON(keyFor('bulk-workout-backup-status-v1',activeProfile),null);
+    if(!state){el.textContent='현재 프로필 · 아직 파일 내보내기 이력이 없어요.';return;}
+    var changed=state.fingerprint!==backupFingerprint(transferSnapshot().profile);
+    el.textContent='현재 프로필 · 마지막 '+(state.confirmed?'파일 저장':'다운로드 요청')+' '+new Date(state.at).toLocaleString('ko-KR')+' · '+(changed?'이후 데이터가 변경됐어요.':'내보낸 내용과 같아요.')+(state.confirmed?'':' 파일 앱에서 저장 여부를 확인해주세요.');
   }
   function recordSignature(date,dayKey,entry) {
     return JSON.stringify([
@@ -5513,7 +5586,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       {key:STORAGE_KEY, value:nextRoutine},
       {key:routinePendingKey(), remove:true},
       {key:CATALOG_KEY, value:nextCatalog},
-      {key:LOG_KEY, value:nextLogs}
+      {key:LOG_KEY, value:nextLogs},
+      {key:keyFor('bulk-workout-pins-v1',activeProfile),value:Array.from(new Set(pinnedExercises().concat(data.profile.pins || []))).slice(0,5)}
     ]);
     if (!ok) {
       document.getElementById('dataTransferHint').textContent =
@@ -5564,6 +5638,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       {key:keyFor('bulk-routine-log-v1',name),value:p.logs},
       {key:keyFor('bulk-routine-memos-v1',name),value:p.memos},
       {key:keyFor('bulk-routine-draft-v2',name),value:p.draft},
+      {key:keyFor('bulk-workout-pins-v1',name),value:p.pins || []},
       {key:keyFor('bulk-catalog-hypertrophy-v1',name),value:true},
       {key:keyFor('bulk-catalog-expand-all-v2',name),value:true}
     ];
@@ -5774,7 +5849,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   document.getElementById('btnDataExport').addEventListener('click',async function(){
     var hint=document.getElementById('dataTransferHint');
     try{
-      var data=transferSnapshot();
+      var data=JSON.parse(JSON.stringify(transferSnapshot()));
       var json=JSON.stringify(data,null,2);
       var blob=new Blob([json],{type:'application/json'});
       if(blob.size>5*1024*1024){
@@ -5793,6 +5868,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
             try{
               await saveBlobToDirectory(dirHandle,fileName,blob);
               hint.textContent=(dirHandle.name || '백업 폴더')+' / '+fileName+' 에 저장했어요.';
+              noteBackup(data,true);
               return;
             }catch(dirError){
               // 폴더 저장 실패 시 아래 저장창/다운로드 방식으로 자동 대체
@@ -5812,6 +5888,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           await writable.write(blob);
           await writable.close();
           hint.textContent=fileName+' 파일을 저장했어요.';
+          noteBackup(data,true);
           return;
         }catch(saveError){
           if(saveError && saveError.name==='AbortError'){
@@ -5830,6 +5907,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       a.remove();
       setTimeout(function(){URL.revokeObjectURL(url);},60000);
       hint.textContent=fileName+' 다운로드를 요청했어요.';
+      noteBackup(data,false);
     }catch(e){
       hint.textContent='파일을 만들지 못했어요. 다시 시도해주세요.';
     }
@@ -5912,7 +5990,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     this.textContent = recordExportWrapEl.hidden ? '운동기록 내보내기' : '운동기록 닫기';
     if (!recordExportWrapEl.hidden) {
       document.getElementById('recordExportText').value = workoutRecordsText();
-      document.getElementById('recordExportHint').textContent = logs.length ? logs.length + '일의 기록' : '';
+      document.getElementById('recordExportHint').textContent = logs.length ? new Set(logs.map(function(g){return g.date;})).size + '일의 기록' : '';
     }
   });
 
@@ -5951,6 +6029,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   else { renderPanel(); renderPrinciples(); }
 
   showRecordDataStatus();
+  window.addEventListener('workout-before-update',function(event){
+    var memoDirty=memoEditingProfile===activeProfile && JSON.stringify(memoDraft)!==JSON.stringify(getMemos());
+    var catalogDirty=mode==='catalog' && JSON.stringify(readCatalogEdits())!==JSON.stringify(catalog);
+    if(memoDirty || catalogDirty){event.preventDefault();showToast('메모 또는 운동 관리의 변경사항을 먼저 저장해주세요.','pending');return;}
+    if(!writeJSON(DRAFT_KEY,draft) || (routineOrderPending && !writeJSON(routinePendingKey(),days))){event.preventDefault();showToast('입력값 임시 보관에 실패했어요. 저장 후 다시 적용해주세요.','error');}
+  });
   if (memoryOnly) {
     var h = document.getElementById('saveHint');
     h.textContent = '이 브라우저에서는 저장이 안 돼요 (창을 닫으면 초기화)';
@@ -5959,22 +6043,42 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 </script>
 
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker
-        .register('/workout-app/sw.js', {
-          scope: '/workout-app/',
-          updateViaCache: 'none'
-        })
-        .then(function (registration) {
-          registration.update();
-          console.log('서비스워커 등록 완료:', registration.scope);
-        })
-        .catch(function (err) {
-          console.error('서비스워커 등록 실패:', err);
-        });
-    });
-  }
+  (function(){
+    var registration=null,applying=false,remoteAvailable=false;
+    var status=document.getElementById('updateStatus'),banner=document.getElementById('updateBanner');
+    function showAvailable(){banner.hidden=false;status.textContent='새 버전 사용 가능 · 입력을 마친 뒤 새 버전 적용을 눌러주세요.';}
+    async function check(){
+      status.textContent='업데이트 확인 중…';
+      try{
+        if(registration)await registration.update();
+        var response=await fetch('/workout-app/index.html',{cache:'no-store'});
+        if(!response.ok)throw new Error('network');
+        var text=await response.text(),match=text.match(/<meta name="workout-app-version" content="([^"]+)"/);
+        remoteAvailable=!!match && match[1]!==document.querySelector('meta[name="workout-app-version"]').content;
+        if(remoteAvailable || (registration && registration.waiting))showAvailable();
+        else status.textContent=registration && registration.installing?'새 버전 준비 중…':'현재 버전을 사용 중이에요.';
+      }catch(e){status.textContent='업데이트를 확인하지 못했어요. 연결 후 다시 확인해주세요.';}
+    }
+    document.getElementById('btnCheckUpdate').onclick=check;
+    document.getElementById('btnApplyUpdate').onclick=function(){
+      if(document.querySelector('[role="dialog"]') || document.querySelector('.record-edit-form')){status.textContent='열린 입력창을 저장하거나 닫은 뒤 적용해주세요.';return;}
+      var ready=new Event('workout-before-update',{cancelable:true});if(!window.dispatchEvent(ready))return;
+      applying=true;
+      if(registration && registration.waiting){registration.waiting.postMessage({type:'SKIP_WAITING'});status.textContent='새 버전 적용 중…';}
+      else location.reload();
+    };
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.addEventListener('controllerchange',function(){if(applying)location.reload();});
+      window.addEventListener('load',function(){
+        navigator.serviceWorker.register('/workout-app/sw.js',{scope:'/workout-app/',updateViaCache:'none'}).then(function(r){
+          registration=r;
+          if(r.waiting)showAvailable();
+          r.addEventListener('updatefound',function(){var worker=r.installing;if(worker)worker.addEventListener('statechange',function(){if(worker.state==='installed' && navigator.serviceWorker.controller)showAvailable();});});
+          check();
+        }).catch(function(){status.textContent='오프라인 준비에 실패했어요. 연결 후 다시 열어주세요.';});
+      });
+    }else status.textContent='이 환경은 오프라인 설치를 지원하지 않아요.';
+  })();
 </script>
 
 </body>

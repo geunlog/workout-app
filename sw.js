@@ -1,93 +1,44 @@
-const CACHE_NAME = 'workout-routine-pwa-v3';
-
-const APP_SHELL = [
-  '/workout-app/',
-  '/workout-app/index.html',
-  '/workout-app/manifest.webmanifest',
-  '/workout-app/icon-192.png',
-  '/workout-app/icon-512.png'
-];
+const CACHE_PREFIX = 'workout-routine-pwa-';
+const CACHE_NAME = CACHE_PREFIX + 'v4-release-1';
+const BASE = '/workout-app/';
+const APP_SHELL = [BASE, BASE+'index.html', BASE+'manifest.webmanifest', BASE+'icon-192.png', BASE+'icon-512.png'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
-  );
-  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE_NAME).then(cache =>
+    cache.addAll(APP_SHELL.map(url => new Request(url, {cache:'reload'})))
+  ));
+  // Existing clients keep their worker until the user explicitly applies the update.
 });
-
+self.addEventListener('message', event => {
+  if(event.data && event.data.type === 'SKIP_WAITING')event.waitUntil(self.skipWaiting());
+});
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  );
+  event.waitUntil(caches.keys().then(keys => Promise.all(
+    keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME).map(key => caches.delete(key))
+  )).then(() => self.clients.claim()));
 });
-
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-
-  const url = new URL(event.request.url);
-
-  if (
-    url.origin !== self.location.origin ||
-    !url.pathname.startsWith('/workout-app/')
-  ) {
-    return;
-  }
-
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .then(response => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache =>
-              cache.put('/workout-app/index.html', copy)
-            );
-          }
-          return response;
-        })
-        .catch(() =>
-          caches.match('/workout-app/index.html')
-            .then(r => r || caches.match('/workout-app/'))
-        )
-    );
-    return;
-  }
-
-  if (
-    url.pathname.endsWith('/manifest.webmanifest') ||
-    url.pathname.endsWith('/icon-192.png') ||
-    url.pathname.endsWith('/icon-512.png')
-  ) {
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .then(response => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        }
+  if(event.request.method !== 'GET')return;
+  const url=new URL(event.request.url);
+  if(url.origin !== self.location.origin || !url.pathname.startsWith(BASE))return;
+  const navigation=event.request.mode==='navigate';
+  const fresh=navigation || /\/(index\.html|manifest\.webmanifest|icon-192\.png|icon-512\.png)$/.test(url.pathname);
+  const key=navigation ? BASE+'index.html' : event.request;
+  const cacheWrite=[];
+  const task=(async()=>{
+    const cache=await caches.open(CACHE_NAME);
+    if(!fresh){const hit=await cache.match(key);if(hit)return hit;}
+    let response;
+    try{
+      response=await fetch(event.request,{cache:fresh?'no-store':'default'});
+      if(response.ok){
+        cacheWrite.push(cache.put(key,response.clone()).catch(()=>{}));
         return response;
-      });
-    })
-  );
+      }
+    }catch(error){}
+    const fallback=await cache.match(key) || (navigation ? await cache.match(BASE) : null);
+    return fallback || response || new Response('연결할 수 없어요. 인터넷 연결 후 다시 열어주세요.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+  })();
+  event.respondWith(task);
+  event.waitUntil(task.then(()=>Promise.all(cacheWrite)).catch(()=>{}));
 });
