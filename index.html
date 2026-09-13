@@ -3927,8 +3927,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         });
       });
       var arrow=document.createElement('span');arrow.className='exercise-record-chevron';
-      var count = document.createElement('span');count.className = 'record-count-badge';count.textContent = visible.length === all.length ? all.length + '세트' : visible.length + ' / ' + all.length + '세트';
-      count.setAttribute('aria-label','현재 조회 ' + visible.length + '세트, 전체 ' + all.length + '세트');
+      var count = document.createElement('span');count.className = 'record-count-badge';count.textContent = visible.length + '세트';
+      count.setAttribute('aria-label','현재 조회 ' + visible.length + '세트');
       head.appendChild(title);head.appendChild(count);head.appendChild(arrow);card.appendChild(head);
       var setSeen={};
       all.forEach(function(entry){
