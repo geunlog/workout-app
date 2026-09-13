@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="3">
+<meta name="workout-app-version" content="4">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1664,8 +1664,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #dayPanel .weight-control .field{flex:1;gap:3px;}
 .bulk-app #dayPanel .weight-control .in-weight{width:100%;max-width:none;min-width:0;flex:1;}
 .bulk-app #dayPanel .weight-control button{flex:0 0 44px;min-width:44px;min-height:44px;padding:0;font-size:20px;}
-.bulk-app .continuous-input{display:flex;align-items:center;gap:8px;min-height:44px;font-size:13px;color:var(--muted);margin-bottom:6px;cursor:pointer;}
-.bulk-app .continuous-input input{width:20px;height:20px;margin:0;accent-color:var(--primary);}
 .bulk-app .record-more > summary,.bulk-app .suggest-details > summary,.bulk-app .pin-manager > summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;line-height:1.6;gap:6px;list-style:none;}
 .bulk-app .record-more > summary::after,.bulk-app .suggest-details > summary::after,.bulk-app .pin-manager > summary::after{content:'⌄';margin-left:auto;}
 .bulk-app details[open].record-more > summary::after,.bulk-app details[open].suggest-details > summary::after,.bulk-app details[open].pin-manager > summary::after{content:'⌃';}
@@ -1775,13 +1773,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 @media(max-width:400px){.bulk-app .routine-mode-note{font-size:12px;}.bulk-app .exercise-name-read{font-size:16px;}}
 
 /* v3: mobile controls and shared disclosure indicators */
-.bulk-app .continuous-switch{display:flex;align-items:center;gap:9px;min-height:44px;padding:4px 0;border:0;background:transparent;color:var(--ink);font:500 14px var(--ui);cursor:pointer;touch-action:manipulation;}
-.bulk-app .continuous-switch .switch-track{display:block;flex:0 0 44px;width:44px;height:26px;padding:3px;box-sizing:border-box;border-radius:20px;background:#778197;}
-.bulk-app .switch-track > span{display:block;width:20px;height:20px;background:#fff;border-radius:50%;transform:translateX(0);transition:transform .2s ease;}
-.bulk-app .continuous-switch[aria-checked=true] .switch-track{background:var(--primary);}
-.bulk-app .continuous-switch[aria-checked=true] .switch-track > span{transform:translateX(18px);}
-.bulk-app .switch-state{font-size:12px;color:var(--muted);}
-.bulk-app .continuous-switch:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:8px;}
 .bulk-app .record-edit-form,.bulk-app #dayPanel .record-edit-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 8px;width:100%;box-sizing:border-box;padding:12px 0;}
 .bulk-app .record-edit-form .edit-date-field,.bulk-app .record-edit-form > .save-hint{grid-column:1/-1;}
 .bulk-app .record-edit-form .field,.bulk-app #dayPanel .record-edit-form .field{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0;}
@@ -1811,7 +1802,20 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app details > summary::after{content:''!important;display:block;flex:0 0 20px;width:20px;height:20px;margin:0 0 0 auto!important;border:0!important;background:currentColor;opacity:.7;mask:var(--disclosure-icon) center/20px 20px no-repeat;-webkit-mask:var(--disclosure-icon) center/20px 20px no-repeat;transform:rotate(0deg)!important;transition:transform .2s ease;}
 .bulk-app details[open] > summary::after{transform:rotate(180deg)!important;}
 .bulk-app{--disclosure-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");}
-@media(prefers-reduced-motion:reduce){.bulk-app details > summary::after,.bulk-app .switch-track > span{transition:none;}}
+@media(prefers-reduced-motion:reduce){.bulk-app details > summary::after{transition:none;}}
+/* v4: compact, consistent record editing */
+.bulk-app .record-edit-form .field,.bulk-app #dayPanel .record-edit-form .field{flex-direction:row;align-items:center;gap:7px;}
+.bulk-app .record-edit-form .field-label{order:0;flex:0 0 auto;white-space:nowrap;font-size:13px;color:var(--muted);}
+.bulk-app .record-edit-form .field input,.bulk-app #dayPanel .record-edit-form .field input{width:0;min-width:0;max-width:none;flex:1 1 0;text-align:center;}
+.bulk-app .record-edit-form .edit-date-field,.bulk-app #dayPanel .record-edit-form .edit-date-field{flex-direction:column;align-items:stretch;gap:4px;}
+.bulk-app .record-edit-form .edit-date-field .field-label{order:-1;}
+.bulk-app .record-edit-form .edit-date-field input[type=date],.bulk-app #dayPanel .record-edit-form .edit-date-field input[type=date]{width:100%;max-width:none;flex:none;text-align:left;}
+.bulk-app .record-edit-form > button[type=submit]{background:var(--primary);border-color:var(--primary);color:var(--on-primary);}
+.bulk-app .quick-actions.editing-record{display:none!important;}
+.bulk-app .rec-item.editing-record .btn-hist-del{display:none!important;}
+.bulk-app .stats-card.stats-section:not([open]){padding:12px 20px;}
+.bulk-app .stats-card.stats-section:not([open]) > summary{padding:0;margin:0;}
+.bulk-app .stats-section .stats-range-status{justify-content:flex-end;margin-bottom:6px;}
 </style>
 </head>
 <body>
@@ -1847,7 +1851,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
   <div class="settings-view" id="settingsView" hidden>
     <div class="settings-card" style="padding:14px;margin-bottom:16px">
-      <strong>앱 버전 3 · 2026-09-13</strong>
+      <strong>앱 버전 4 · 2026-09-13</strong>
       <p id="backupStatus" class="record-export-note"></p>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
@@ -2899,7 +2903,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     reportViewEl.hidden = mode !== 'report';
     statsViewEl.hidden = mode !== 'stats';
   }
-  var routineEditing = false, continuousInput = false;
+  var routineEditing = false;
   function updateRoutineMode() {
     dayViewEl.classList.toggle('routine-editing', routineEditing);
     var button = document.getElementById('btnRoutineEdit');
@@ -3180,11 +3184,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var context=document.createElement('p');context.className='record-context'+(selectedRecordDate!==todayStr()?' past':'');
     context.textContent=(selectedRecordDate===todayStr()?'오늘':selectedRecordDate)+' 기록 중 · '+d.letter+'요일 루틴 사용';
     panelEl.appendChild(context);
-    var inputOptions=document.createElement('div');inputOptions.className='continuous-input routine-read-only';
-    var continuousToggle=document.createElement('button');continuousToggle.type='button';continuousToggle.className='continuous-switch';continuousToggle.setAttribute('role','switch');continuousToggle.setAttribute('aria-label','연속 입력');
-    function updateContinuousToggle(){continuousToggle.setAttribute('aria-checked',String(continuousInput));continuousToggle.innerHTML='<span class="switch-track" aria-hidden="true"><span></span></span><span>연속 입력</span><span class="switch-state">'+(continuousInput?'켜짐':'꺼짐')+'</span>';}
-    continuousToggle.addEventListener('click',function(){continuousInput=!continuousInput;updateContinuousToggle();});updateContinuousToggle();
-    continuousToggle.title='이용 중에만 유지 · 저장 후 같은 종목의 반복수 입력칸으로 이동';inputOptions.appendChild(continuousToggle);panelEl.appendChild(inputOptions);
+
 
     var stampRow = document.createElement('div');
     stampRow.className = 'stamp-row';
@@ -3567,7 +3567,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       draft=nextDraft;
       renderPanel();
       renderPrinciples();
-      if(selectedIndex!==null){var nextInput=panelEl.querySelectorAll(continuousInput?'.in-done':'.btn-record-one')[selectedIndex];if(nextInput)nextInput.focus({preventScroll:true});}
+      if(selectedIndex!==null){var nextInput=panelEl.querySelectorAll('.btn-record-one')[selectedIndex];if(nextInput)nextInput.focus({preventScroll:true});}
 
       hint = document.getElementById('saveHint');
       hint.textContent = date+' · '+entries.length + '세트 기록 저장됨';
@@ -3959,7 +3959,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
   function openRecordEditor(row,entry,trigger) {
     clearConfirmation();
-    document.querySelectorAll('.record-edit-form').forEach(function(form){form.remove();});
+    document.querySelectorAll('.record-edit-form').forEach(function(form){if(form._close)form._close(false);else form.remove();});
     var form=document.createElement('form');form.className='record-edit-form';
     var date=document.createElement('input');date.type='date';date.value=entry.date;date.max=todayStr();date.required=true;date.setAttribute('aria-label','기록 날짜 수정');
     var weight=document.createElement('input');weight.type='number';weight.min='0';weight.max='500';weight.step='any';weight.inputMode='decimal';weight.value=entry.w==='-'?'':entry.w;weight.setAttribute('aria-label','기록 무게 수정');
@@ -3969,7 +3969,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var cancel=document.createElement('button');cancel.type='button';cancel.className='btn-reset';cancel.textContent='취소';
     var hint=document.createElement('p');hint.className='save-hint';hint.setAttribute('role','status');
     form.appendChild(commit);form.appendChild(cancel);form.appendChild(hint);
-    function close(){form.remove();if(trigger.isConnected)trigger.focus();}
+    row.classList.add('editing-record');
+    function close(restoreFocus){row.classList.remove('editing-record');form.remove();if(restoreFocus!==false && trigger.isConnected)trigger.focus();}
+    form._close=close;
     cancel.addEventListener('click',close);form.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();close();}});
     form.addEventListener('submit',function(e){
       e.preventDefault();
@@ -3977,7 +3979,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         var values=cleanRecordValues(date.value,weight.value,reps.value);
         var next=editedRecords(logs,entry.id,values);
         if(!writeJSON(LOG_KEY,next))throw new Error('저장하지 못했어요. 입력값을 유지했으니 다시 시도해주세요.');
-        clearRecordUndo();logs=next;renderRecords();renderPanel();
+        clearRecordUndo();logs=next;close(false);renderRecords();renderPanel();
         var message=document.getElementById('recordsActionHint');
         message.textContent='기록 수정 저장됨'+((recFilterFrom && values.date<recFilterFrom)||(recFilterTo && values.date>recFilterTo)?' · 바뀐 날짜는 현재 조회 기간 밖입니다.':'');
         showToast(message.textContent);
@@ -4564,7 +4566,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var searchList=recordedNames.map(function(name){return '<option value="'+statsEscape(name)+'"></option>';}).join('');
     var searchHtml='<div class="stats-exercise-search"><input type="search" data-stats-exercise-search list="statsExerciseSuggestions" autocomplete="off" placeholder="통계 종목 검색" aria-label="통계 종목 검색" value="'+statsEscape(statsExerciseQuery)+'"><svg class="stats-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><datalist id="statsExerciseSuggestions">'+searchList+'</datalist></div><p class="stats-search-empty" data-stats-search-empty hidden>검색한 종목의 기록이 선택 기간에 없어요.</p>';
     var attendanceDisplay=statsAttendanceDisplay(data,asOf);
-    statsViewEl.innerHTML=pinnedStatsHtml()+'<details class="stats-card stats-section" data-stats-panel="range"><summary><span>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></span></summary><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><p class="stats-note" role="status">'+(statsRangeAnchor?'직접 선택 · 종료일 선택 중<br>현재 조회: ':statsPeriod==='custom'?'직접 선택 · ':'')+data.from+' ~ '+data.to+'</p><button type="button" data-stats-reset>기간 초기화</button></div>'+
+    statsViewEl.innerHTML=pinnedStatsHtml()+'<details class="stats-card stats-section" data-stats-panel="range"><summary><span>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></span></summary><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><button type="button" data-stats-reset>기간 초기화</button></div>'+
       statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details>'+
       '<section class="stats-card"><div class="stats-attendance"><h3>기록한 날</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">일</span></div></div><p class="stats-note">선택 기간에 기록을 남긴 날짜 수예요. 실제 운동한 날과 다를 수 있어요.</p></section>'+
       (!data.count?'<p class="stats-note">이 기간에는 기록이 없어요. 운동 탭에서 기록을 추가하거나 조회 기간을 바꿔보세요.</p>':'')+
