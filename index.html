@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="8">
+<meta name="workout-app-version" content="9">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1926,6 +1926,58 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .app-version-card button{min-height:44px;margin-left:auto;font-size:12px;padding:8px;}
 .bulk-app .app-version-card #updateStatus{flex-basis:100%;margin:0;font-size:12px;}
 @media(max-width:360px){.bulk-app .stamp-row{padding:12px;gap:8px;}.bulk-app .stamp-row .stamp-read{font-size:20px;}.bulk-app #dayView.routine-editing .stamp-row{flex-wrap:wrap;}.bulk-app #dayView.routine-editing .stamp{flex-basis:100%;}.bulk-app #dayView.routine-editing .set-total{margin-left:auto;}}
+
+/* v9 mobile density and editing affordances */
+.bulk-app [hidden]{display:none!important;}
+.bulk-app .stamp-edit-control{position:relative;display:block;cursor:text;}
+.bulk-app .stamp-row .in-stamp{width:100%;padding-right:36px;box-sizing:border-box;}
+.bulk-app .title-edit-pencil{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:20px;height:20px;padding:0;border:0;box-shadow:none;background:transparent;color:#1746b4;pointer-events:none;}
+.bulk-app .title-edit-pencil svg{width:20px;height:20px;}
+.bulk-app .record-date-row{grid-template-columns:auto minmax(0,1fr) auto;}
+.bulk-app #btnRecordToday{flex:0 0 auto;width:auto;min-width:56px;}
+.bulk-app.keyboard-open #modeToggle,.bulk-app.keyboard-open ~ #modeToggle{display:none!important;}
+.bulk-app .suggest-details{margin-top:8px;}
+.bulk-app .suggest-records caption{padding:6px 0;text-align:left;}
+.bulk-app .suggest-records td,.bulk-app .suggest-records th{padding:6px 0;}
+.bulk-app .suggest-details p{margin:10px 0 0;}
+.bulk-app .rec-body{padding:0 12px 12px;}
+.bulk-app .exercise-record-card{padding:0 12px 10px;}
+.bulk-app .record-day-group>summary{min-height:48px;padding:10px 0;}
+.bulk-app .record-day-group[open]>.record-day-summary-value{display:none;}
+.bulk-app .record-day-group[open]>summary .record-day-summary-value{display:none;}
+.bulk-app .rec-item{min-height:52px;padding:8px 0;}
+.bulk-app .btn-hist-del{width:44px;height:44px;min-width:44px;min-height:44px;padding:10px;}
+.bulk-app .rec-filter-row label{flex:1;min-width:0;font-size:13px;display:flex;flex-direction:column;gap:4px;}
+.bulk-app .rec-filter-row input[type=date]{width:100%;box-sizing:border-box;}
+.bulk-app .rec-filter-sep{align-self:center;}
+.bulk-app .settings-card summary,.bulk-app .memo-item>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:10px 0;}
+.bulk-app .settings-card summary:after{flex-shrink:0;margin:0 0 0 auto;align-self:center;}
+.bulk-app .memo-editor-card{padding:4px 0;margin:0;}
+.bulk-app .memo-settings>.settings-card{padding:8px 0 0;}
+.bulk-app #btnAdjustmentJson{background:white;color:#315bea;border:1px solid #c7d3f1;box-shadow:none;}
+.bulk-app .adjustment-card .temporary-status{display:none;}
+.bulk-app .rep-day-head{gap:8px;flex-wrap:wrap;}
+.bulk-app .rep-day{padding:18px;}
+.bulk-app .stats-section>h3{margin:0 0 12px;}
+.bulk-app .stats-section details>summary,.secondary-pr>summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-size:14px;color:#536174;}
+.bulk-app .stats-range-status{margin:4px 0;}
+.secondary-pr{margin:12px 0;}
+.bulk-app .cat-item{padding:8px 0;border-bottom:1px solid #e0e4ed;}
+.bulk-app .cat-item-top{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:4px 8px;padding:8px 0;cursor:pointer;list-style:none;}
+.bulk-app .cat-summary-spec{grid-column:1;font-size:13px;color:#687182;font-weight:400;}
+.bulk-app .cat-item-top .btn-hist-del{grid-column:2;grid-row:1 / 3;}
+.bulk-app .cat-item-top:after{display:none;}
+.bulk-app .cat-item-specs{padding:8px 0 12px;}
+.bulk-app .catalog-maintenance{margin-left:auto;font-size:13px;}
+.bulk-app .backup-options{order:3;flex-basis:100%;font-size:13px;}
+.bulk-app #btnRecordsDeleteAll{color:#aa4356;font-size:14px;}
+.match-row{border-top:1px solid #ddd;padding:14px 0;}
+.match-row strong{display:block;margin-bottom:10px;}
+.match-row input,.match-row select{min-height:44px;max-width:100%;font-size:16px;}
+.match-row>select{width:100%;margin-top:8px;}
+.exercise-match-dialog{max-height:85vh;overflow:auto;}
+@media(max-width:480px){.bulk-app .rep-ex-list li{display:block;padding:10px 0;}.bulk-app .rep-ex-spec{display:block;margin-top:4px;font-size:13px;}.bulk-app .rep-ex-name{font-size:16px;}.bulk-app .stats-pr-row{flex-wrap:wrap;}.bulk-app .settings-card{padding:16px;}}
+
 </style>
 </head>
 <body>
@@ -1990,14 +2042,14 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head" style="margin-top:18px;">플랜 백업·복원</div>
     <div class="settings-card"><p id="backupStatus" class="record-export-note"></p>
-      <p class="record-export-note">데이터는 이 브라우저에 저장됩니다. 파일로 내보내면 현재 플랜의 루틴·종목·운동기록·메모·임시 루틴과 임시 입력값을 보관할 수 있어요. 현재 플랜으로 가져오면 루틴은 파일 내용으로 교체되고, 기존 종목은 유지한 채 파일에만 있는 종목과 없는 운동기록을 추가해요. 새 플랜으로 가져오면 파일 내용을 그대로 복원해요.</p>
+      <p class="record-export-note">현재 플랜의 루틴·종목·기록·메모를 JSON 파일로 백업해요.</p>
       <div class="transfer-actions">
-        <button class="btn-reset" id="btnBackupFolder" type="button">백업 폴더 선택</button>
+        <details class="backup-options"><summary>백업 설정</summary><button class="btn-reset" id="btnBackupFolder" type="button">백업 폴더 선택</button></details>
         <button class="btn-reset" id="btnDataExport" type="button">플랜 백업</button>
         <button class="btn-reset" id="btnDataImport" type="button">파일 가져오기</button>
         <input id="dataImportFile" type="file" accept=".json,application/json" hidden>
       </div>
-      <div id="dataImportPreview" hidden>
+      <div id="dataImportPreview" hidden><p class="record-export-note">현재 플랜에 가져오면 루틴은 교체하고, 기존 종목과 기록은 유지하며 파일의 새 항목을 추가해요. 새 플랜으로 가져오면 파일 내용을 별도 플랜으로 복원해요.</p>
         <p id="dataImportSummary" class="record-export-note"></p>
         <button class="btn-reset btn-save-now" id="btnImportMergeCurrent" type="button">현재 플랜에 가져오기</button>
         <button class="btn-reset" id="btnImportConfirm" type="button">새 플랜으로 가져오기</button>
@@ -2016,7 +2068,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     <div class="settings-head" style="margin-top:18px;">운동기록</div>
     <div class="settings-card">
       <p class="record-export-note">현재 플랜에 저장된 운동기록을 텍스트로 확인하고 복사할 수 있어요.</p>
-      <button class="btn-reset btn-save-now record-export-open" id="btnRecordExport" type="button">운동기록 내보내기</button>
+      <button class="btn-reset btn-save-now record-export-open" id="btnRecordExport" type="button">운동 기록 텍스트 내보내기</button>
       <div id="recordExportWrap" hidden>
         <textarea id="recordExportText" class="record-export-text-base record-export-text" readonly rows="12" aria-label="저장된 운동기록 텍스트"></textarea>
         <button class="btn-reset" id="btnRecordCopy" type="button">텍스트 복사</button>
@@ -2024,7 +2076,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       </div>
     </div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 8 · 2026-09-14</strong>
+      <strong>앱 버전 9 · 2026-09-14</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -2061,8 +2113,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     <div id="catalogView" hidden>
       <div class="cat-toolbar">
         <div class="cat-toolbar-row">
-          <button class="btn-reset btn-save-now" id="btnCatalogSave" type="button">저장 확인</button>
-          <button class="btn-reset" id="btnCatalogReset" type="button">기본 종목으로 초기화</button>
+          <span id="btnCatalogSave" role="status">자동 저장</span>
+          <details class="catalog-maintenance"><summary>종목 관리 옵션</summary><button class="btn-reset" id="btnCatalogReset" type="button">기본 종목으로 초기화</button></details>
         </div>
         <p class="save-hint" id="catalogSaveHint" role="status">변경사항은 자동 저장돼요.</p>
       </div>
@@ -2073,14 +2125,14 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       <p class="record-export-note">기록을 누르면 수정할 수 있어요.</p>
       <div class="rec-filter">
         <div class="rec-filter-row">
-          <input type="date" id="recFilterFrom" aria-label="조회 시작일">
+          <label>시작일<input type="date" id="recFilterFrom" aria-label="조회 시작일"></label>
           <span class="rec-filter-sep">~</span>
-          <input type="date" id="recFilterTo" aria-label="조회 종료일">
+          <label>종료일<input type="date" id="recFilterTo" aria-label="조회 종료일"></label>
         </div>
         <div class="rec-filter-presets">
-          <button type="button" class="rec-preset-btn" data-preset="all">전체</button>
-          <button type="button" class="rec-preset-btn" data-preset="week">최근 1주</button>
-          <button type="button" class="rec-preset-btn" data-preset="month">최근 한달</button>
+          <button type="button" class="rec-preset-btn" data-preset="all">전체 기간</button>
+          <button type="button" class="rec-preset-btn" data-preset="week">이번 주</button>
+          <button type="button" class="rec-preset-btn" data-preset="month">이번 달</button>
         </div>
       </div>
       <div class="stats-exercise-search record-exercise-search muscle-search"><select id="recordSearchMuscle" aria-label="검색할 부위"></select>
@@ -2089,10 +2141,10 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         <datalist id="recordExerciseSuggestions"></datalist>
       </div>
       <p id="recordSearchCount" class="stats-note" role="status"></p><p class="stats-search-empty" id="recordSearchEmpty" hidden>검색한 종목의 기록이 현재 조회 기간에 없어요.</p>
-      <div class="records-disclosure-actions"><button type="button" class="btn-reset" id="btnRecordsExpand" aria-controls="recordsList">전체 펼치기</button><select id="recordMuscleSelect" aria-label="펼치거나 접을 부위 선택"><option value="">부위 선택</option></select><button type="button" class="btn-reset" id="btnRecordMuscleToggle" aria-controls="recordsList" disabled>펼치기</button></div>
+      <div class="records-disclosure-actions"><button type="button" class="btn-reset" id="btnRecordsExpand" aria-controls="recordsList">전체 펼치기</button><select id="recordMuscleSelect" aria-label="펼치거나 접을 부위 선택"><option value="">펼칠 부위</option></select><button type="button" class="btn-reset" id="btnRecordMuscleToggle" aria-controls="recordsList" disabled>펼치기</button></div>
       <div id="recordsList"></div>
       <div class="reset-row">
-        <button class="btn-reset" id="btnRecordsDeleteAll" type="button">전체 삭제</button>
+        <button class="btn-reset" id="btnRecordsDeleteAll" type="button">현재 플랜의 운동 기록 전체 삭제</button>
       </div>
     </div>
     <div id="reportView" hidden></div>
@@ -2183,7 +2235,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     return ['bulk-routine-v4','bulk-routine-v5','bulk-routine-v6','bulk-routine-v7','bulk-routine-v8','bulk-routine-v9',
       'bulk-routine-pending-v1','bulk-routine-catalog-v2','bulk-routine-catalog-v3','bulk-routine-log-v1',
       'bulk-routine-draft-v1','bulk-routine-draft-v2','bulk-routine-log-recovery-v1','bulk-routine-memos-v1','bulk-catalog-hypertrophy-v1',
-      'bulk-catalog-add-bulgarian-v1','bulk-catalog-expand-all-v2','bulk-catalog-expand-all-v3','bulk-workout-pins-v1','bulk-workout-backup-status-v1','bulk-workout-panels-v1','bulk-workout-temporary-v1'];
+      'bulk-catalog-add-bulgarian-v1','bulk-catalog-expand-all-v2','bulk-catalog-expand-all-v3','bulk-workout-pins-v1','bulk-workout-backup-status-v1','bulk-workout-panels-v1','bulk-workout-temporary-v1','bulk-workout-temporary-pending-v1'];
   }
   function readJSON(key, fallback) {
     try {
@@ -2621,11 +2673,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       clearConfirmation();action();return;
     }
     clearConfirmation();
-    var originalText=button.textContent, originalLabel=button.getAttribute('aria-label');
+    var originalText=button.textContent, originalHtml=button.innerHTML, originalLabel=button.getAttribute('aria-label');
     var timer;
     function reset(){
       clearTimeout(timer);button.classList.remove('confirming');button.dataset.deleteArmed='';
-      button.textContent=originalText;
+      button.innerHTML=originalHtml;
       if(originalLabel===null)button.removeAttribute('aria-label');else button.setAttribute('aria-label',originalLabel);
       activeConfirmation=null;
     }
@@ -2783,7 +2835,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         var reps=e.reps.split(/[~–-]/).map(Number),rir=e.rir.split(/[~–-]/).map(Number);
         if(reps.some(function(n){return n<1 || n>100;}) || reps[0]>reps[reps.length-1])fail(ep+'.reps','1~100 이내의 오름차순 범위여야 해요.');
         if(rir[0]>rir[rir.length-1])fail(ep+'.rir','0~9 이내의 오름차순 범위여야 해요.');
-        return {name:e.name.trim(),muscle:e.muscle,sets:e.sets,reps:e.reps,rir:e.rir};
+        return Object.assign({name:e.name.trim(),muscle:e.muscle,sets:e.sets,reps:e.reps,rir:e.rir},typeof e.uid==='string' && /^[a-zA-Z0-9_-]{1,120}$/.test(e.uid)?{uid:e.uid}:{});
       });
       clean.days.push({date:day.date,title:day.title.trim(),rest:day.rest,exercises:exercises});
     });
@@ -2796,13 +2848,39 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   function activeTemporary() {
     var temp=temporaryRoutine();return temp && temp.weekStart===adjustmentWeek(todayStr()).from?temp:null;
   }
+  var temporaryWorkspaces = new Map();
+  function temporaryPendingKey(){return keyFor('bulk-workout-temporary-pending-v1',activeProfile);}
+  function temporaryWorkspace(temp){
+    var key=JSON.stringify([activeProfile,temp.weekStart,temp.revision]);
+    if(!temporaryWorkspaces.has(key)){
+      var pending=readJSON(temporaryPendingKey(),null);
+      var work={revision:temp.revision,weekStart:temp.weekStart,dirty:false,days:{}};
+      if(pending && pending.revision===temp.revision && pending.weekStart===temp.weekStart && pending.days)work=pending;
+      temporaryWorkspaces.set(key,work);
+    }
+    return temporaryWorkspaces.get(key);
+  }
+  function currentTemporaryDay(){return effectiveRoutineDay(selectedRecordDate,activeIndex);}
+  function saveTemporaryEdit(explicit){
+    var temp=activeTemporary();if(!temp){showToast('임시 루틴 적용 기간이 끝났어요.','error');return false;}
+    var work=temporaryWorkspace(temp),hint=document.getElementById('routineSaveHint');
+    if(!explicit){work.dirty=true;var ok=writeJSON(temporaryPendingKey(),work);hint.textContent=ok?'임시 루틴 변경사항 · 저장을 눌러 확정하세요.':'임시 보관 실패 · 저장을 다시 시도해주세요.';updateRoutineMode();return false;}
+    try{
+      temp.days=temp.days.map(function(day){var d=work.days[day.date];return d?{date:day.date,title:d.title,rest:d.ex.length===0,exercises:d.ex.map(function(e){return {name:e.n,muscle:e.m,sets:Number(e.s),reps:e.r,rir:e.rir,uid:e.uid};})}:day;});
+      var clean=validateTemporary(temp,todayStr(),true);clean.revision=temp.revision;
+      if(!storageTransaction([{key:temporaryKey(),value:clean},{key:temporaryPendingKey(),remove:true}]))throw new Error('임시 루틴을 저장하지 못했어요.');
+      work.dirty=false;hint.textContent='임시 루틴 저장됨';updateRoutineMode();renderReport();showToast('임시 루틴 저장 완료');return true;
+    }catch(e){hint.textContent=e.message;showToast(e.message,'error');return false;}
+  }
   function effectiveRoutineDay(date,index) {
     var base=days[index] || {key:'sun',letter:'일',title:'휴식',cardio:false,ex:[]},temp=activeTemporary();
     var actualIndex=(new Date(date+'T00:00:00Z').getUTCDay()+6)%7;
     var change=temp && actualIndex===index && temp.days.find(function(d){return d.date===date;});
     if(!change)return base;
-    return {key:base.key,letter:base.letter,title:change.title,cardio:false,temporary:true,rest:change.rest,date:date,
-      ex:change.exercises.map(function(e,i){return {uid:'temp-'+temp.revision+'-'+date+'-'+i,n:e.name,m:e.muscle,s:e.sets,r:e.reps,rir:e.rir};})};
+    var work=temporaryWorkspace(temp);
+    if(!work.days[date])work.days[date]={key:base.key,letter:base.letter,title:change.title,cardio:false,temporary:true,rest:change.rest,date:date,
+      ex:change.exercises.map(function(e,i){return {uid:e.uid || 'temp-'+temp.revision+'-'+date+'-'+i,n:e.name,m:e.muscle,s:e.sets,r:e.reps,rir:e.rir};})};
+    work.days[date].rest=work.days[date].ex.length===0;return work.days[date];
   }
   function effectiveWeek() {
     var week=adjustmentWeek(todayStr());return week.dates.map(function(date,i){return effectiveRoutineDay(date,i);});
@@ -2821,13 +2899,30 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       var parent=button.closest('dialog');if(parent)parent.close();
       var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';dialog.setAttribute('aria-label','임시 적용 취소');dialog.innerHTML='<h2>임시 적용 취소</h2><p>기본 루틴으로 돌아가요. 저장한 운동 기록은 유지돼요.</p><div class="data-confirm-actions"><button type="button" data-no>닫기</button><button type="button" data-yes>적용 취소</button></div>';
       var owner=activeProfile;document.body.appendChild(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.addEventListener('close',function(){dialog.remove();});dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
-      dialog.querySelector('[data-yes]').onclick=function(){if(owner!==activeProfile){dialog.close();return;}if(!storageTransaction([{key:temporaryKey(),remove:true}])){showToast('취소를 저장하지 못했어요.','error');return;}dialog.close();refreshTemporaryViews();showToast('기본 루틴으로 돌아왔어요.');};dialog.showModal();dialog.querySelector('[data-no]').focus();
+      dialog.querySelector('[data-yes]').onclick=function(){if(owner!==activeProfile){dialog.close();return;}if(!storageTransaction([{key:temporaryKey(),remove:true},{key:temporaryPendingKey(),remove:true}])){showToast('취소를 저장하지 못했어요.','error');return;}dialog.close();refreshTemporaryViews();showToast('기본 루틴으로 돌아왔어요.');};dialog.showModal();dialog.querySelector('[data-no]').focus();
     };});
   }
   function refreshTemporaryViews() {
+    temporaryWorkspaces.clear();
     routineEditing=false;
     if(activeIndex===6 && !activeTemporary())activeIndex=todayIndex!==null?todayIndex:0;
     renderTabs();renderPanel();renderReport();renderPrinciples();refreshBackupStatus();
+  }
+  function registeredExerciseText(){return '\n\n[사용 가능한 등록 종목 — 이름과 부위를 그대로 사용]\n'+MUSCLES.filter(function(m){return m!=='복근';}).map(function(m){return m+': '+(catalog[m]||[]).map(function(e){return e.n;}).join(', ');}).join('\n')+'\n목록에 없는 이름을 만들거나 장비·그립을 바꿔 표기하지 마세요.';}
+  function matchTemporaryExercises(candidate,owner){
+    var unmatched=[];candidate.days.forEach(function(day){day.exercises.forEach(function(e){if(!(catalog[e.muscle]||[]).some(function(c){return c.n===e.name;}))unmatched.push(e);});});
+    if(!unmatched.length){previewTemporaryFile(candidate,owner);return;}
+    var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog exercise-match-dialog';dialog.setAttribute('aria-label','임시 루틴 종목 연결');
+    dialog.innerHTML='<h2>등록 종목 연결</h2><p>이름 또는 부위가 다른 종목을 기존 종목에 연결해주세요. 장비와 그립도 확인해주세요.</p><div data-matches></div><p data-error role="status"></p><div class="data-confirm-actions"><button data-cancel>취소</button><button data-next>연결 후 미리보기</button></div>';
+    var selections=new Map();unmatched.forEach(function(e,index){
+      var row=document.createElement('section');row.className='match-row';var label=document.createElement('strong');label.textContent=e.name+' · '+e.muscle;row.appendChild(label);
+      var filter=makeMuscleSelect(),input=document.createElement('input'),select=document.createElement('select');input.type='search';input.placeholder='연결할 종목 검색';input.setAttribute('aria-label',e.name+' 연결할 종목 검색');select.setAttribute('aria-label',e.name+' 등록 종목 선택');
+      filter.value=e.muscle;var search=document.createElement('div');search.className='muscle-search';search.append(filter,input);row.append(search,select);
+      function results(){var matches=searchExerciseCatalog(input.value,filter.value).filter(function(x){return x.muscle!=='복근';});select.replaceChildren(new Option('종목을 선택해주세요',''));matches.forEach(function(x){select.add(new Option(x.exercise.n+' · '+x.muscle,JSON.stringify([x.muscle,x.exercise.n])));});selections.delete(index);}
+      input.oninput=filter.onchange=results;select.onchange=function(){if(select.value)selections.set(index,JSON.parse(select.value));else selections.delete(index);};results();dialog.querySelector('[data-matches]').appendChild(row);
+    });
+    dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();};dialog.querySelector('[data-next]').onclick=function(){if(owner!==activeProfile){dialog.close();return;}if(selections.size!==unmatched.length){dialog.querySelector('[data-error]').textContent='모든 종목을 연결해주세요.';return;}unmatched.forEach(function(e,i){var pair=selections.get(i);e.muscle=pair[0];e.name=pair[1];});dialog.close();previewTemporaryFile(candidate,owner);};
+    dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};document.body.appendChild(dialog);dialog.showModal();
   }
   function previewTemporaryFile(candidate,owner) {
     var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';dialog.setAttribute('aria-label','임시 루틴 적용 확인');
@@ -2836,9 +2931,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.addEventListener('close',function(){dialog.remove();});dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
     dialog.querySelector('[data-yes]').onclick=function(){try{
       if(owner!==activeProfile)throw new Error('플랜이 바뀌었어요. 파일을 다시 가져와주세요.');
-      var next=validateTemporary(candidate,todayStr(),false);next.revision=genId();
+      var next=validateTemporary(candidate,todayStr(),false);if(next.days.some(function(day){return day.exercises.some(function(e){return !(catalog[e.muscle]||[]).some(function(c){return c.n===e.name;});});}))throw new Error('등록 종목이 변경됐어요. 파일을 다시 가져와 연결해주세요.');next.revision=genId();
       var previous=activeTemporary();if(previous)next.days=previous.days.filter(function(d){return d.date<todayStr();}).concat(next.days);
-      if(!writeJSON(temporaryKey(),next))throw new Error('저장하지 못했어요. 기존 루틴은 유지돼요.');
+      if(!storageTransaction([{key:temporaryKey(),value:next},{key:temporaryPendingKey(),remove:true}]))throw new Error('저장하지 못했어요. 기존 루틴은 유지돼요.');
       dialog.close();var index=(new Date(todayStr()+'T00:00:00Z').getUTCDay()+6)%7;activeIndex=index;selectedRecordDate=todayStr();refreshTemporaryViews();showToast('이번 주 임시 루틴을 적용했어요.');
     }catch(e){dialog.querySelector('[data-error]').textContent=e.message;}};
     document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-no]').focus();
@@ -2847,7 +2942,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     return '\n\n[상담부터 최종 파일까지]'+
       '\n이 대화에서 필요한 실제 수행 내역·일정을 간단히 확인하고 남은 루틴을 함께 확정해주세요. 이미 확정했다면 반복해서 질문하거나 다시 추천하지 마세요.\n'+
       '루틴이 확정되면 사용자가 앱으로 가져올 수 있는 JSON 파일까지 제공해주세요. 최종 파일을 만들 때에는 확정한 운동 날짜·종목·순서·세트·횟수·RIR을 임의로 변경하지 말고 아래 형식을 다시 확인하세요.\n\n'+temporaryFormatRules(todayStr())+
-      '\n\n[등록 종목]\n'+MUSCLES.filter(function(m){return m!=='복근';}).map(function(m){return m+': '+(catalog[m]||[]).map(function(e){return e.n;}).join(', ');}).join('\n');
+      registeredExerciseText();
   }
   function statsSource() {
     if(statsScope!=='all')return logs;
@@ -3095,8 +3190,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       '<div class="stats-pr-row"><span>최고 무게</span><strong>'+bestWeightText+(pr.weight?'<small class="stats-pr-date">'+statsEscape(pr.weight.date)+'</small>':'')+'</strong></div>'+
       '<div class="stats-pr-row"><span>최고 세트 볼륨</span><strong>'+bestSetVolumeText+(pr.setVolume?'<small class="stats-pr-date">'+statsEscape(pr.setVolume.date)+'</small>':'')+'</strong></div>'+
       '<div class="stats-pr-row"><span>추정 1RM</span><strong>'+(pr.e1rm?statsFormatMetric(pr.e1rm.value,'e1rm')+'<small class="stats-pr-date">'+statsEscape(pr.e1rm.date)+'</small>':'-')+'</strong></div>';
-    modal.appendChild(prBox);
-    var recentLabel=document.createElement('p');recentLabel.className='stats-note';recentLabel.textContent='최근 '+recent.length+'개 기록 · '+date+'까지 (선택일 포함)';modal.appendChild(recentLabel);
+    var prDetails=document.createElement('details');prDetails.className='secondary-pr';prDetails.innerHTML='<summary>역대 PR 보기</summary>';prDetails.appendChild(prBox);
+    var recentLabel=document.createElement('p');recentLabel.className='stats-note';recentLabel.textContent='최근 '+recent.length+'세트 · '+date+'까지 (선택일 포함)';modal.appendChild(recentLabel);
 
     var list=document.createElement('div');
     list.className='recent-history-list';
@@ -3107,13 +3202,13 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       d.className='recent-history-date';
       var dateRecords=historyFor(name).filter(function(e){return e.date===item.date;});
       var setNumber=dateRecords.findIndex(function(e){return e.id===item.id;})+1;
-      d.textContent=item.date;var setLabel=document.createElement('small');setLabel.className='recent-set-number';setLabel.textContent='기록 '+setNumber+'세트';d.appendChild(setLabel);
+      d.textContent=item.date;var setLabel=document.createElement('small');setLabel.className='recent-set-number';setLabel.textContent=setNumber+'번째 세트';d.appendChild(setLabel);
       var value=document.createElement('span');
       value.className='recent-history-value';
       value.textContent=(item.w==='-'?'–':item.w+'kg')+' × '+(item.reps==='-'?'–':item.reps+'회');
       row.appendChild(d);row.appendChild(value);list.appendChild(row);
     });
-    modal.appendChild(list);
+    modal.appendChild(list);modal.appendChild(prDetails);
     overlay.appendChild(modal);
 
     function close(){
@@ -3191,11 +3286,16 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     button.textContent = routineEditing ? '편집 닫기' : '루틴 편집';
     button.setAttribute('aria-pressed', String(routineEditing));
 
-    document.getElementById('btnSaveNow').hidden = !routineEditing && !routineOrderPending;
-    document.getElementById('btnSaveNow').closest('.reset-row').hidden = !routineEditing && !routineOrderPending;
-    document.getElementById('btnSaveNow').classList.toggle('pending-save',routineOrderPending);
+    var tempDay=currentTemporaryDay(),isTemp=!!tempDay.temporary;
+    var pending=isTemp?temporaryWorkspace(activeTemporary()).dirty:routineOrderPending;
+    document.getElementById('btnSaveNow').textContent=isTemp?'임시 루틴 변경사항 저장':'루틴 변경사항 저장';
+    document.getElementById('btnSaveNow').hidden = !pending;
+    document.getElementById('btnClearDay').hidden=isTemp;
+    document.getElementById('btnReset').hidden=isTemp;
+    document.getElementById('btnSaveNow').closest('.reset-row').hidden = !routineEditing && !pending;
+    document.getElementById('btnSaveNow').classList.toggle('pending-save',pending);
     var hint=document.getElementById('routineSaveHint');
-    if(routineOrderPending && !hint.textContent)hint.textContent='임시 보관된 변경사항 · 루틴 저장을 눌러 확정하세요.';
+    if(pending && !hint.textContent)hint.textContent='임시 보관된 변경사항 · 루틴 저장을 눌러 확정하세요.';
   }
   document.getElementById('btnRoutineEdit').addEventListener('click', function () {
     routineEditing = !routineEditing;
@@ -3254,6 +3354,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     updateRoutineMode();
   }
   function save(explicit) {
+    if(currentTemporaryDay().temporary)return saveTemporaryEdit(explicit===true);
     ensureRoutineIds(days);
     if(explicit!==true){routineOrderPending=true;showPendingOrder();return false;}
     var hint=document.getElementById('routineSaveHint');
@@ -3291,7 +3392,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       }
       btn.addEventListener('click', function () {
         activeIndex = i;
-        if(activeTemporary() && !routineEditing)selectedRecordDate=adjustmentWeek(todayStr()).dates[i];
+        if(activeTemporary())selectedRecordDate=adjustmentWeek(todayStr()).dates[i];
         renderTabs();
         renderPanel();
         renderPrinciples();
@@ -3376,9 +3477,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         if (from < 0 || to < 0 || to >= day.ex.length) return;
         var item = day.ex.splice(from, 1)[0];
         day.ex.splice(to, 0, item);
-        routineOrderPending = true;
+        save();
         renderPanel();
-        showPendingOrder();
         var movedRow = panelEl.querySelectorAll('.ex-row')[to];
         var nextButton = movedRow.querySelector(offset === -1 ? '.move-up' : '.move-down');
         if (nextButton.disabled) nextButton = movedRow.querySelector('.reorder-step:not(:disabled)');
@@ -3390,6 +3490,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     row.appendChild(controls);
   }
 
+  function deleteIcon(){return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 10v7M14 10v7"/></svg>';}
   function searchExerciseCatalog(query,muscle) {
     var terms = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
     var results = [];
@@ -3426,7 +3527,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       }
     }
     function renderResults() {
-      results.replaceChildren();var matches=searchExerciseCatalog(input.value,filter.value);count.textContent=matches.length+'개 종목';
+      results.replaceChildren();var matches=searchExerciseCatalog(input.value,filter.value).filter(function(match){return !day.temporary || match.muscle!=='복근';});count.textContent=matches.length+'개 종목';
       if(!matches.length){var empty=document.createElement('p');empty.textContent='일치하는 종목이 없어요. 다른 이름으로 검색하거나 운동 관리에서 종목을 등록해주세요.';results.appendChild(empty);}
       matches.forEach(function(match){
         var button=document.createElement('button');button.type='button';button.className='exercise-search-result';
@@ -3434,7 +3535,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         var meta=document.createElement('small');meta.textContent=match.muscle+' · '+match.exercise.s+'세트'+(match.exercise.r?' · '+match.exercise.r+'회':'')+(match.exercise.rir?' · RIR '+match.exercise.rir:'');
         button.appendChild(name);button.appendChild(meta);
         button.addEventListener('click',function(){
-          var ex=match.exercise;day.ex.push({uid:'row-'+genId(),n:ex.n,m:match.muscle,s:ex.s,r:ex.r,rir:ex.rir});
+          if(day.temporary && day.ex.length>=30){showToast('임시 루틴은 하루 최대 30종목이에요.','pending');return;}var ex=match.exercise;day.ex.push({uid:'row-'+genId(),n:ex.n,m:match.muscle,s:ex.s,r:ex.r,rir:ex.rir});
           close();save();renderPanel();renderPrinciples();
           var handles=panelEl.querySelectorAll('.in-name');if(handles.length)handles[handles.length-1].focus();
         });results.appendChild(button);
@@ -3463,17 +3564,17 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   function renderPanel() {
     ensureRoutineIds(days);
     updateRoutineMode();
-    document.getElementById('recordDate').value=selectedRecordDate;
+    document.getElementById('recordDate').value=selectedRecordDate;document.getElementById('btnRecordToday').disabled=selectedRecordDate===todayStr();
     document.getElementById('recordDate').max=todayStr();
-    var d = routineEditing?days[Math.min(activeIndex,5)]:effectiveRoutineDay(selectedRecordDate,activeIndex);
+    var d = effectiveRoutineDay(selectedRecordDate,activeIndex);
     panelEl.innerHTML = '';
     panelEl.classList.toggle('temporary-panel',!!d.temporary);
-    var editButton=document.getElementById('btnRoutineEdit');editButton.disabled=!!d.temporary || activeIndex===6;
+    var editButton=document.getElementById('btnRoutineEdit');editButton.disabled=!d.temporary && activeIndex===6;
     restNoteEl.hidden=!(todayIndex===null && selectedRecordDate===todayStr() && !d.temporary);
     if(d.temporary){var banner=document.createElement('div');banner.innerHTML=temporaryStatusHtml();panelEl.appendChild(banner);bindTemporaryCancel(banner);}
 
     var context=document.createElement('p');context.className='record-context'+(selectedRecordDate!==todayStr()?' past':'');
-    context.textContent=(selectedRecordDate===todayStr()?'오늘':selectedRecordDate)+(selectedRecordDate>todayStr()?' · 예정':' · 기록')+(d.temporary?'':' · '+d.letter+'요일 루틴');
+    context.textContent=(selectedRecordDate===todayStr()?'':selectedRecordDate+' · ')+(d.temporary?'임시 루틴 사용 중':d.letter+'요일 루틴 사용 중');
     panelEl.appendChild(context);
 
 
@@ -3490,7 +3591,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     stampIn.addEventListener('input', function () { d.title = stampIn.value; save(); });
     stampIn.placeholder='루틴 제목';
     var editTitle=document.createElement('div');editTitle.className='stamp-edit-control routine-edit-only';editTitle.appendChild(stampIn);
-    var pencil=document.createElement('button');pencil.type='button';pencil.className='title-edit-pencil';pencil.setAttribute('aria-label','루틴 제목 수정');pencil.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/></svg>';pencil.onclick=function(){stampIn.focus();};editTitle.appendChild(pencil);stampWrap.appendChild(editTitle);
+    var pencil=document.createElement('span');pencil.className='title-edit-pencil';pencil.setAttribute('aria-hidden','true');pencil.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/></svg>';editTitle.onclick=function(){stampIn.focus();};editTitle.appendChild(pencil);stampWrap.appendChild(editTitle);
     var stampRead = document.createElement('span');
     stampRead.className = 'stamp-read routine-read-only';
     stampRead.textContent = d.rest?'임시 루틴에 따른 휴식일':d.title || d.letter + '요일 운동';
@@ -3581,7 +3682,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       var del = document.createElement('button');
       del.className = 'btn-del routine-edit-only';
       del.type = 'button';
-      del.textContent = '×';
+      del.innerHTML = deleteIcon();
       del.setAttribute('aria-label', '이 종목 삭제');
       del.addEventListener('click', function () {
         requireSecondClick(del, '확인', function () {
@@ -3608,7 +3709,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       var mSel = document.createElement('select');
       mSel.className = 'in-muscle';
       mSel.setAttribute('aria-label', '부위');
-      MUSCLES.forEach(function (m) {
+      MUSCLES.filter(function(m){return !d.temporary || m!=='복근';}).forEach(function (m) {
         var opt = document.createElement('option');
         opt.value = m; opt.textContent = m;
         if (m === ex.m) opt.selected = true;
@@ -3703,7 +3804,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         var undo=document.createElement('button');undo.type='button';undo.className='btn-reset';undo.textContent='최근 저장 되돌리기';undo.onclick=function(){
           requireSecondClick(undo,'되돌리기 확인',function(){var next=logs.map(function(g){return Object.assign({},g,{entries:g.entries.filter(function(e){return e.id!==lastSaved.id;})});}).filter(function(g){return g.entries.length;});if(!writeJSON(LOG_KEY,next)){showToast('저장 취소 실패 · 기존 기록 유지','error');return;}clearRecordUndo();logs=next;renderPanel();renderRecords();showToast('선택한 1세트 저장을 되돌렸어요.');});
         };quick.appendChild(undo);
-      }else savedBox.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' 저장한 기록 없음';
+      }else savedBox.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' 0세트';
       li.appendChild(savedBox);
       if(saved.length)li.appendChild(more);
 
@@ -3735,7 +3836,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           var sugIcon = suggestion.type === 'up' ? '<span class="up">↑</span> ' : (suggestion.type === 'down' ? '<span class="down">↓</span> ' : '');
           var sugEl = document.createElement('details');
           sugEl.className = 'suggest-details routine-read-only' + sugClass;
-          sugEl.innerHTML = '<summary>'+sugIcon+(suggestion.type==='up'?'증량 참고':suggestion.type==='down'?'감량 참고':'증감 판단 보류')+'</summary><table class="suggest-records"><caption>날짜별 최고 무게 세트 기준</caption><thead><tr><th scope="col">기록일</th><th scope="col">무게 × 횟수</th></tr></thead><tbody>'+suggestion.records.map(function(e){return '<tr><td>'+statsEscape(e.date)+'</td><td>'+statsEscape(e.w)+'kg × '+statsEscape(e.reps)+'회</td></tr>';}).join('')+'</tbody></table><p>'+statsEscape(suggestion.reason)+'</p>';
+          sugEl.innerHTML = '<summary>'+sugIcon+(suggestion.type==='up'?'증량 참고':suggestion.type==='down'?'감량 참고':'중량 비교 · 판단 보류')+'</summary><table class="suggest-records"><caption>날짜별 최고 무게 세트 기준</caption><thead><tr><th scope="col">기록일</th><th scope="col">무게 × 횟수</th></tr></thead><tbody>'+suggestion.records.map(function(e){return '<tr><td>'+statsEscape(e.date)+'</td><td>'+statsEscape(e.w)+'kg × '+statsEscape(e.reps)+'회</td></tr>';}).join('')+'</tbody></table><p>'+statsEscape(suggestion.reason)+'</p>';
           li.appendChild(sugEl);
         }
       }
@@ -3768,7 +3869,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     });
 
     actions.appendChild(addBtn);
-    actions.appendChild(cardioBtn);
+    if(!d.temporary)actions.appendChild(cardioBtn);
 
     var logBtn = document.createElement('button');
     logBtn.className = 'btn btn-log';
@@ -3776,7 +3877,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     function updateSaveCount(){
       if(!logBtn)return;
       var count=Array.from(panelEl.querySelectorAll('.ex-row')).filter(function(row){return row.dataset.touched==='true' && (row.querySelector('.in-weight').value.trim() || row.querySelector('.in-done').value.trim());}).length;
-      logBtn.textContent=selectedRecordDate>todayStr()?'해당 날짜부터 기록 가능':'입력한 '+count+'세트 저장 · '+selectedRecordDate;logBtn.disabled=count===0 || selectedRecordDate>todayStr();
+      logBtn.textContent=selectedRecordDate>todayStr()?'해당 날짜부터 기록 가능':'입력한 '+count+'세트 모두 저장';logBtn.disabled=count===0 || selectedRecordDate>todayStr();logBtn.hidden=count===0;
     }
     logBtn.addEventListener('click', function () { saveExerciseRecords(null); });
     function saveExerciseRecords(selectedIndex) {
@@ -3948,7 +4049,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var barsHtml = volumeBarsHtml(vol);
 
     document.getElementById('principles').innerHTML =
-      '<details class="principle fixed-guide"' + (openStates[0] !== false ? ' open' : '') + '>' +
+      '<details class="principle fixed-guide"' + (openStates[0] === true ? ' open' : '') + '>' +
         '<summary>주간 계획 세트<span class="chev"></span></summary>' +
         '<div class="principle-body">' +
           '<p class="bar-legend">근비대 참고구간 · 가슴/등/어깨/하체 12–16 · 이두/삼두 6–10</p>' +
@@ -4409,7 +4510,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           var value=document.createElement('button');value.type='button';value.className='record-card-value record-edit-trigger';value.textContent=(entry.w === '-' ? '무게 미입력' : entry.w + 'kg') + ' × ' + (entry.reps === '-' ? '횟수 미입력' : entry.reps + '회');
           value.setAttribute('aria-label',name+' '+entry.date+' '+entry._setNo+'세트 무게·횟수 수정');
           value.addEventListener('click',function(){openRecordEditor(row,entry,value);});
-          var remove=document.createElement('button');remove.type='button';remove.className='btn-hist-del';remove.textContent='×';remove.setAttribute('aria-label',name+' '+entry.date+' '+entry._setNo+'세트 기록 삭제');
+          var remove=document.createElement('button');remove.type='button';remove.className='btn-hist-del';remove.innerHTML=deleteIcon();remove.setAttribute('aria-label',name+' '+entry.date+' '+entry._setNo+'세트 기록 삭제');
           remove.addEventListener('click',function(){requireSecondClick(remove,'확인',function(){deleteRecords(function(e){return e.id===entry.id;},true);});});
           row.appendChild(setBadge);row.appendChild(value);row.appendChild(remove);dayGroup.appendChild(row);
         });
@@ -4420,7 +4521,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     });
     sections.forEach(function(group,muscle){
       var count=group.body.querySelectorAll('.exercise-record-card').length;
-      if((recordQuery || recordMuscleQuery) && !count)return;
+      if(!count)return;
       if(muscle==='기타' && !count)return;
       group.count.textContent=count ? count+'개 종목' : '기록 없음';
       if(recordQuery && count)group.section.open=true;
@@ -4468,12 +4569,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       var itemsHtml = arr.length ? arr.map(function (c, ci) {
         var token = m + '|' + c.n;
         var confirming = catPendingDel === token;
-        return '<div class="cat-item">' +
-          '<div class="cat-item-top">' +
-            '<span class="cat-name">' + statsEscape(c.n) + '</span>' +
+        return '<details class="cat-item">' +
+          '<summary class="cat-item-top">' +
+            '<span class="cat-name">' + statsEscape(c.n) + '</span><small class="cat-summary-spec">'+statsEscape(c.s)+'세트 · '+statsEscape(c.r)+'회 · RIR '+statsEscape(c.rir)+'</small>' +
             '<button class="btn-hist-del' + (confirming ? ' confirming' : '') + '" type="button" data-muscle="' + m +
-              '" data-name="' + statsEscape(c.n) + '" aria-label="삭제">' + (confirming ? '확인' : '×') + '</button>' +
-          '</div>' +
+              '" data-name="' + statsEscape(c.n) + '" aria-label="삭제">' + (confirming ? '확인' : deleteIcon()) + '</button>' +
+          '</summary>' +
           '<div class="cat-item-specs">' +
             '<span class="field"><input type="number" class="in-sets cat-edit" data-muscle="' + m + '" data-idx="' + ci +
               '" data-field="s" min="1" max="20" step="1" value="' + statsEscape(c.s) + '"><label>세트</label></span>' +
@@ -4482,7 +4583,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
             '<span class="field"><input type="text" class="in-rir cat-edit" data-muscle="' + m + '" data-idx="' + ci +
               '" data-field="rir" value="' + statsEscape(c.rir) + '"><label>RIR</label></span>' +
           '</div>' +
-        '</div>';
+        '</details>';
       }).join('') : '<p class="cat-empty">등록된 종목이 없어요.</p>';
 
       var isOpen = openStates[mi] === true;
@@ -4516,7 +4617,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         var entry = catalog[m] && catalog[m][idx];
         if (!entry) return;
         if(field==='s' && (input.value==='' || !input.validity.valid))return;
-        commitCatalog(readCatalogEdits());
+        if(commitCatalog(readCatalogEdits())){var summary=input.closest('.cat-item').querySelector('.cat-summary-spec'),c=catalog[m][idx];summary.textContent=c.s+'세트 · '+c.r+'회 · RIR '+c.rir;}
       });
       if (input.getAttribute('data-field') === 's') {
         input.addEventListener('blur', function () {
@@ -4526,7 +4627,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           if (!entry) return;
           var clamped = clampNumber(input.value, 1, 20, 3);
           input.value = clamped;
-          commitCatalog(readCatalogEdits());
+          if(commitCatalog(readCatalogEdits())){var summary=input.closest('.cat-item').querySelector('.cat-summary-spec'),c=catalog[m][idx];summary.textContent=c.s+'세트 · '+c.r+'회 · RIR '+c.rir;}
         });
       }
     });
@@ -4763,7 +4864,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     return '<div class="stats-metric-summary">'+
         '<div><span>최근</span><strong>'+statsFormatMetric(summary.latest,metric)+'</strong></div>'+
         '<div><span>선택 기간 최고</span><strong>'+statsFormatMetric(summary.best,metric)+'</strong></div>'+
-        '<div><span>선택 기간 변화</span><strong class="'+(summary.change>0?'is-up':summary.change<0?'is-down':'')+'">'+changeText+'</strong></div>'+
+        '<div><span>첫 기록 대비</span><strong class="'+(summary.change>0?'is-up':summary.change<0?'is-down':'')+'">'+changeText+'</strong></div>'+
       '</div>'+
       '<figure class="stats-weight-figure" data-metric-figure="'+metric+'"><svg class="stats-weight-graph" viewBox="0 0 320 184" role="img" aria-label="'+statsEscape(exercise.name)+' '+meta.aria+' 그래프">'+
       '<title>'+statsEscape(exercise.name)+' · '+points[0].date+' ~ '+last.date+' · '+meta.label+' '+statsFormatMetric(summary.best,metric)+'</title><text x="37" y="20" text-anchor="end">'+meta.unit+'</text>'+grid+line+dots+ticks+'</svg>'+
@@ -4793,7 +4894,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var panels=metrics.map(function(metric){
       return '<div class="stats-metric-panel" data-stats-metric-panel="'+metric+'"'+(metric==='e1rm'?'':' hidden')+'>'+statsMetricGraph(exercise,metric)+'</div>';
     }).join('');
-    return prHtml+'<div class="stats-metric-switch" role="group" aria-label="'+statsEscape(exercise.name)+' 통계 지표">'+buttons+'</div>'+panels;
+    return '<div class="stats-metric-switch" role="group" aria-label="'+statsEscape(exercise.name)+' 통계 지표">'+buttons+'</div>'+panels+'<details class="secondary-pr"><summary>역대 PR 보기</summary>'+prHtml+'</details>';
   }
   function statsRecordedExerciseNames(muscle) {
     var seen = new Set(), names = [];
@@ -4875,7 +4976,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     }).join('');
     var groups=MUSCLES.concat(data.muscles['기타']?['기타']:[]).map(function(m){
       var muscleKey='muscle:'+m;
-      var exercises=data.exercises.filter(function(g){return g.muscle===m;});
+      var exercises=data.exercises.filter(function(g){return g.muscle===m;});if(!exercises.length)return '';
       var cards=exercises.map(function(g){
         var key='exercise:'+g.key;
         return '<details class="stats-exercise" data-stats-key="'+statsEscape(key)+'" data-stats-exercise-name="'+statsEscape(g.name)+'"'+(opened.has(key)?' open':'')+'><summary><span class="stats-exercise-title">'+statsEscape(g.name)+'</span><span class="rec-count">'+g.count+'세트</span></summary><div class="stats-exercise-body">'+
@@ -4888,12 +4989,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var searchList=recordedNames.map(function(name){return '<option value="'+statsEscape(name)+'"></option>';}).join('');
     var searchHtml='<div class="stats-exercise-search muscle-search">'+muscleSelectHtml('statsMuscleSelect',statsMuscleQuery)+'<input type="search" data-stats-exercise-search list="statsExerciseSuggestions" autocomplete="off" placeholder="통계 종목 검색" aria-label="통계 종목 검색" value="'+statsEscape(statsExerciseQuery)+'"><svg class="stats-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><datalist id="statsExerciseSuggestions">'+searchList+'</datalist></div><p class="stats-note" data-stats-search-count role="status"></p><p class="stats-search-empty" data-stats-search-empty hidden>검색한 종목의 기록이 선택 기간에 없어요.</p>';
     var attendanceDisplay=statsAttendanceDisplay(data,asOf);
-    statsViewEl.innerHTML='<h3 class="stats-scope-heading">통계에 포함할 기록</h3><div class="stats-periods" role="group" aria-label="통계 플랜 범위"><button type="button" data-stats-scope="current" aria-pressed="'+(statsScope==='current')+'">이 플랜만</button><button type="button" data-stats-scope="all" aria-pressed="'+(statsScope==='all')+'">모든 플랜 합산</button></div><p class="stats-note scope-caption">'+statsEscape(statsScope==='all'?'모든 플랜의 기록 합산':'플랜: '+activeProfile)+'</p>'+'<details class="stats-card stats-section" data-stats-panel="range"><summary><span>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></span></summary><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><button type="button" data-stats-reset>기간 초기화</button></div>'+
-      statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details>'+pinnedStatsHtml()+
-      '<section class="stats-card"><div class="stats-attendance"><h3>기록한 날</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">일</span></div></div><p class="stats-note">선택 기간에 기록을 남긴 날짜 수예요. 실제 운동한 날과 다를 수 있어요.</p></section>'+
+    statsViewEl.innerHTML='<h3 class="stats-scope-heading">통계에 포함할 기록</h3><div class="stats-periods" role="group" aria-label="통계 플랜 범위"><button type="button" data-stats-scope="current" aria-pressed="'+(statsScope==='current')+'">이 플랜만</button><button type="button" data-stats-scope="all" aria-pressed="'+(statsScope==='all')+'">모든 플랜 합산</button></div><p class="stats-note scope-caption">'+statsEscape(statsScope==='all'?'모든 플랜의 기록 합산':'플랜: '+activeProfile)+'</p>'+'<section class="stats-card stats-section"><h3>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></h3><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><button type="button" data-stats-reset'+(statsPeriod==='custom'?'':' hidden')+'>기간 초기화</button></div><details data-stats-panel="range"><summary>달력으로 기간 선택</summary>'+
+      statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details></section>'+pinnedStatsHtml()+
+      '<section class="stats-card"><div class="stats-attendance"><h3>기록한 날</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">일</span></div></div><p class="stats-note">선택 기간에 기록이 있는 날짜 수예요.</p></section>'+
       (!data.count?'<p class="stats-note">이 기간에는 기록이 없어요. 운동 탭에서 기록을 추가하거나 조회 기간을 바꿔보세요.</p>':'')+
-      '<section class="stats-card"><h3>부위별 기록 세트</h3>'+muscleBars+'<p class="stats-note">저장한 운동 기록 1개를 1세트로 집계해요.</p></section>'+
-      '<h3 class="stats-heading">종목별 기록 변화</h3><p class="stats-note">선택한 기간의 추정 1RM·최고 무게·기록 볼륨 변화를 비교해보세요. 카드의 역대 PR은 선택 플랜의 전체 기간 기준이며, 그래프의 ‘선택 기간 최고’는 현재 조회 기간 안의 최고값이에요. 추정 1RM과 기록 볼륨은 입력한 기록을 바탕으로 한 참고값이에요.</p>'+searchHtml+groups;
+      (data.count?'<section class="stats-card"><h3>부위별 기록 세트</h3>'+muscleBars+'<p class="stats-note">저장한 운동 기록 1개를 1세트로 집계해요.</p></section>':'')+
+      '<h3 class="stats-heading">종목별 기록 변화</h3><p class="stats-note">선택 기간의 기록 변화를 비교해보세요. 역대 PR은 전체 기간 기준이에요.</p>'+searchHtml+groups;
     statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;writeJSON('bulk-workout-stats-scope-v1',statsScope);renderStats();};});
     statsViewEl.querySelectorAll('details[data-stats-key]').forEach(function(el){if(opened.has(el.dataset.statsKey))el.open=true;});
     statsViewEl.querySelectorAll('[data-stats-panel]').forEach(function(el){var name=el.dataset.statsPanel;el.dataset.owner=activeProfile;el.open=name==='range' && !!statsRangeAnchor ? true : typeof panelPrefs[name]==='boolean' ? panelPrefs[name] : name==='pins' && pinnedExercises().length>0;
@@ -5073,7 +5174,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
   function adjustmentHtml() {
     var asOf=todayStr(),week=adjustmentWeek(asOf),state=adjustmentState(),labels=['월','화','수','목','금','토','일'];
-    return '<details class="adjustment-card" id="weekAdjustment"'+(state.open?' open':'')+'><summary>이번 주 루틴 조정</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+'</p>'+temporaryStatusHtml()+'<fieldset><legend>앞으로 운동할 날짜 <small>· 여러 날짜 선택</small></legend><div class="adjustment-days">'+week.dates.map(function(date,i){return '<button type="button" data-adjust-date="'+date+'" aria-pressed="'+state.dates.includes(date)+'" aria-label="'+date+' '+labels[i]+'요일"'+(date<asOf?' disabled':'')+'>'+labels[i]+'<small>'+date.slice(5).replace('-','/')+'</small></button>';}).join('')+'</div></fieldset><div class="adjustment-fields"><label>웨이트 가능 시간 (1회)<select id="adjustMinutes"><option value="">미정</option><option value="45">45분</option><option value="60">60분</option><option value="75">75분</option><option value="90">90분</option><option value="unlimited">제한 없음</option></select></label><label>이번 주 운동 기록<select id="adjustCoverage"><option value="unknown">잘 모르겠어요</option><option value="all">모든 세트를 기록했어요</option><option value="some">일부 세트만 기록했어요</option></select></label></div><label class="adjustment-notes">꼭 반영할 조건 (선택)<textarea id="adjustNotes" rows="2" maxlength="1000" placeholder="예: 변경할 수 없는 PT 일정, 운동하지 못한 날">'+statsEscape(state.notes)+'</textarea></label><div class="adjustment-copy-actions"><button class="btn-reset adjustment-copy" id="btnAdjustmentCopy" type="button">상담 요청 복사</button><button class="btn-reset adjustment-copy" id="btnAdjustmentJson" type="button">JSON 요청 복사</button></div><button type="button" class="btn-reset temporary-import" id="btnTemporaryImport">임시 루틴 가져오기</button><input type="file" id="temporaryFile" accept=".json,application/json" hidden><p id="adjustmentStatus" class="adjustment-note" role="status"></p><button type="button" class="btn-reset" id="btnTemporaryRepair" hidden>오류 수정 요청 복사</button><textarea id="adjustmentFallback" rows="8" readonly hidden aria-label="복사할 루틴 조정 내용"></textarea></details>';
+    return '<details class="adjustment-card" id="weekAdjustment"'+(state.open?' open':'')+'><summary>이번 주 루틴 조정</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+'</p>'+temporaryStatusHtml()+'<fieldset><legend>앞으로 운동할 날짜 <small>· 여러 날짜 선택</small></legend><div class="adjustment-days">'+week.dates.map(function(date,i){return '<button type="button" data-adjust-date="'+date+'" aria-pressed="'+state.dates.includes(date)+'" aria-label="'+date+' '+labels[i]+'요일"'+(date<asOf?' disabled':'')+'>'+labels[i]+'<small>'+date.slice(5).replace('-','/')+'</small></button>';}).join('')+'</div></fieldset><div class="adjustment-fields"><label>웨이트 가능 시간 (1회)<select id="adjustMinutes"><option value="">미정</option><option value="45">45분</option><option value="60">60분</option><option value="75">75분</option><option value="90">90분</option><option value="unlimited">제한 없음</option></select></label><label>이번 주 기록의 완전성<select id="adjustCoverage"><option value="unknown">일부 누락 가능</option><option value="all">모든 세트를 기록했어요</option><option value="some">일부 세트만 기록했어요</option></select></label></div><label class="adjustment-notes">꼭 반영할 조건 (선택)<textarea id="adjustNotes" rows="2" maxlength="1000" placeholder="예: 변경할 수 없는 PT 일정, 운동하지 못한 날">'+statsEscape(state.notes)+'</textarea></label><div class="adjustment-copy-actions"><button class="btn-reset adjustment-copy" id="btnAdjustmentCopy" type="button">상담 요청 복사</button><button class="btn-reset adjustment-copy" id="btnAdjustmentJson" type="button">JSON 요청 복사</button></div><button type="button" class="btn-reset temporary-import" id="btnTemporaryImport">임시 루틴 가져오기</button><input type="file" id="temporaryFile" accept=".json,application/json" hidden><p id="adjustmentStatus" class="adjustment-note" role="status"></p><button type="button" class="btn-reset" id="btnTemporaryRepair" hidden>오류 수정 요청 복사</button><textarea id="adjustmentFallback" rows="8" readonly hidden aria-label="복사할 루틴 조정 내용"></textarea></details>';
   }
   function bindAdjustment() {
     var root=document.getElementById('weekAdjustment'),state=adjustmentState(),renderedOn=todayStr();if(!root)return;
@@ -5098,7 +5199,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         try{candidate=JSON.parse(raw.replace(/^\uFEFF/,''));}catch(e){throw new Error('JSON 문법 오류 · '+e.message);}
         candidate=validateTemporary(candidate,todayStr(),false);
         document.getElementById('adjustmentStatus').textContent='형식을 확인했어요. 미리보기에서 적용 내용을 확인해주세요.';
-        previewTemporaryFile(candidate,owner);
+        matchTemporaryExercises(candidate,owner);
       }catch(e){if(owner!==activeProfile || !root.isConnected)return;state.importFailure={raw:raw,message:e.message};updateImportFailure();}
     };
     document.getElementById('btnTemporaryRepair').onclick=async function(){
@@ -5114,6 +5215,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       var status=document.getElementById('adjustmentStatus'),fallback=document.getElementById('adjustmentFallback'),text;
       try{text=buildAdjustmentText(todayStr(),effectiveWeek(),logs,state,activeProfile);}catch(e){status.textContent=e.message;return;}
       if(routineOrderPending)text+='\n\n※ 현재 루틴에는 아직 루틴 저장으로 확정하지 않은 편집 내용이 포함되어 있습니다.';
+      if(id!=='btnAdjustmentJson')text+=registeredExerciseText();
       if(id==='btnAdjustmentJson')text=text.replace('남은 날짜별 종목·세트·횟수·RIR과 제외하거나 다음 주로 넘길 운동을 텍스트로 추천해주세요.','남은 날짜별 운동을 추천하고 아래 JSON 응답 규칙을 따라주세요.')+temporaryJsonPrompt(state);
       var button=this;button.disabled=true;
       try{if(!navigator.clipboard || !window.isSecureContext)throw new Error('clipboard');await navigator.clipboard.writeText(text);fallback.hidden=true;status.textContent='복사했어요. ChatGPT에 붙여넣어 남은 루틴을 추천받으세요.';}
@@ -5135,8 +5237,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         : '<p class="empty-note">종목이 없어요.</p>';
       var noteHtml = d.note ? '<p class="rep-note">' + statsEscape(d.note) + '</p>' : '';
       var cardioHtml = d.cardio ? '<div class="cardio-tag">+ 웨이트 후 저강도 유산소 15~20분</div>' : '';
-      return '<div class="rep-day'+(d.temporary?' temporary-status':'')+'">'+(d.temporary?'<span class="temporary-badge">임시</span>':'') +
-        '<div class="rep-day-head">' +
+      return '<div class="rep-day'+(d.temporary?' temporary-status':'')+'">'+
+        '<div class="rep-day-head">'+(d.temporary?'<span class="temporary-badge">임시</span>':'') +
           '<span class="rep-day-letter">' + statsEscape(d.letter) + '</span>' +
           '<span class="rep-day-title">' + statsEscape(d.title) + '</span>' +
           '<span class="rep-day-total">' + dayTotal(d) + '<span>세트</span></span>' +
@@ -5145,15 +5247,15 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       '</div>';
     }).join('');
 
-    reportViewEl.innerHTML = adjustmentHtml()+
+    reportViewEl.innerHTML = temporaryStatusHtml()+adjustmentHtml()+
       '<div class="rep-summary">' +
-        '<h2>이번 주 계획 세트</h2>' +
+        '<h2>이번 주 계획 세트</h2><p class="stats-note">'+(activeTemporary()?'임시 루틴 반영 · ':'')+'월~일 계획 합계 · 실제 수행 기록과 별개</p>' +
         '<p class="bar-legend">근비대 참고구간 · 가슴/등/어깨/하체 12–16 · 이두/삼두 6–10</p>' +
         '<div class="bars">' + barsHtml + '</div>' +
         '<p class="bar-legend">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +
       '</div>' +
       daysHtml;
-    bindAdjustment();
+    bindAdjustment();bindTemporaryCancel(reportViewEl);
   }
 
   document.getElementById('btnSaveNow').addEventListener('click', function () {
@@ -5164,7 +5266,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     }
   });
 
-  document.getElementById('btnCatalogSave').addEventListener('click', function () {
+  document.getElementById('btnCatalogSave').addEventListener('unused-save', function () {
     var ok = commitCatalog(readCatalogEdits());
     var hint = document.getElementById('catalogSaveHint');
     hint.textContent = ok ? '저장됨' : '저장 실패 (브라우저 저장 불가)';
@@ -5201,8 +5303,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       btn.addEventListener('click', function () {
         var p = btn.getAttribute('data-preset');
         if (p === 'all') { recFilterFrom = ''; recFilterTo = ''; }
-        else if (p === 'week') { recFilterFrom = daysAgoStr(6); recFilterTo = todayStr(); }
-        else if (p === 'month') { recFilterFrom = daysAgoStr(29); recFilterTo = todayStr(); }
+        else if (p === 'week') { recFilterFrom = adjustmentWeek(todayStr()).from; recFilterTo = todayStr(); }
+        else if (p === 'month') { recFilterFrom = todayStr().slice(0,7)+'-01'; recFilterTo = todayStr(); }
         fromInput.value = recFilterFrom;
         toInput.value = recFilterTo;
         renderRecords();
@@ -5720,7 +5822,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       var confirming = catDelPendingProfile === name;
       var delBtn = canDelete
         ? '<button class="btn-hist-del' + (confirming ? ' confirming' : '') + '" type="button" data-name="' +
-          statsEscape(name) + '" aria-label="플랜 삭제">' + (confirming ? '확인' : '×') + '</button>'
+          statsEscape(name) + '" aria-label="플랜 삭제">' + (confirming ? '확인' : deleteIcon()) + '</button>'
         : '';
       return '<div class="profile-row">' +
         '<button class="profile-select" type="button" data-name="' + statsEscape(name) +
@@ -5771,7 +5873,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     document.getElementById('recordsActionHint').textContent='';
     document.getElementById('recordExportWrap').hidden=true;
     document.getElementById('recordExportText').value='';
-    document.getElementById('btnRecordExport').textContent='운동기록 내보내기';
+    document.getElementById('btnRecordExport').textContent='운동 기록 텍스트 내보내기';
     document.getElementById('btnSaveNow').classList.remove('pending-save');
     catalog = loadCatalog();
     applyHypertrophyDefaults();
@@ -6187,6 +6289,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     var ok = storageTransaction([
       {key:temporaryKey(),value:imported.temporaryRoutine || temporaryRoutine()},
+      {key:temporaryPendingKey(),remove:true},
       {key:STORAGE_KEY, value:nextRoutine},
       {key:routinePendingKey(), remove:true},
       {key:CATALOG_KEY, value:nextCatalog},
@@ -6199,6 +6302,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       return {ok:false, added:0, skipped:analysis.duplicateRecordCount, catalogAdded:0};
     }
 
+    temporaryWorkspaces.clear();
     days = ensureRoutineIds(nextRoutine);
     catalog = nextCatalog;
     logs = nextLogs;
@@ -6592,7 +6696,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   var recordExportWrapEl = document.getElementById('recordExportWrap');
   document.getElementById('btnRecordExport').addEventListener('click', function () {
     recordExportWrapEl.hidden = !recordExportWrapEl.hidden;
-    this.textContent = recordExportWrapEl.hidden ? '운동기록 내보내기' : '운동기록 닫기';
+    this.textContent = recordExportWrapEl.hidden ? '운동 기록 텍스트 내보내기' : '운동기록 닫기';
     if (!recordExportWrapEl.hidden) {
       document.getElementById('recordExportText').value = workoutRecordsText();
       document.getElementById('recordExportHint').textContent = logs.length ? new Set(logs.map(function(g){return g.date;})).size + '일의 기록' : '';
