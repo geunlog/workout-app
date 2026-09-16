@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="16">
+<meta name="workout-app-version" content="17">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -623,9 +623,10 @@ button {touch-action:manipulation;transition:background .18s ease,transform .18s
 .bulk-app .btn-record-one:hover {background:#234ad0;}
 @media(max-width:360px){.bulk-app .log-fields{gap:6px}.bulk-app .btn-record-one{padding:9px 8px}}
   .bulk-app input.is-autofill{color:var(--muted);font-style:italic;}
-  .bulk-app .app-guide-body h3{margin:14px 0 4px;font-size:13.5px;color:var(--ink);}
-  .bulk-app .app-guide-body h3:first-child{margin-top:6px;}
-  .bulk-app .app-guide-body p{margin:0 0 6px;font-size:12.5px;line-height:1.6;color:var(--muted);}
+  .bulk-app .app-guide-body h3{margin:18px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--ink);}
+  .bulk-app .app-guide-body h3:first-of-type{margin-top:8px;}
+  .bulk-app .app-guide-lead{margin:4px 0 0!important;font-size:12px;color:var(--faint)!important;}
+  .bulk-app .app-guide-body p{margin:0 0 8px;font-size:12.5px;line-height:1.7;color:var(--muted);word-break:keep-all;}
   .bulk-app .app-guide-body strong{color:var(--ink);}
 
 /* Arrow controls for routine order */
@@ -1074,9 +1075,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
   .weight-point.is-pr{
     stroke:currentColor;stroke-width:2.2px;
-  }
-  .stats-pr-legend{
-    font-size:10.5px;color:var(--faint);margin-top:5px;
   }
   .direct-recent{
     margin:0 0 14px;padding:0;
@@ -1725,7 +1723,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .muscle-vol-guide>summary{padding:10px 0 2px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;}
 .bulk-app .muscle-vol-guide .stats-note{margin-top:6px;}
 .bulk-app .big3-badge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:-0.01em;color:#1746b4;background:#e8eefc;border:1px solid #c3d3f5;vertical-align:middle;}
-.bulk-app .stats-metric-detail{margin-top:4px;font-size:11.5px;color:var(--faint);line-height:1.5;word-break:keep-all;overflow-wrap:break-word;}
 .bulk-app .big3-table{display:grid;grid-template-columns:minmax(0,1fr) auto auto;column-gap:12px;align-items:baseline;font-size:13px;}
 .bulk-app .big3-table>span{padding:9px 0;min-width:0;}
 .bulk-app .big3-table>span.big3-col1{text-align:left;}
@@ -1793,7 +1790,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .stats-weight-graph text{fill:var(--muted);font:12px var(--ui);}.bulk-app .stats-weight-graph .weight-grid{stroke:var(--line);stroke-width:1;}
 .bulk-app .stats-weight-graph .weight-line{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;}
 .bulk-app .stats-weight-graph .weight-point{fill:currentColor;stroke:var(--raised);stroke-width:1.5;}
-.bulk-app .stats-weight-figure figcaption{font-size:11px;color:var(--muted);line-height:1.6;margin-top:6px;}
 .bulk-app .stats-chart-select{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12px;color:var(--muted);}
 .bulk-app .stats-chart-select>span{flex-shrink:0;}
 .bulk-app .stats-chart-select select{min-width:0;max-width:100%;flex:1;font-size:13px;min-height:44px;}
@@ -2003,7 +1999,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .rep-day-head{gap:8px;flex-wrap:wrap;}
 .bulk-app .rep-day{padding:18px;}
 .bulk-app .stats-section>h3{margin:0 0 12px;}
-.bulk-app .stats-section details>summary,.secondary-pr>summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-size:14px;color:#536174;}
+.bulk-app .stats-section details>summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-size:14px;color:#536174;}
 .bulk-app .stats-range-status{margin:4px 0;}
 .secondary-pr{margin:12px 0;}
 .bulk-app .cat-item{padding:8px 0;border-bottom:1px solid #e0e4ed;}
@@ -2012,10 +2008,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .cat-item-top .btn-hist-del{grid-column:2;grid-row:1 / 3;}
 .bulk-app .cat-item-top:after{display:none;}
 .bulk-app .cat-item-specs{padding:8px 0 12px;}
-.bulk-app .catalog-maintenance{margin-top:18px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;}
-.bulk-app .catalog-maintenance>summary{padding:4px 0;color:var(--muted);cursor:pointer;display:flex;align-items:center;}
-.bulk-app .catalog-maintenance .stats-note{margin:6px 0 8px;}
-.bulk-app .catalog-maintenance>button{margin-left:auto;display:block;min-height:44px;padding:10px 4px;border:0;background:transparent;font-size:13px;color:var(--drop);}
+.bulk-app .catalog-maintenance{margin-left:auto;font-size:13px;}
+.bulk-app .catalog-maintenance>button{min-height:40px;padding:8px 4px;border:0;background:transparent;font-size:13px;font-weight:600;color:var(--drop);}
 .bulk-app .backup-options{order:3;flex-basis:100%;font-size:13px;}
 .bulk-app #btnRecordsDeleteAll{color:#aa4356;font-size:14px;}
 .match-row{border-top:1px solid #ddd;padding:14px 0;}
@@ -2060,23 +2054,43 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
   <div class="settings-view" id="settingsView" hidden>
     <div class="settings-head">사용 설명서</div>
-    <details class="settings-card app-guide"><summary>앱 사용법 간단 안내</summary>
+    <details class="settings-card app-guide"><summary>앱 사용법 안내</summary>
       <div class="app-guide-body">
-        <h3>1. 루틴 만들기</h3>
-        <p>운동 탭에서 요일을 고르고 <strong>루틴 편집</strong>을 누르면 종목을 추가·삭제·정렬할 수 있어요. 편집 내용은 <strong>루틴 저장</strong>을 눌러야 확정돼요. 저장하지 않고 편집을 닫으면 저장할지 되돌릴지 물어봐요.</p>
-        <h3>2. 기록하기</h3>
-        <p>종목마다 kg과 횟수를 넣고 <strong>N세트 저장</strong>을 누르면 한 세트가 기록돼요. 버튼의 숫자는 그날 저장될 세트 번호예요.</p>
-        <p>무게 칸에 기울임꼴로 흐리게 보이는 숫자는 <strong>제안값</strong>이에요. 그날 이미 저장한 세트가 있으면 그 무게를, 없으면 이전 회차 무게를 보여줘요. 그대로 쓰거나 고쳐서 저장하면 돼요.</p>
-        <p>루틴에 없는 종목은 <strong>직접 기록</strong>으로 남길 수 있어요.</p>
-        <h3>3. 고치기 · 지우기</h3>
-        <p>기록 탭에서 기록을 누르면 날짜·무게·횟수를 고칠 수 있어요. 같은 자리에서 <strong>이 내용으로 추가 등록</strong>을 누르면 같은 내용의 세트가 하나 더 쌓여요.</p>
-        <p>한 세트 삭제는 되돌리기가 뜨고, 종목 전체 삭제는 되돌릴 수 없어요.</p>
-        <h3>4. 통계 보기</h3>
-        <p>통계 탭에서 기간을 정하면 부위별 세트 수와 종목별 변화를 볼 수 있어요. 종목을 펼치면 추정 1RM·최고 무게·볼륨 그래프와 역대 PR이 나와요.</p>
-        <p>추정 1RM은 Epley 공식으로 계산한 참고값이라 고반복일수록 오차가 커져요.</p>
-        <h3>5. 백업</h3>
-        <p>기록은 이 브라우저 안에만 저장돼요. 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니, <strong>플랜 백업</strong>으로 JSON 파일을 주기적으로 받아두세요.</p>
-        <p>홈 화면에 설치해서 쓰면 저장 데이터가 더 안전하게 유지돼요.</p>
+        <p class="app-guide-lead">아래 탭 순서대로 읽으면 전체 흐름을 익힐 수 있어요.</p>
+
+        <h3>운동 탭 — 오늘 운동하고 기록하기</h3>
+        <p>가장 자주 쓰는 화면이에요. 맨 위 <strong>요일 버튼</strong>으로 날짜를 고르면 그 요일 루틴이 나와요. 오늘 요일에는 점이 찍혀 있어요.</p>
+        <p><strong>한 세트 저장하기</strong> — 종목 카드에서 kg과 횟수를 넣고 파란 버튼을 누르면 한 세트가 저장돼요. 버튼에 적힌 <strong>2세트 저장</strong>의 숫자는 그날 저장될 세트 번호라, 같은 종목을 이어서 저장하면 3세트·4세트로 올라가요. kg 옆 <strong>＋ －</strong> 버튼으로 무게를 빠르게 조절할 수 있어요.</p>
+        <p><strong>무게 칸의 흐린 기울임꼴 숫자</strong>는 앱이 채워둔 제안값이에요. 그날 이미 저장한 세트가 있으면 그 무게를, 없으면 이전 회차 무게를 보여줘요. 그대로 저장해도 되고, 고치면 글씨가 진해지면서 직접 입력한 값이 돼요.</p>
+        <p><strong>저장 직후 고치기</strong> — 카드 아래 <strong>최근 저장 기록 관리</strong>를 펼치면 방금 저장한 세트의 날짜·무게·횟수를 바로 고칠 수 있어요.</p>
+        <p><strong>이전 기록 보기</strong> — 카드 아래 이전 기록 줄을 누르면 그 종목의 최근 5세트와 역대 PR이 떠요.</p>
+        <p><strong>루틴에 없는 운동</strong>은 <strong>＋ 직접 기록</strong>으로 남겨요. 부위와 종목을 고르고 무게·횟수를 넣으면 돼요. 목록에 없는 이름도 직접 쳐서 기록할 수 있지만, 그렇게 넣은 이름은 운동 관리에 자동으로 추가되지는 않아요.</p>
+        <p><strong>루틴 편집</strong> — <strong>루틴 편집</strong>을 누르면 종목 추가·삭제, 순서 이동, 세트·횟수·RIR 수정이 가능해요. 고친 내용은 <strong>루틴 변경사항 저장</strong>을 눌러야 확정돼요. 저장하지 않고 편집을 닫으면 저장할지 되돌릴지 물어봐요.</p>
+
+        <h3>기록 탭 — 지난 기록 찾고 고치기</h3>
+        <p>저장한 기록이 부위별·종목별·날짜별로 쌓여요. 위쪽 <strong>시작일·종료일</strong>로 기간을 좁힐 수 있어요.</p>
+        <p><strong>고치기</strong> — 기록을 누르면 날짜·무게·횟수를 수정할 수 있어요. 같은 화면의 <strong>같은 내용 추가</strong>를 누르면 똑같은 내용의 세트가 하나 더 쌓여요. 같은 무게로 여러 세트를 할 때 편해요.</p>
+        <p><strong>지우기</strong> — 한 세트를 지우면 되돌리기 안내가 잠깐 떠요. 종목 카드 맨 아래 빨간 <strong>이 종목 기록 전체 삭제</strong>는 되돌릴 수 없으니 주의하세요.</p>
+
+        <h3>루틴 탭 — 주간 계획 한눈에 보기</h3>
+        <p>월요일부터 토요일까지 요일별 루틴을 한 화면에서 볼 수 있어요. 이번 주에 무엇을 하는지 확인하는 용도예요.</p>
+
+        <h3>통계 탭 — 변화 확인하기</h3>
+        <p><strong>조회 기간</strong>을 먼저 정하세요. 버튼으로 고르거나 달력에서 직접 지정할 수 있어요.</p>
+        <p><strong>3대 운동</strong> — 벤치프레스·스쿼트·데드리프트 기록이 따로 모여요. 횟수 <strong>1회</strong>로 저장한 기록만 실측 1RM으로 잡히고, 2회 이상 기록은 추정 1RM으로 환산돼요. 세 종목을 다 채우지 않아도 있는 것만으로 합계가 나와요.</p>
+        <p><strong>부위별 기록 세트·볼륨</strong> — 기간 안에 부위마다 몇 종목 몇 세트를 했는지, 볼륨이 이전 기간보다 늘었는지 줄었는지 보여줘요.</p>
+        <p><strong>종목별 기록 변화</strong> — 종목을 펼치면 <strong>추정 1RM·최고 무게·기록 볼륨</strong> 세 가지 그래프를 전환하며 볼 수 있어요. 그래프 아래에서 날짜를 고르면 그날 값이 표시되고, 역대 PR도 함께 나와요.</p>
+        <p><strong>관심 종목</strong>에 자주 보는 종목을 최대 5개까지 고정해두면 매번 찾지 않아도 돼요.</p>
+
+        <h3>운동 관리 탭 — 종목 목록 손보기</h3>
+        <p>부위별 종목 목록이에요. 이름·세트·횟수·RIR을 고치거나 새 종목을 추가할 수 있고, <strong>변경사항은 자동 저장</strong>돼요.</p>
+        <p>3대 운동에 해당하는 세 종목에는 <strong>‘3대운동’ 배지</strong>가 붙어 있어요. 이 종목들의 이름을 바꾸면 통계의 3대 운동 집계가 끊기니 그대로 두는 게 좋아요.</p>
+        <p>오른쪽 위 <strong>종목 관리 옵션</strong>을 펼치면 목록을 기본 상태로 되돌릴 수 있어요. 직접 추가·수정한 종목만 사라지고, 저장된 운동 기록과 루틴은 그대로 남아요.</p>
+
+        <h3>설정 — 플랜과 백업</h3>
+        <p><strong>운동 플랜</strong>은 루틴과 기록을 통째로 나눠 쓰는 단위예요. 벌크업과 다이어트처럼 시기를 나눠 관리하고 싶을 때 새 플랜을 만들면 돼요.</p>
+        <p><strong>기록은 이 브라우저 안에만 저장돼요.</strong> 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니, <strong>플랜 백업</strong>으로 JSON 파일을 주기적으로 받아두세요. 받은 파일은 <strong>플랜 복원</strong>으로 다시 불러올 수 있어요.</p>
+        <p>브라우저 메뉴에서 <strong>홈 화면에 추가</strong>로 설치해두면 앱처럼 열리고 저장 데이터도 더 안전하게 유지돼요.</p>
       </div>
     </details>
 
@@ -2144,7 +2158,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       </div>
     </div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 16 · 2026-09-17</strong>
+      <strong>앱 버전 17 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -2182,11 +2196,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       <div class="cat-toolbar">
         <div class="cat-toolbar-row">
           <span id="btnCatalogSave" role="status">자동 저장</span>
+          <details class="catalog-maintenance"><summary>종목 관리 옵션</summary><button class="btn-reset" id="btnCatalogReset" type="button">기본 종목으로 초기화</button></details>
         </div>
         <p class="save-hint" id="catalogSaveHint" role="status">변경사항은 자동 저장돼요.</p>
       </div>
       <div class="muscle-search"><select id="catalogSearchMuscle" aria-label="검색할 부위"></select><input type="search" id="catalogSearchName" placeholder="종목 검색" aria-label="운동 관리 종목 검색"></div><p id="catalogSearchCount" class="stats-note" role="status"></p><div id="catalogList"></div>
-      <details class="catalog-maintenance"><summary>종목 관리 옵션</summary><p class="stats-note">직접 추가하거나 수정한 종목이 기본 목록으로 되돌아가요. 저장된 운동기록과 루틴은 유지돼요.</p><button class="btn-reset" id="btnCatalogReset" type="button">기본 종목으로 초기화</button></details>
     </div>
     <div id="recordsView" hidden>
       <p class="save-hint" id="recordsActionHint" role="status" aria-live="polite"></p>
@@ -3269,7 +3283,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       '<div class="stats-pr-row"><span>최고 무게</span><strong>'+bestWeightText+(pr.weight?'<small class="stats-pr-date">'+statsEscape(pr.weight.date)+'</small>':'')+'</strong></div>'+
       '<div class="stats-pr-row"><span>최고 세트 볼륨</span><strong>'+bestSetVolumeText+(pr.setVolume?'<small class="stats-pr-date">'+statsEscape(pr.setVolume.date)+'</small>':'')+'</strong></div>'+
       '<div class="stats-pr-row"><span>추정 1RM</span><strong>'+(pr.e1rm?statsFormatMetric(pr.e1rm.value,'e1rm')+'<small class="stats-pr-date">'+statsEscape(pr.e1rm.date)+'</small>':'-')+'</strong></div>';
-    var prDetails=document.createElement('details');prDetails.className='secondary-pr';prDetails.open=true;prDetails.innerHTML='<summary>역대 PR 보기</summary>';prDetails.appendChild(prBox);
+    var prDetails=document.createElement('div');prDetails.className='secondary-pr';prDetails.appendChild(prBox);
     var recentLabel=document.createElement('p');recentLabel.className='stats-note';recentLabel.textContent='최근 '+recent.length+'세트 · '+date+'까지 (선택일 포함)';modal.appendChild(recentLabel);
 
     var list=document.createElement('div');
@@ -5072,11 +5086,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       '<figure class="stats-weight-figure" data-metric-figure="'+metric+'"><svg class="stats-weight-graph" viewBox="0 0 320 184" role="img" aria-label="'+statsEscape(exercise.name)+' '+meta.aria+' 그래프">'+
       '<title>'+statsEscape(exercise.name)+' · '+points[0].date+' ~ '+last.date+' · '+meta.label+' '+statsFormatMetric(summary.best,metric)+'</title><text x="37" y="20" text-anchor="end">'+meta.unit+'</text>'+grid+line+dots+ticks+'</svg>'+
       '<label class="stats-chart-select"><span>기록 날짜 선택</span><select data-metric-date aria-label="'+statsEscape(exercise.name)+' '+meta.label+' 기록 날짜 선택">'+options+'</select></label>'+
-      '<figcaption><span class="sr-only" data-metric-value role="status">'+last.date+' · '+statsFormatMetric(last.value,metric)+statsMetricDetail(last,metric)+'</span>'+
-      '<div class="stats-metric-detail" data-metric-detail>'+last.date+' · '+statsFormatMetric(last.value,metric)+statsMetricDetail(last,metric)+'</div>'+
-      (metric==='volume'?'기록한 세트만 기준으로 무게×횟수를 합산해요. 실제 전체 운동량과 다를 수 있어요.':metric==='e1rm'?'Epley 공식으로 계산한 참고값이며, 고반복 기록일수록 오차가 커질 수 있어요.':'기록이 있는 날짜의 최고 입력 무게만 연결해요.')+
-      ((metric==='e1rm' || metric==='weight') && lifetimePr && points.some(function(p){return p.date===lifetimePr.date && Math.abs(p.value-lifetimePr.value)<0.06;})?'<div class="stats-pr-legend">● 현재 PR 지점</div>':'')+
-      '</figcaption></figure>';
+      '<span class="sr-only" data-metric-value role="status">'+last.date+' · '+statsFormatMetric(last.value,metric)+statsMetricDetail(last,metric)+'</span>'+
+      '</figure>';
   }
   function statsExerciseMetricsHtml(exercise) {
     var metrics=['e1rm','weight','volume'];
@@ -5098,7 +5109,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var panels=metrics.map(function(metric){
       return '<div class="stats-metric-panel" data-stats-metric-panel="'+metric+'"'+(metric==='e1rm'?'':' hidden')+'>'+statsMetricGraph(exercise,metric)+'</div>';
     }).join('');
-    return '<div class="stats-metric-switch" role="group" aria-label="'+statsEscape(exercise.name)+' 통계 지표">'+buttons+'</div>'+panels+'<details class="secondary-pr" open><summary>역대 PR 보기</summary>'+prHtml+'</details>';
+    return '<div class="stats-metric-switch" role="group" aria-label="'+statsEscape(exercise.name)+' 통계 지표">'+buttons+'</div>'+panels+'<div class="secondary-pr">'+prHtml+'</div>';
   }
   function statsRecordedExerciseNames(muscle) {
     var seen = new Set(), names = [];
@@ -5312,8 +5323,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       figure.querySelectorAll('[data-metric-point]').forEach(function(point){point.setAttribute('r',point.dataset.metricPoint===select.value?'4.5':point.dataset.weightRadius);});
       var value=figure.querySelector('[data-metric-value]');
       if(value)value.textContent=select.options[select.selectedIndex].textContent;
-      var detail=figure.querySelector('[data-metric-detail]');
-      if(detail)detail.textContent=select.options[select.selectedIndex].textContent;
     });});
   }
 
