@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="17">
+<meta name="workout-app-version" content="18">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -623,11 +623,25 @@ button {touch-action:manipulation;transition:background .18s ease,transform .18s
 .bulk-app .btn-record-one:hover {background:#234ad0;}
 @media(max-width:360px){.bulk-app .log-fields{gap:6px}.bulk-app .btn-record-one{padding:9px 8px}}
   .bulk-app input.is-autofill{color:var(--muted);font-style:italic;}
-  .bulk-app .app-guide-body h3{margin:18px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--ink);}
-  .bulk-app .app-guide-body h3:first-of-type{margin-top:8px;}
-  .bulk-app .app-guide-lead{margin:4px 0 0!important;font-size:12px;color:var(--faint)!important;}
-  .bulk-app .app-guide-body p{margin:0 0 8px;font-size:12.5px;line-height:1.7;color:var(--muted);word-break:keep-all;}
+  .bulk-app .app-guide-lead{margin:0 0 4px;font-size:12.5px;line-height:1.6;color:var(--muted);word-break:keep-all;}
+  .bulk-app .app-guide-lead strong{color:var(--ink);}
+  .bulk-app .app-guide-sec{border-top:1px solid var(--line);}
+  .bulk-app .app-guide-sec>summary{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 0;cursor:pointer;list-style:none;}
+  .bulk-app .app-guide-sec>summary::-webkit-details-marker{display:none;}
+  .bulk-app .app-guide-num{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--sunken);color:var(--muted);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .bulk-app .app-guide-sec[open] .app-guide-num{background:var(--primary);color:var(--on-primary);}
+  .bulk-app .app-guide-title{flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-.01em;}
+  .bulk-app .app-guide-title small{display:block;margin-top:2px;font-size:11.5px;font-weight:400;color:var(--faint);}
+  .bulk-app .app-guide-sec>summary::after{content:'';flex:0 0 auto;width:7px;height:7px;margin-right:4px;border-right:2px solid var(--faint);border-bottom:2px solid var(--faint);transform:rotate(45deg);margin-bottom:3px;transition:transform .15s;}
+  .bulk-app .app-guide-sec[open]>summary::after{transform:rotate(225deg);margin-bottom:-3px;}
+  .bulk-app .app-guide-body{padding:0 0 14px 32px;}
+  .bulk-app .app-guide-body h4{margin:12px 0 3px;font-size:12.5px;font-weight:700;color:var(--ink);}
+  .bulk-app .app-guide-body h4:first-child{margin-top:2px;}
+  .bulk-app .app-guide-body p{margin:0 0 7px;font-size:12.5px;line-height:1.7;color:var(--muted);word-break:keep-all;}
+  .bulk-app .app-guide-body p:last-child{margin-bottom:0;}
   .bulk-app .app-guide-body strong{color:var(--ink);}
+  .bulk-app .app-guide-warn{padding:9px 11px;border-radius:9px;background:var(--sunken);border-left:3px solid var(--warn);}
+  @media(max-width:360px){.bulk-app .app-guide-body{padding-left:0;}}
 
 /* Arrow controls for routine order */
 .bulk-app .ex-row{position:relative;}
@@ -2009,7 +2023,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .cat-item-top:after{display:none;}
 .bulk-app .cat-item-specs{padding:8px 0 12px;}
 .bulk-app .catalog-maintenance{margin-left:auto;font-size:13px;}
-.bulk-app .catalog-maintenance>button{min-height:40px;padding:8px 4px;border:0;background:transparent;font-size:13px;font-weight:600;color:var(--drop);}
+.bulk-app .catalog-maintenance>button{min-height:42px;margin-top:6px;padding:10px 14px;border:1px solid var(--drop);border-radius:11px;background:var(--drop);font-size:13px;font-weight:700;color:#fff;white-space:nowrap;}
+.bulk-app .catalog-maintenance>button:active{transform:translateY(1px);}
 .bulk-app .backup-options{order:3;flex-basis:100%;font-size:13px;}
 .bulk-app #btnRecordsDeleteAll{color:#aa4356;font-size:14px;}
 .match-row{border-top:1px solid #ddd;padding:14px 0;}
@@ -2054,45 +2069,74 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
   <div class="settings-view" id="settingsView" hidden>
     <div class="settings-head">사용 설명서</div>
-    <details class="settings-card app-guide"><summary>앱 사용법 안내</summary>
-      <div class="app-guide-body">
-        <p class="app-guide-lead">아래 탭 순서대로 읽으면 전체 흐름을 익힐 수 있어요.</p>
+    <div class="settings-card app-guide">
+      <p class="app-guide-lead">궁금한 탭을 눌러 펼쳐보세요. 처음이라면 <strong>운동 탭</strong>부터 순서대로 읽는 걸 권해요.</p>
 
-        <h3>운동 탭 — 오늘 운동하고 기록하기</h3>
-        <p>가장 자주 쓰는 화면이에요. 맨 위 <strong>요일 버튼</strong>으로 날짜를 고르면 그 요일 루틴이 나와요. 오늘 요일에는 점이 찍혀 있어요.</p>
-        <p><strong>한 세트 저장하기</strong> — 종목 카드에서 kg과 횟수를 넣고 파란 버튼을 누르면 한 세트가 저장돼요. 버튼에 적힌 <strong>2세트 저장</strong>의 숫자는 그날 저장될 세트 번호라, 같은 종목을 이어서 저장하면 3세트·4세트로 올라가요. kg 옆 <strong>＋ －</strong> 버튼으로 무게를 빠르게 조절할 수 있어요.</p>
-        <p><strong>무게 칸의 흐린 기울임꼴 숫자</strong>는 앱이 채워둔 제안값이에요. 그날 이미 저장한 세트가 있으면 그 무게를, 없으면 이전 회차 무게를 보여줘요. 그대로 저장해도 되고, 고치면 글씨가 진해지면서 직접 입력한 값이 돼요.</p>
-        <p><strong>저장 직후 고치기</strong> — 카드 아래 <strong>최근 저장 기록 관리</strong>를 펼치면 방금 저장한 세트의 날짜·무게·횟수를 바로 고칠 수 있어요.</p>
-        <p><strong>이전 기록 보기</strong> — 카드 아래 이전 기록 줄을 누르면 그 종목의 최근 5세트와 역대 PR이 떠요.</p>
-        <p><strong>루틴에 없는 운동</strong>은 <strong>＋ 직접 기록</strong>으로 남겨요. 부위와 종목을 고르고 무게·횟수를 넣으면 돼요. 목록에 없는 이름도 직접 쳐서 기록할 수 있지만, 그렇게 넣은 이름은 운동 관리에 자동으로 추가되지는 않아요.</p>
-        <p><strong>루틴 편집</strong> — <strong>루틴 편집</strong>을 누르면 종목 추가·삭제, 순서 이동, 세트·횟수·RIR 수정이 가능해요. 고친 내용은 <strong>루틴 변경사항 저장</strong>을 눌러야 확정돼요. 저장하지 않고 편집을 닫으면 저장할지 되돌릴지 물어봐요.</p>
+      <details class="app-guide-sec"><summary><span class="app-guide-num">1</span><span class="app-guide-title">운동 탭<small>오늘 운동하고 기록하기</small></span></summary>
+        <div class="app-guide-body">
+          <p>가장 자주 쓰는 화면이에요. 맨 위 <strong>요일 버튼</strong>으로 날짜를 고르면 그 요일 루틴이 나와요. 오늘 요일에는 점이 찍혀 있어요.</p>
+          <h4>한 세트 저장하기</h4>
+          <p>종목 카드에서 kg과 횟수를 넣고 파란 버튼을 누르면 한 세트가 저장돼요. 버튼에 적힌 <strong>2세트 저장</strong>의 숫자는 그날 저장될 세트 번호라, 같은 종목을 이어서 저장하면 3세트·4세트로 올라가요. kg 옆 <strong>＋ －</strong> 버튼으로 무게를 빠르게 조절할 수 있어요.</p>
+          <h4>흐린 기울임꼴 숫자의 의미</h4>
+          <p>무게 칸에 흐리게 보이는 숫자는 앱이 채워둔 <strong>제안값</strong>이에요. 그날 이미 저장한 세트가 있으면 그 무게를, 없으면 이전 회차 무게를 보여줘요. 그대로 저장해도 되고, 고치면 글씨가 진해지면서 직접 입력한 값이 돼요.</p>
+          <h4>저장 직후 고치기</h4>
+          <p>카드 아래 <strong>최근 저장 기록 관리</strong>를 펼치면 방금 저장한 세트의 날짜·무게·횟수를 바로 고칠 수 있어요.</p>
+          <h4>이전 기록 보기</h4>
+          <p>카드 아래 이전 기록 줄을 누르면 그 종목의 최근 5세트와 역대 PR이 떠요.</p>
+          <h4>루틴에 없는 운동</h4>
+          <p><strong>＋ 직접 기록</strong>으로 남겨요. 부위와 종목을 고르고 무게·횟수를 넣으면 돼요. 목록에 없는 이름도 직접 쳐서 기록할 수 있지만, 그렇게 넣은 이름은 운동 관리에 자동으로 추가되지는 않아요.</p>
+          <h4>루틴 편집</h4>
+          <p><strong>루틴 편집</strong>을 누르면 종목 추가·삭제, 순서 이동, 세트·횟수·RIR 수정이 가능해요. 고친 내용은 <strong>루틴 변경사항 저장</strong>을 눌러야 확정돼요. 저장하지 않고 편집을 닫으면 저장할지 되돌릴지 물어봐요.</p>
+          <p><strong>기본 루틴 적용</strong>을 누르면 분할을 골라 월~토 루틴 전체를 한 번에 교체할 수 있어요.</p>
+        </div>
+      </details>
 
-        <h3>기록 탭 — 지난 기록 찾고 고치기</h3>
-        <p>저장한 기록이 부위별·종목별·날짜별로 쌓여요. 위쪽 <strong>시작일·종료일</strong>로 기간을 좁힐 수 있어요.</p>
-        <p><strong>고치기</strong> — 기록을 누르면 날짜·무게·횟수를 수정할 수 있어요. 같은 화면의 <strong>같은 내용 추가</strong>를 누르면 똑같은 내용의 세트가 하나 더 쌓여요. 같은 무게로 여러 세트를 할 때 편해요.</p>
-        <p><strong>지우기</strong> — 한 세트를 지우면 되돌리기 안내가 잠깐 떠요. 종목 카드 맨 아래 빨간 <strong>이 종목 기록 전체 삭제</strong>는 되돌릴 수 없으니 주의하세요.</p>
+      <details class="app-guide-sec"><summary><span class="app-guide-num">2</span><span class="app-guide-title">기록 탭<small>지난 기록 찾고 고치기</small></span></summary>
+        <div class="app-guide-body">
+          <p>저장한 기록이 부위별·종목별·날짜별로 쌓여요. 위쪽 <strong>시작일·종료일</strong>로 기간을 좁힐 수 있어요.</p>
+          <h4>고치기</h4>
+          <p>기록을 누르면 날짜·무게·횟수를 수정할 수 있어요. 같은 화면의 <strong>같은 내용 추가</strong>를 누르면 똑같은 내용의 세트가 하나 더 쌓여요. 같은 무게로 여러 세트를 할 때 편해요.</p>
+          <h4>지우기</h4>
+          <p>한 세트를 지우면 되돌리기 안내가 잠깐 떠요. 종목 카드 맨 아래 빨간 <strong>이 종목 기록 전체 삭제</strong>는 되돌릴 수 없으니 주의하세요.</p>
+        </div>
+      </details>
 
-        <h3>루틴 탭 — 주간 계획 한눈에 보기</h3>
-        <p>월요일부터 토요일까지 요일별 루틴을 한 화면에서 볼 수 있어요. 이번 주에 무엇을 하는지 확인하는 용도예요.</p>
+      <details class="app-guide-sec"><summary><span class="app-guide-num">3</span><span class="app-guide-title">루틴 탭<small>주간 계획 한눈에 보기</small></span></summary>
+        <div class="app-guide-body">
+          <p>월요일부터 토요일까지 요일별 루틴을 한 화면에서 볼 수 있어요. 이번 주에 무엇을 하는지 확인하는 용도예요.</p>
+        </div>
+      </details>
 
-        <h3>통계 탭 — 변화 확인하기</h3>
-        <p><strong>조회 기간</strong>을 먼저 정하세요. 버튼으로 고르거나 달력에서 직접 지정할 수 있어요.</p>
-        <p><strong>3대 운동</strong> — 벤치프레스·스쿼트·데드리프트 기록이 따로 모여요. 횟수 <strong>1회</strong>로 저장한 기록만 실측 1RM으로 잡히고, 2회 이상 기록은 추정 1RM으로 환산돼요. 세 종목을 다 채우지 않아도 있는 것만으로 합계가 나와요.</p>
-        <p><strong>부위별 기록 세트·볼륨</strong> — 기간 안에 부위마다 몇 종목 몇 세트를 했는지, 볼륨이 이전 기간보다 늘었는지 줄었는지 보여줘요.</p>
-        <p><strong>종목별 기록 변화</strong> — 종목을 펼치면 <strong>추정 1RM·최고 무게·기록 볼륨</strong> 세 가지 그래프를 전환하며 볼 수 있어요. 그래프 아래에서 날짜를 고르면 그날 값이 표시되고, 역대 PR도 함께 나와요.</p>
-        <p><strong>관심 종목</strong>에 자주 보는 종목을 최대 5개까지 고정해두면 매번 찾지 않아도 돼요.</p>
+      <details class="app-guide-sec"><summary><span class="app-guide-num">4</span><span class="app-guide-title">통계 탭<small>변화 확인하기</small></span></summary>
+        <div class="app-guide-body">
+          <p><strong>조회 기간</strong>을 먼저 정하세요. 버튼으로 고르거나 달력에서 직접 지정할 수 있어요.</p>
+          <h4>3대 운동</h4>
+          <p>벤치프레스·스쿼트·데드리프트 기록이 따로 모여요. 횟수 <strong>1회</strong>로 저장한 기록만 실측 1RM으로 잡히고, 2회 이상 기록은 추정 1RM으로 환산돼요. 세 종목을 다 채우지 않아도 있는 것만으로 합계가 나와요.</p>
+          <h4>부위별 기록 세트·볼륨</h4>
+          <p>기간 안에 부위마다 몇 종목 몇 세트를 했는지, 볼륨이 이전 기간보다 늘었는지 줄었는지 보여줘요.</p>
+          <h4>종목별 기록 변화</h4>
+          <p>종목을 펼치면 <strong>추정 1RM·최고 무게·기록 볼륨</strong> 세 가지 그래프를 전환하며 볼 수 있어요. 그래프 아래에서 날짜를 고르면 그날 값이 표시되고, 역대 PR도 함께 나와요.</p>
+          <h4>관심 종목</h4>
+          <p>자주 보는 종목을 최대 5개까지 고정해두면 매번 찾지 않아도 돼요.</p>
+        </div>
+      </details>
 
-        <h3>운동 관리 탭 — 종목 목록 손보기</h3>
-        <p>부위별 종목 목록이에요. 이름·세트·횟수·RIR을 고치거나 새 종목을 추가할 수 있고, <strong>변경사항은 자동 저장</strong>돼요.</p>
-        <p>3대 운동에 해당하는 세 종목에는 <strong>‘3대운동’ 배지</strong>가 붙어 있어요. 이 종목들의 이름을 바꾸면 통계의 3대 운동 집계가 끊기니 그대로 두는 게 좋아요.</p>
-        <p>오른쪽 위 <strong>종목 관리 옵션</strong>을 펼치면 목록을 기본 상태로 되돌릴 수 있어요. 직접 추가·수정한 종목만 사라지고, 저장된 운동 기록과 루틴은 그대로 남아요.</p>
+      <details class="app-guide-sec"><summary><span class="app-guide-num">5</span><span class="app-guide-title">운동 관리 탭<small>종목 목록 손보기</small></span></summary>
+        <div class="app-guide-body">
+          <p>부위별 종목 목록이에요. 이름·세트·횟수·RIR을 고치거나 새 종목을 추가할 수 있고, <strong>변경사항은 자동 저장</strong>돼요.</p>
+          <p>3대 운동에 해당하는 세 종목에는 <strong>‘3대운동’ 배지</strong>가 붙어 있어요. 이 종목들의 이름을 바꾸면 통계의 3대 운동 집계가 끊기니 그대로 두는 게 좋아요.</p>
+          <p>오른쪽 위 <strong>종목 관리 옵션</strong>을 펼치면 목록을 기본 상태로 되돌릴 수 있어요. 직접 추가·수정한 종목만 사라지고, 저장된 운동 기록과 루틴은 그대로 남아요.</p>
+        </div>
+      </details>
 
-        <h3>설정 — 플랜과 백업</h3>
-        <p><strong>운동 플랜</strong>은 루틴과 기록을 통째로 나눠 쓰는 단위예요. 벌크업과 다이어트처럼 시기를 나눠 관리하고 싶을 때 새 플랜을 만들면 돼요.</p>
-        <p><strong>기록은 이 브라우저 안에만 저장돼요.</strong> 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니, <strong>플랜 백업</strong>으로 JSON 파일을 주기적으로 받아두세요. 받은 파일은 <strong>플랜 복원</strong>으로 다시 불러올 수 있어요.</p>
-        <p>브라우저 메뉴에서 <strong>홈 화면에 추가</strong>로 설치해두면 앱처럼 열리고 저장 데이터도 더 안전하게 유지돼요.</p>
-      </div>
-    </details>
+      <details class="app-guide-sec"><summary><span class="app-guide-num">6</span><span class="app-guide-title">설정<small>플랜과 백업</small></span></summary>
+        <div class="app-guide-body">
+          <p><strong>운동 플랜</strong>은 루틴과 기록을 통째로 나눠 쓰는 단위예요. 벌크업과 다이어트처럼 시기를 나눠 관리하고 싶을 때 새 플랜을 만들면 돼요.</p>
+          <p class="app-guide-warn"><strong>기록은 이 브라우저 안에만 저장돼요.</strong> 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니, <strong>플랜 백업</strong>으로 JSON 파일을 주기적으로 받아두세요. 받은 파일은 <strong>플랜 복원</strong>으로 다시 불러올 수 있어요.</p>
+          <p>브라우저 메뉴에서 <strong>홈 화면에 추가</strong>로 설치해두면 앱처럼 열리고 저장 데이터도 더 안전하게 유지돼요.</p>
+        </div>
+      </details>
+    </div>
 
     <div class="settings-head" style="margin-top:18px;">운동 플랜</div>
     <div class="settings-card">
@@ -2158,7 +2202,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       </div>
     </div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 17 · 2026-09-17</strong>
+      <strong>앱 버전 18 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -2178,7 +2222,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       <div class="reset-row">
         <button class="btn-reset btn-save-now" id="btnSaveNow" type="button">루틴 저장</button>
         <button class="btn-reset routine-edit-only" id="btnClearDay" type="button">운동 초기화</button>
-        <button class="btn-reset routine-edit-only" id="btnReset" type="button">기본 루틴 설정</button>
+        <button class="btn-reset routine-edit-only" id="btnReset" type="button">기본 루틴 적용</button>
       </div>
 
       <div class="record-date-row routine-read-only">
@@ -5925,7 +5969,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     sheet.innerHTML =
       '<div class="base-routine-handle" aria-hidden="true"></div>' +
       '<div class="base-routine-head">' +
-        '<h2 id="baseRoutineTitle">기본 루틴 설정</h2>' +
+        '<h2 id="baseRoutineTitle">기본 루틴 적용</h2>' +
         '<p>분할을 선택하면 현재 운동 루틴 전체가 선택한 기본 루틴으로 변경됩니다.</p>' +
       '</div>' +
       '<div class="base-routine-options">' +
@@ -6007,7 +6051,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       btn.addEventListener('click', async function() {
         var split = parseInt(btn.getAttribute('data-split'), 10);
         close();
-        if(!await confirmDataAction('기본 루틴 설정',split+'분할 기본 루틴으로 현재 월~토 루틴 전체를 교체할까요? 운동기록·운동 관리 종목·설정 메모는 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','루틴 적용'))return;
+        if(!await confirmDataAction('기본 루틴 적용',split+'분할 기본 루틴으로 현재 월~토 루틴 전체를 교체할까요? 운동기록·운동 관리 종목·설정 메모는 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','루틴 적용'))return;
         days = makeBaseSplitRoutine(split);
         save();
         renderTabs();
