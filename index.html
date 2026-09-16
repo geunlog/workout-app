@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="18">
+<meta name="workout-app-version" content="19">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -623,25 +623,26 @@ button {touch-action:manipulation;transition:background .18s ease,transform .18s
 .bulk-app .btn-record-one:hover {background:#234ad0;}
 @media(max-width:360px){.bulk-app .log-fields{gap:6px}.bulk-app .btn-record-one{padding:9px 8px}}
   .bulk-app input.is-autofill{color:var(--muted);font-style:italic;}
-  .bulk-app .app-guide-lead{margin:0 0 4px;font-size:12.5px;line-height:1.6;color:var(--muted);word-break:keep-all;}
+  .bulk-app .app-guide-lead{margin:0 0 12px;font-size:13px;line-height:1.65;color:var(--muted);word-break:keep-all;}
   .bulk-app .app-guide-lead strong{color:var(--ink);}
   .bulk-app .app-guide-sec{border-top:1px solid var(--line);}
-  .bulk-app .app-guide-sec>summary{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 0;cursor:pointer;list-style:none;}
+  .bulk-app .app-guide-sec>summary{display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 0;cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent;}
   .bulk-app .app-guide-sec>summary::-webkit-details-marker{display:none;}
-  .bulk-app .app-guide-num{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--sunken);color:var(--muted);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;}
-  .bulk-app .app-guide-sec[open] .app-guide-num{background:var(--primary);color:var(--on-primary);}
-  .bulk-app .app-guide-title{flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-.01em;}
-  .bulk-app .app-guide-title small{display:block;margin-top:2px;font-size:11.5px;font-weight:400;color:var(--faint);}
+  .bulk-app .app-guide-num{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--raised);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}
+  .bulk-app .app-guide-sec[open] .app-guide-num{background:var(--primary);border-color:var(--primary);color:var(--on-primary);}
+  .bulk-app .app-guide-title{flex:1;min-width:0;font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em;}
+  .bulk-app .app-guide-title small{display:block;margin-top:3px;font-size:11.5px;font-weight:400;color:var(--faint);}
   .bulk-app .app-guide-sec>summary::after{content:'';flex:0 0 auto;width:7px;height:7px;margin-right:4px;border-right:2px solid var(--faint);border-bottom:2px solid var(--faint);transform:rotate(45deg);margin-bottom:3px;transition:transform .15s;}
   .bulk-app .app-guide-sec[open]>summary::after{transform:rotate(225deg);margin-bottom:-3px;}
-  .bulk-app .app-guide-body{padding:0 0 14px 32px;}
-  .bulk-app .app-guide-body h4{margin:12px 0 3px;font-size:12.5px;font-weight:700;color:var(--ink);}
+  /* 펼친 섹션은 번호 배지 아래로 이어지는 세로선으로 범위를 표시한다. */
+  .bulk-app .app-guide-body{margin:0 0 6px 11px;padding:2px 0 14px 21px;border-left:2px solid var(--line);}
+  .bulk-app .app-guide-body h4{margin:16px 0 4px;font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-.01em;}
   .bulk-app .app-guide-body h4:first-child{margin-top:2px;}
-  .bulk-app .app-guide-body p{margin:0 0 7px;font-size:12.5px;line-height:1.7;color:var(--muted);word-break:keep-all;}
+  .bulk-app .app-guide-body p{margin:0 0 9px;font-size:13px;line-height:1.75;color:var(--muted);word-break:keep-all;}
   .bulk-app .app-guide-body p:last-child{margin-bottom:0;}
-  .bulk-app .app-guide-body strong{color:var(--ink);}
-  .bulk-app .app-guide-warn{padding:9px 11px;border-radius:9px;background:var(--sunken);border-left:3px solid var(--warn);}
-  @media(max-width:360px){.bulk-app .app-guide-body{padding-left:0;}}
+  .bulk-app .app-guide-body strong{color:var(--ink);font-weight:700;}
+  .bulk-app .app-guide-warn{margin-top:12px;padding:11px 13px;border-radius:10px;background:var(--sunken);border-left:3px solid var(--warn);}
+  @media(max-width:360px){.bulk-app .app-guide-body{margin-left:6px;padding-left:14px;}.bulk-app .app-guide-sec>summary{gap:8px;}}
 
 /* Arrow controls for routine order */
 .bulk-app .ex-row{position:relative;}
@@ -2104,6 +2105,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       <details class="app-guide-sec"><summary><span class="app-guide-num">3</span><span class="app-guide-title">루틴 탭<small>주간 계획 한눈에 보기</small></span></summary>
         <div class="app-guide-body">
           <p>월요일부터 토요일까지 요일별 루틴을 한 화면에서 볼 수 있어요. 이번 주에 무엇을 하는지 확인하는 용도예요.</p>
+          <p>루틴을 고치려면 <strong>운동 탭</strong>에서 요일을 고른 뒤 <strong>루틴 편집</strong>을 누르세요.</p>
         </div>
       </details>
 
@@ -2124,16 +2126,21 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       <details class="app-guide-sec"><summary><span class="app-guide-num">5</span><span class="app-guide-title">운동 관리 탭<small>종목 목록 손보기</small></span></summary>
         <div class="app-guide-body">
           <p>부위별 종목 목록이에요. 이름·세트·횟수·RIR을 고치거나 새 종목을 추가할 수 있고, <strong>변경사항은 자동 저장</strong>돼요.</p>
-          <p>3대 운동에 해당하는 세 종목에는 <strong>‘3대운동’ 배지</strong>가 붙어 있어요. 이 종목들의 이름을 바꾸면 통계의 3대 운동 집계가 끊기니 그대로 두는 게 좋아요.</p>
-          <p>오른쪽 위 <strong>종목 관리 옵션</strong>을 펼치면 목록을 기본 상태로 되돌릴 수 있어요. 직접 추가·수정한 종목만 사라지고, 저장된 운동 기록과 루틴은 그대로 남아요.</p>
+          <h4>‘3대운동’ 배지</h4>
+          <p>3대 운동에 해당하는 세 종목에는 배지가 붙어 있어요. 이 종목들의 이름을 바꾸면 통계의 3대 운동 집계가 끊기니 그대로 두는 게 좋아요.</p>
+          <h4>기본 종목으로 되돌리기</h4>
+          <p>오른쪽 위 <strong>종목 관리 옵션</strong>을 펼치면 빨간 <strong>기본 종목으로 초기화</strong> 버튼이 나와요. 직접 추가·수정한 종목만 사라지고, 저장된 운동 기록과 루틴은 그대로 남아요.</p>
         </div>
       </details>
 
       <details class="app-guide-sec"><summary><span class="app-guide-num">6</span><span class="app-guide-title">설정<small>플랜과 백업</small></span></summary>
         <div class="app-guide-body">
-          <p><strong>운동 플랜</strong>은 루틴과 기록을 통째로 나눠 쓰는 단위예요. 벌크업과 다이어트처럼 시기를 나눠 관리하고 싶을 때 새 플랜을 만들면 돼요.</p>
+          <h4>운동 플랜</h4>
+          <p>루틴과 기록을 통째로 나눠 쓰는 단위예요. 벌크업과 다이어트처럼 시기를 나눠 관리하고 싶을 때 새 플랜을 만들면 돼요.</p>
+          <h4>백업하기</h4>
           <p class="app-guide-warn"><strong>기록은 이 브라우저 안에만 저장돼요.</strong> 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니, <strong>플랜 백업</strong>으로 JSON 파일을 주기적으로 받아두세요. 받은 파일은 <strong>플랜 복원</strong>으로 다시 불러올 수 있어요.</p>
-          <p>브라우저 메뉴에서 <strong>홈 화면에 추가</strong>로 설치해두면 앱처럼 열리고 저장 데이터도 더 안전하게 유지돼요.</p>
+          <h4>홈 화면에 설치</h4>
+          <p>브라우저 메뉴에서 <strong>홈 화면에 추가</strong>를 누르면 앱처럼 열리고, 저장 데이터도 더 안전하게 유지돼요.</p>
         </div>
       </details>
     </div>
@@ -2202,7 +2209,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       </div>
     </div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 18 · 2026-09-17</strong>
+      <strong>앱 버전 19 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
