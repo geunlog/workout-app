@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="21">
+<meta name="workout-app-version" content="22">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1736,13 +1736,21 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .mc-nav{display:flex;align-items:center;gap:4px;margin-left:auto;}
 .bulk-app .mc-nav button{width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:17px;line-height:1;color:var(--ink);}
 .bulk-app .mc-nav button:disabled{opacity:.3;}
-.bulk-app .mc-period{min-width:92px;text-align:center;}
+.bulk-app .mc-period{min-width:92px;text-align:center;padding:4px 8px;border:0;border-radius:9px;background:transparent;color:inherit;}
+.bulk-app .mc-period:active{background:var(--sunken);}
+.bulk-app .mc-picker{max-width:360px;}
+.bulk-app .mc-picker-list{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+.bulk-app .mc-picker-item{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;min-height:46px;padding:10px 12px;border:0;border-radius:10px;background:transparent;text-align:left;font-size:13.5px;color:var(--ink);}
+.bulk-app .mc-picker-item small{font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums;}
+.bulk-app .mc-picker-item.is-current{background:var(--primary);color:var(--on-primary);font-weight:700;}
+.bulk-app .mc-picker-item.is-current small{color:var(--on-primary);opacity:.85;}
 .bulk-app .mc-period strong{display:block;font-size:13px;letter-spacing:-.01em;}
 .bulk-app .mc-period small{display:block;margin-top:1px;font-size:10.5px;color:var(--faint);}
 .bulk-app .mc-table{display:flex;flex-direction:column;}
-.bulk-app .mc-row{display:grid;grid-template-columns:38px minmax(0,1fr) 52px minmax(62px,auto) minmax(56px,auto);gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;}
-.bulk-app .mc-row.mc-head{border-top:0;padding:0 0 6px;font-size:10.5px;color:var(--muted);}
-.bulk-app .mc-head small{display:block;font-size:9.5px;color:var(--faint);}
+.bulk-app .mc-row{display:grid;grid-template-columns:38px minmax(48px,1fr) 52px minmax(62px,auto) minmax(56px,auto);gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;}
+.bulk-app .mc-row.mc-head{border-top:0;padding:0 0 7px;font-size:10.5px;color:var(--muted);}
+/* 헤더는 부위와 막대 칸을 하나로 합쳐 한 줄로 유지한다. */
+.bulk-app .mc-head-label{grid-column:1 / span 2;text-align:left;}
 .bulk-app .mc-name{font-weight:600;color:var(--ink);}
 .bulk-app .mc-head .mc-name{font-weight:400;color:var(--muted);}
 .bulk-app .mc-bar{position:relative;height:8px;border-radius:8px;background:var(--sunken);overflow:hidden;}
@@ -1759,7 +1767,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .mc-down{color:var(--drop);}
 .bulk-app .mc-flat,.bulk-app .mc-new{color:var(--faint);font-weight:400;}
 .bulk-app .mc-empty{margin:14px 0;}
-@media(max-width:360px){.bulk-app .mc-row{grid-template-columns:32px minmax(0,1fr) 44px minmax(54px,auto) minmax(48px,auto);gap:6px;font-size:12px;}.bulk-app .mc-nav{margin-left:0;}.bulk-app .mc-period{min-width:80px;}}
+@media(max-width:360px){.bulk-app .mc-row{grid-template-columns:32px minmax(36px,1fr) 44px minmax(54px,auto) minmax(48px,auto);gap:6px;font-size:12px;}.bulk-app .mc-nav{margin-left:0;}.bulk-app .mc-period{min-width:80px;}}
 .bulk-app .muscle-vol-guide{margin-top:12px;border-top:1px solid var(--line);}
 .bulk-app .muscle-vol-guide>summary{padding:10px 0 2px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;}
 .bulk-app .muscle-vol-guide .stats-note{margin-top:6px;}
@@ -2237,7 +2245,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 21 · 2026-09-17</strong>
+      <strong>앱 버전 22 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -5315,9 +5323,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var mc=buildMuscleCompare(statsSource(),muscleScope,muscleAnchor);
     var mcRange=mc.range;
     function mcKg(v){
-      if(!v)return '–';
-      if(v>=100000)return (v/1000).toFixed(1).replace(/\.0$/,'')+'t';
-      return Math.round(v).toLocaleString('ko-KR')+'kg';
+      return v?Math.round(v).toLocaleString('ko-KR')+'kg':'–';
     }
     function mcDelta(cur,prev){
       if(!prev)return cur?'<span class="mc-new">신규</span>':'<span class="mc-flat">–</span>';
@@ -5347,11 +5353,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         '</div>'+
         '<div class="mc-nav">'+
           '<button type="button" data-muscle-move="prev" aria-label="이전 기간"'+(mcHasPrev?'':' disabled')+'>‹</button>'+
-          '<span class="mc-period"><strong>'+muscleRangeLabel(muscleScope,mcRange)+'</strong><small>'+muscleShortDate(mcRange.from)+' – '+muscleShortDate(mcRange.to)+'</small></span>'+
+          '<button type="button" class="mc-period" data-muscle-pick aria-label="기간 직접 선택"><strong>'+muscleRangeLabel(muscleScope,mcRange)+'</strong><small>'+muscleShortDate(mcRange.from)+' – '+muscleShortDate(mcRange.to)+'</small></button>'+
           '<button type="button" data-muscle-move="next" aria-label="다음 기간"'+(mcHasNext?'':' disabled')+'>›</button>'+
         '</div>'+
       '</div>'+
-      (mc.total?'<div class="mc-table"><div class="mc-row mc-head"><span class="mc-name">부위</span><span class="mc-bar"></span><span class="mc-sets">세트<small>(직전)</small></span><span class="mc-vol">볼륨</span><span class="mc-delta">변화</span></div>'+mcRows+'</div>'
+      (mc.total?'<div class="mc-table"><div class="mc-row mc-head"><span class="mc-head-label">부위</span><span class="mc-sets">세트</span><span class="mc-vol">볼륨</span><span class="mc-delta">변화</span></div>'+mcRows+'</div>'
        :'<p class="stats-note mc-empty">이 기간에는 기록이 없어요. ‹ › 로 다른 기간을 확인해보세요.</p>');
     var groups=MUSCLES.concat(data.muscles['기타']?['기타']:[]).map(function(m){
       var muscleKey='muscle:'+m;
@@ -5410,12 +5416,19 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         '<p>모든 값은 <strong>조회 기간과 무관하게 전체 기간</strong> 기준이에요.</p>'+
         '<p class="big3-guide-warn">운동 관리에서 이 세 종목의 이름을 바꾸거나 삭제하면 집계가 끊겨요. 이름 옆 <strong>‘3대운동’ 배지</strong>가 보이면 정상이에요.</p>'+
       '</div></details></section>';
-    statsViewEl.innerHTML='<h3 class="stats-scope-heading">통계에 포함할 기록</h3><div class="stats-periods" role="group" aria-label="통계 플랜 범위"><button type="button" data-stats-scope="current" aria-pressed="'+(statsScope==='current')+'">이 플랜만</button><button type="button" data-stats-scope="all" aria-pressed="'+(statsScope==='all')+'">모든 플랜 합산</button></div><p class="stats-note scope-caption">'+statsEscape(statsScope==='all'?'모든 플랜의 기록 합산':'플랜: '+activeProfile)+'</p>'+'<section class="stats-card stats-section"><h3>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></h3><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><button type="button" data-stats-reset'+(statsPeriod==='custom'?'':' hidden')+'>기간 초기화</button></div><details data-stats-panel="range"><summary>달력으로 기간 선택</summary>'+
-      statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details></section>'+pinnedStatsHtml()+
-      '<section class="stats-card"><div class="stats-attendance"><h3>기록한 날</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">일</span></div></div><p class="stats-note">선택 기간에 기록이 있는 날짜 수예요.</p></section>'+
+    var scopeHtml='<h3 class="stats-scope-heading">통계에 포함할 기록</h3><div class="stats-periods" role="group" aria-label="통계 플랜 범위"><button type="button" data-stats-scope="current" aria-pressed="'+(statsScope==='current')+'">이 플랜만</button><button type="button" data-stats-scope="all" aria-pressed="'+(statsScope==='all')+'">모든 플랜 합산</button></div><p class="stats-note scope-caption">'+statsEscape(statsScope==='all'?'모든 플랜의 기록 합산':'플랜: '+activeProfile)+'</p>';
+    // 조회 기간은 기록한 날·관심 종목·종목별 변화에만 적용되므로 그 묶음 바로 위에 둔다.
+    var rangeHtml='<section class="stats-card stats-section"><h3>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></h3><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><button type="button" data-stats-reset'+(statsPeriod==='custom'?'':' hidden')+'>기간 초기화</button></div><details data-stats-panel="range"><summary>달력으로 기간 선택</summary>'+
+      statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details></section>';
+    var attendanceHtml='<section class="stats-card"><div class="stats-attendance"><h3>기록한 날</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">일</span></div></div><p class="stats-note">선택 기간에 기록이 있는 날짜 수예요.</p></section>';
+    var muscleHtml='<section class="stats-card"><h3>부위별 기록 세트 · 볼륨</h3>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>볼륨 집계 기준</summary><p class="stats-note">이 카드는 <strong>아래 조회 기간과 무관하게</strong> 선택한 주·월과 그 직전 기간을 비교해요. 주는 월요일에 시작해요.<br>세트 칸의 <strong>괄호 안 숫자는 직전 기간 세트 수</strong>이고, 막대의 회색 부분도 직전 기간을 뜻해요. 볼륨은 무게×횟수의 합이라 무게나 횟수가 빠진 세트는 제외돼요. 부위마다 관여 근육량이 달라서 <strong>부위끼리 볼륨을 비교하는 건 의미가 없어요.</strong><br>비교 기간: '+mcRange.prevFrom+' ~ '+mcRange.prevTo+'</p></details></section>';
+    statsViewEl.innerHTML=scopeHtml+
       big3Html+
+      muscleHtml+
+      rangeHtml+
+      attendanceHtml+
+      pinnedStatsHtml()+
       (!data.count?'<p class="stats-note">이 기간에는 기록이 없어요. 운동 탭에서 기록을 추가하거나 조회 기간을 바꿔보세요.</p>':'')+
-      '<section class="stats-card"><h3>부위별 기록 세트 · 볼륨</h3>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>볼륨 집계 기준</summary><p class="stats-note">이 카드는 <strong>위쪽 조회 기간과 무관하게</strong> 선택한 주·월과 그 직전 기간을 비교해요. 주는 월요일에 시작해요.<br>세트 옆 괄호는 직전 기간 세트 수예요. 볼륨은 무게×횟수의 합이라 무게나 횟수가 빠진 세트는 제외돼요. 부위마다 관여 근육량이 달라서 <strong>부위끼리 볼륨을 비교하는 건 의미가 없어요.</strong><br>비교 기간: '+mcRange.prevFrom+' ~ '+mcRange.prevTo+'</p></details></section>'+
       '<h3 class="stats-heading">종목별 기록 변화</h3><p class="stats-note">선택 기간의 기록 변화를 비교해보세요. 역대 PR은 전체 기간 기준이에요.</p>'+searchHtml+groups;
     statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;writeJSON('bulk-workout-stats-scope-v1',statsScope);renderStats();};});
     statsViewEl.querySelectorAll('details[data-stats-key]').forEach(function(el){if(opened.has(el.dataset.statsKey))el.open=true;});
@@ -5434,6 +5447,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       muscleScope=button.dataset.muscleScope;muscleAnchor=todayStr();renderStats();
       var active=statsViewEl.querySelector('[data-muscle-scope="'+muscleScope+'"]');if(active)active.focus({preventScroll:true});
     });});
+    statsViewEl.querySelectorAll('[data-muscle-pick]').forEach(function(button){
+      button.addEventListener('click',function(){openMusclePeriodPicker(button);});
+    });
     statsViewEl.querySelectorAll('[data-muscle-move]').forEach(function(button){button.addEventListener('click',function(){
       if(button.disabled)return;
       var range=muscleRangeFor(muscleScope,muscleAnchor||todayStr());
@@ -5486,6 +5502,49 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
 
   var pendingActionDialog = false;
+  // 먼 과거로 한 번에 이동하기 위한 기간 선택 다이얼로그.
+  function openMusclePeriodPicker(trigger){
+    var asOf=todayStr();
+    var earliest=null;
+    (statsSource()||[]).forEach(function(rec){if(rec&&rec.date&&(!earliest||rec.date<earliest))earliest=rec.date;});
+    if(!earliest)earliest=asOf;
+    var items=[],cursor=muscleRangeFor(muscleScope,asOf),guard=0;
+    while(guard++<240){
+      items.push({from:cursor.from,to:cursor.to,label:muscleRangeLabel(muscleScope,cursor),anchor:cursor.from});
+      if(cursor.from<=earliest)break;
+      cursor=muscleRangeFor(muscleScope,cursor.prevAnchor);
+    }
+    var current=muscleRangeFor(muscleScope,muscleAnchor||asOf).from;
+    var overlay=document.createElement('div');overlay.className='direct-record-overlay';
+    var modal=document.createElement('div');modal.className='direct-record-modal mc-picker';
+    modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','기간 선택');
+    var head=document.createElement('div');head.className='direct-record-head';
+    var title=document.createElement('h2');title.textContent=(muscleScope==='month'?'월':'주차')+' 선택';
+    var close=document.createElement('button');close.type='button';close.className='btn-reset';close.textContent='✕';close.setAttribute('aria-label','닫기');
+    head.appendChild(title);head.appendChild(close);
+    var list=document.createElement('div');list.className='mc-picker-list';
+    items.forEach(function(it){
+      var b=document.createElement('button');b.type='button';b.className='btn-reset mc-picker-item'+(it.from===current?' is-current':'');
+      b.innerHTML='<span>'+it.label+'</span><small>'+muscleShortDate(it.from)+' – '+muscleShortDate(it.to)+'</small>';
+      b.addEventListener('click',function(){muscleAnchor=it.anchor;done();renderStats();});
+      list.appendChild(b);
+    });
+    modal.appendChild(head);modal.appendChild(list);overlay.appendChild(modal);
+    function done(){
+      document.removeEventListener('keydown',onKey);
+      overlay.remove();document.body.style.overflow='';
+      var app=document.querySelector('.bulk-app');if(app)app.inert=false;
+      if(trigger && document.contains(trigger))trigger.focus({preventScroll:true});
+    }
+    function onKey(e){if(e.key==='Escape'){e.preventDefault();done();}}
+    close.addEventListener('click',done);
+    overlay.addEventListener('click',function(e){if(e.target===overlay)done();});
+    document.addEventListener('keydown',onKey);
+    var app=document.querySelector('.bulk-app');if(app)app.inert=true;
+    document.body.style.overflow='hidden';document.body.appendChild(overlay);
+    var cur=list.querySelector('.is-current')||list.firstElementChild;
+    if(cur){cur.focus({preventScroll:true});cur.scrollIntoView({block:'center'});}
+  }
   function confirmDataAction(title,message,actionLabel,backupProfile) {
     if(pendingActionDialog)return Promise.resolve(false);
     clearConfirmation();pendingActionDialog=true;
