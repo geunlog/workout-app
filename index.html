@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="22">
+<meta name="workout-app-version" content="25">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1057,7 +1057,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     outline:1px solid var(--line-strong);outline-offset:4px;border-radius:6px;
   }
   .bulk-app .prev-history-arrow{
-    position:absolute;right:2px;top:1px;color:var(--muted);font-size:17px;line-height:1;
+    position:absolute;right:4px;top:50%;width:7px;height:7px;margin-top:-4px;
+    border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
+    transform:rotate(-45deg);
   }
   .recent-history-list{display:grid;gap:0;border-top:1px solid var(--line);}
   .recent-history-row{
@@ -1738,12 +1740,29 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .mc-nav button:disabled{opacity:.3;}
 .bulk-app .mc-period{min-width:92px;text-align:center;padding:4px 8px;border:0;border-radius:9px;background:transparent;color:inherit;}
 .bulk-app .mc-period:active{background:var(--sunken);}
-.bulk-app .mc-picker{max-width:360px;}
-.bulk-app .mc-picker-list{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
-.bulk-app .mc-picker-item{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;min-height:46px;padding:10px 12px;border:0;border-radius:10px;background:transparent;text-align:left;font-size:13.5px;color:var(--ink);}
-.bulk-app .mc-picker-item small{font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums;}
-.bulk-app .mc-picker-item.is-current{background:var(--primary);color:var(--on-primary);font-weight:700;}
-.bulk-app .mc-picker-item.is-current small{color:var(--on-primary);opacity:.85;}
+/* 기간 선택 모달 — body 직속이라 .bulk-app 접두사를 붙이지 않는다. */
+/* 폰트에 없는 ‹ › 문자 대신 CSS로 꺾쇠를 그린다(기기별 뒤틀림 방지). */
+.nav-chevron{position:relative;flex:0 0 auto;font-size:0;}
+.nav-chevron::before{content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;
+  border-right:2px solid currentColor;border-bottom:2px solid currentColor;opacity:.75;}
+.nav-chevron-next::before{transform:translate(-65%,-50%) rotate(-45deg);}
+.nav-chevron-prev::before{transform:translate(-35%,-50%) rotate(135deg);}
+.nav-chevron:disabled{opacity:.3;}
+.nav-chevron:active{transform:translateY(1px);}
+.mc-picker-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 14px;}
+.mc-picker-nav strong{flex:1;text-align:center;font-size:16px;font-weight:700;letter-spacing:-.01em;color:var(--ink);}
+.mc-picker-nav button{flex:0 0 auto;width:44px;height:44px;padding:0;border:1px solid var(--line);border-radius:12px;background:var(--raised);color:var(--muted);}
+.mc-picker-nav button:disabled{opacity:.3;}
+.mc-picker-list{display:grid;grid-template-columns:1fr;gap:8px;}
+.mc-picker-list.is-month{grid-template-columns:repeat(3,1fr);}
+.mc-picker-item{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;width:100%;min-height:52px;padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel);text-align:left;font:600 14.5px/1.35 var(--ui);color:var(--ink);cursor:pointer;}
+.mc-picker-item:active{transform:translateY(1px);}
+.mc-picker-item small{font:400 12px/1.3 var(--ui);color:var(--faint);font-variant-numeric:tabular-nums;}
+.mc-picker-item:disabled{opacity:.35;}
+.mc-picker-item.is-current{background:var(--primary);border-color:var(--primary);color:var(--on-primary);box-shadow:0 2px 10px rgba(49,91,234,.25);}
+.mc-picker-item.is-current small{color:var(--on-primary);opacity:.85;}
+.mc-picker-month{display:flex;align-items:center;justify-content:center;grid-template-columns:none;padding:16px 4px;font-size:15px;min-height:56px;}
+.mc-picker-hint{margin:14px 0 0;}
 .bulk-app .mc-period strong{display:block;font-size:13px;letter-spacing:-.01em;}
 .bulk-app .mc-period small{display:block;margin-top:1px;font-size:10.5px;color:var(--faint);}
 .bulk-app .mc-table{display:flex;flex-direction:column;}
@@ -2245,7 +2264,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 22 · 2026-09-17</strong>
+      <strong>앱 버전 25 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -3329,7 +3348,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var arrow=document.createElement('span');
     arrow.className='prev-history-arrow';
     arrow.setAttribute('aria-hidden','true');
-    arrow.textContent='›';
     hint.appendChild(arrow);
   }
   function openRecentHistoryModal(name,date,trigger) {
@@ -4960,11 +4978,13 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       prevAnchor:statsOffset(wFrom,-7),nextAnchor:statsOffset(wFrom,7)};
   }
   function muscleRangeLabel(scope,range){
-    var y=range.from.slice(0,4),m=Number(range.from.slice(5,7));
-    if(scope==='month')return y+'년 '+m+'월';
-    // 그 달 첫 월요일을 1주차로 세되, 1일이 속한 주도 1주차로 본다.
-    var firstOfMonth=range.from.slice(0,7)+'-01';
-    var firstWeek=muscleWeekStart(firstOfMonth);
+    if(scope==='month')return Number(range.from.slice(0,4))+'년 '+Number(range.from.slice(5,7))+'월';
+    // 주가 걸친 달 중 더 많은 날이 속한 쪽을 그 주의 달로 본다(목요일이 속한 달과 동일).
+    var owner=statsOffset(range.from,3);
+    var m=Number(owner.slice(5,7));
+    var firstWeek=muscleWeekStart(owner.slice(0,7)+'-01');
+    // 1일이 속한 주의 소유 달이 이전 달이면 그 주는 제외하고 다음 주를 1주차로 센다.
+    if(Number(statsOffset(firstWeek,3).slice(5,7))!==m)firstWeek=statsOffset(firstWeek,7);
     var nth=Math.round((new Date(range.from+'T00:00:00Z')-new Date(firstWeek+'T00:00:00Z'))/604800000)+1;
     return m+'월 '+nth+'주차';
   }
@@ -5147,9 +5167,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       return '<button type="button" data-stats-date="'+c.date+'" aria-pressed="'+selected+'"'+(c.future?' disabled':'')+(c.today?' aria-current="date"':'')+' aria-label="'+c.date+(c.recorded?' 운동기록 있음':' 기록 없음')+(start?' · 시작일':'')+(end?' · 종료일':'')+'" class="stats-calendar-date'+(c.recorded?' has-record':'')+(c.today?' is-today':'')+(c.future?' is-future':'')+(selected?' in-range':'')+(start?' range-start':'')+(end?' range-end':'')+'">'+c.day+'<span class="stats-calendar-dot" aria-hidden="true"></span></button>';
     }).join('');
     return '<section class="stats-calendar-section" aria-label="달력에서 조회 기간 선택"><div class="stats-calendar-head"><h3>'+month.slice(0,4)+'년 '+Number(month.slice(5))+'월</h3>'+
-      '<button type="button" data-calendar-step="-1" aria-label="이전 달"'+(month==='0001-01'?' disabled':'')+'>‹</button>'+
+      '<button type="button" class="nav-chevron nav-chevron-prev" data-calendar-step="-1" aria-label="이전 달"'+(month==='0001-01'?' disabled':'')+'></button>'+
       '<button type="button" data-calendar-current aria-label="이번 달로 이동">오늘</button>'+
-      '<button type="button" data-calendar-step="1" aria-label="다음 달"'+(month>=asOf.slice(0,7)?' disabled':'')+'>›</button></div>'+
+      '<button type="button" class="nav-chevron nav-chevron-next" data-calendar-step="1" aria-label="다음 달"'+(month>=asOf.slice(0,7)?' disabled':'')+'></button></div>'+
       '<div class="stats-calendar-grid" role="group" aria-label="시작일과 종료일 선택">'+weekdays+cells+'</div><p class="stats-note" role="status">'+(anchor?'시작일 '+anchor+' 선택 · 종료일을 눌러주세요. 선택 완료 전까지 통계는 기존 조회 기간을 유지해요.':'')+'</p><p class="stats-note">점: 운동기록이 있는 날 · 테두리: 오늘 · 색칠된 구간: 선택 기간</p></section>';
   }
   function statsMetricMeta(metric) {
@@ -5352,13 +5372,13 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           '<button type="button" data-muscle-scope="month" aria-pressed="'+(muscleScope==='month')+'">월간</button>'+
         '</div>'+
         '<div class="mc-nav">'+
-          '<button type="button" data-muscle-move="prev" aria-label="이전 기간"'+(mcHasPrev?'':' disabled')+'>‹</button>'+
+          '<button type="button" class="nav-chevron nav-chevron-prev" data-muscle-move="prev" aria-label="이전 기간"'+(mcHasPrev?'':' disabled')+'></button>'+
           '<button type="button" class="mc-period" data-muscle-pick aria-label="기간 직접 선택"><strong>'+muscleRangeLabel(muscleScope,mcRange)+'</strong><small>'+muscleShortDate(mcRange.from)+' – '+muscleShortDate(mcRange.to)+'</small></button>'+
-          '<button type="button" data-muscle-move="next" aria-label="다음 기간"'+(mcHasNext?'':' disabled')+'>›</button>'+
+          '<button type="button" class="nav-chevron nav-chevron-next" data-muscle-move="next" aria-label="다음 기간"'+(mcHasNext?'':' disabled')+'></button>'+
         '</div>'+
       '</div>'+
       (mc.total?'<div class="mc-table"><div class="mc-row mc-head"><span class="mc-head-label">부위</span><span class="mc-sets">세트</span><span class="mc-vol">볼륨</span><span class="mc-delta">변화</span></div>'+mcRows+'</div>'
-       :'<p class="stats-note mc-empty">이 기간에는 기록이 없어요. ‹ › 로 다른 기간을 확인해보세요.</p>');
+       :'<p class="stats-note mc-empty">이 기간에는 기록이 없어요. 위 화살표로 다른 기간을 확인해보세요.</p>');
     var groups=MUSCLES.concat(data.muscles['기타']?['기타']:[]).map(function(m){
       var muscleKey='muscle:'+m;
       var exercises=data.exercises.filter(function(g){return g.muscle===m;});if(!exercises.length)return '';
@@ -5503,33 +5523,100 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
   var pendingActionDialog = false;
   // 먼 과거로 한 번에 이동하기 위한 기간 선택 다이얼로그.
+  // 월을 먼저 고르고 그 달의 주차를 고르는 2단계 선택.
   function openMusclePeriodPicker(trigger){
     var asOf=todayStr();
     var earliest=null;
     (statsSource()||[]).forEach(function(rec){if(rec&&rec.date&&(!earliest||rec.date<earliest))earliest=rec.date;});
     if(!earliest)earliest=asOf;
-    var items=[],cursor=muscleRangeFor(muscleScope,asOf),guard=0;
-    while(guard++<240){
-      items.push({from:cursor.from,to:cursor.to,label:muscleRangeLabel(muscleScope,cursor),anchor:cursor.from});
-      if(cursor.from<=earliest)break;
-      cursor=muscleRangeFor(muscleScope,cursor.prevAnchor);
-    }
-    var current=muscleRangeFor(muscleScope,muscleAnchor||asOf).from;
+    var curRange=muscleRangeFor(muscleScope,muscleAnchor||asOf);
+    var viewMonth=curRange.from.slice(0,7);           // 목록에 띄울 달
+    var minMonth=earliest.slice(0,7),maxMonth=asOf.slice(0,7);
+
     var overlay=document.createElement('div');overlay.className='direct-record-overlay';
     var modal=document.createElement('div');modal.className='direct-record-modal mc-picker';
     modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','기간 선택');
     var head=document.createElement('div');head.className='direct-record-head';
-    var title=document.createElement('h2');title.textContent=(muscleScope==='month'?'월':'주차')+' 선택';
-    var close=document.createElement('button');close.type='button';close.className='btn-reset';close.textContent='✕';close.setAttribute('aria-label','닫기');
+    var title=document.createElement('h2');title.textContent=muscleScope==='month'?'월 선택':'주차 선택';
+    var close=document.createElement('button');close.type='button';close.className='direct-record-close';close.textContent='✕';close.setAttribute('aria-label','닫기');
     head.appendChild(title);head.appendChild(close);
+
+    var nav=document.createElement('div');nav.className='mc-picker-nav';
+    var prevBtn=document.createElement('button');prevBtn.type='button';prevBtn.className='nav-chevron nav-chevron-prev';prevBtn.setAttribute('aria-label','이전 달');
+    var monthLabel=document.createElement('strong');
+    var nextBtn=document.createElement('button');nextBtn.type='button';nextBtn.className='nav-chevron nav-chevron-next';nextBtn.setAttribute('aria-label','다음 달');
+    nav.appendChild(prevBtn);nav.appendChild(monthLabel);nav.appendChild(nextBtn);
     var list=document.createElement('div');list.className='mc-picker-list';
-    items.forEach(function(it){
-      var b=document.createElement('button');b.type='button';b.className='btn-reset mc-picker-item'+(it.from===current?' is-current':'');
-      b.innerHTML='<span>'+it.label+'</span><small>'+muscleShortDate(it.from)+' – '+muscleShortDate(it.to)+'</small>';
-      b.addEventListener('click',function(){muscleAnchor=it.anchor;done();renderStats();});
-      list.appendChild(b);
+    var hint=document.createElement('p');hint.className='stats-note mc-picker-hint';
+
+    function shiftMonth(ym,delta){
+      var d=new Date(ym+'-01T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+delta);
+      return d.toISOString().slice(0,7);
+    }
+    function weeksOfMonth(ym){
+      var first=ym+'-01';
+      var last=statsOffset(shiftMonth(ym,1)+'-01',-1);
+      var out=[],cursor=muscleWeekStart(first),guard=0;
+      while(cursor<=last && guard++<10){
+        var r=muscleRangeFor('week',cursor);
+        out.push(r);
+        cursor=statsOffset(cursor,7);
+      }
+      return out;
+    }
+    function pick(anchorDate){
+      muscleAnchor=anchorDate;done();renderStats();
+    }
+    function render(){
+      monthLabel.textContent=Number(viewMonth.slice(0,4))+'년 '+Number(viewMonth.slice(5,7))+'월';
+      prevBtn.disabled=viewMonth<=minMonth;
+      nextBtn.disabled=viewMonth>=maxMonth;
+      list.innerHTML='';
+      list.classList.toggle('is-month',muscleScope==='month');
+      if(muscleScope==='month'){
+        hint.textContent='화살표로 연도를 넘기며 달을 고르세요.';
+        var months=[];
+        for(var m=1;m<=12;m++){
+          var ym=viewMonth.slice(0,4)+'-'+String(m).padStart(2,'0');
+          months.push(ym);
+        }
+        months.forEach(function(ym){
+          var disabled=ym<minMonth || ym>maxMonth;
+          var b=document.createElement('button');b.type='button';
+          b.className='btn-reset mc-picker-item mc-picker-month'+(ym===curRange.from.slice(0,7)?' is-current':'');
+          b.disabled=disabled;b.textContent=Number(ym.slice(5,7))+'월';
+          b.addEventListener('click',function(){pick(ym+'-01');});
+          list.appendChild(b);
+        });
+      }else{
+        hint.textContent='화살표로 달을 넘기며 주차를 고르세요.';
+        weeksOfMonth(viewMonth).forEach(function(r){
+          var disabled=r.from>asOf || r.to<earliest;
+          var b=document.createElement('button');b.type='button';
+          b.className='btn-reset mc-picker-item'+(r.from===curRange.from?' is-current':'');
+          b.disabled=disabled;
+          b.innerHTML='<span>'+muscleRangeLabel('week',r)+'</span><small>'+muscleShortDate(r.from)+' – '+muscleShortDate(r.to)+'</small>';
+          b.addEventListener('click',function(){pick(r.from);});
+          list.appendChild(b);
+        });
+      }
+    }
+    prevBtn.addEventListener('click',function(){
+      viewMonth=muscleScope==='month'?shiftMonth(viewMonth,-12):shiftMonth(viewMonth,-1);
+      if(viewMonth<minMonth)viewMonth=minMonth;
+      render();
     });
-    modal.appendChild(head);modal.appendChild(list);overlay.appendChild(modal);
+    nextBtn.addEventListener('click',function(){
+      viewMonth=muscleScope==='month'?shiftMonth(viewMonth,12):shiftMonth(viewMonth,1);
+      if(viewMonth>maxMonth)viewMonth=maxMonth;
+      render();
+    });
+    if(muscleScope==='month'){
+      prevBtn.setAttribute('aria-label','이전 해');nextBtn.setAttribute('aria-label','다음 해');
+    }
+
+    modal.appendChild(head);modal.appendChild(nav);modal.appendChild(list);modal.appendChild(hint);
+    overlay.appendChild(modal);
     function done(){
       document.removeEventListener('keydown',onKey);
       overlay.remove();document.body.style.overflow='';
@@ -5542,8 +5629,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     document.addEventListener('keydown',onKey);
     var app=document.querySelector('.bulk-app');if(app)app.inert=true;
     document.body.style.overflow='hidden';document.body.appendChild(overlay);
-    var cur=list.querySelector('.is-current')||list.firstElementChild;
-    if(cur){cur.focus({preventScroll:true});cur.scrollIntoView({block:'center'});}
+    render();
+    var cur=list.querySelector('.is-current')||list.querySelector('button:not([disabled])');
+    if(cur)cur.focus({preventScroll:true});
   }
   function confirmDataAction(title,message,actionLabel,backupProfile) {
     if(pendingActionDialog)return Promise.resolve(false);
