@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="32">
+<meta name="workout-app-version" content="34">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2303,7 +2303,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 32 · 2026-09-17</strong>
+      <strong>앱 버전 34 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -2516,14 +2516,22 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       {key:'wed',letter:'수',title:'',cardio:false,ex:[]},
       {key:'thu',letter:'목',title:'',cardio:false,ex:[]},
       {key:'fri',letter:'금',title:'',cardio:false,ex:[]},
-      {key:'sat',letter:'토',title:'',cardio:false,ex:[]}
+      {key:'sat',letter:'토',title:'',cardio:false,ex:[]},
+      {key:'sun',letter:'일',title:'',cardio:false,ex:[]}
     ];
+  }
+  var ROUTINE_KEYS=['mon','tue','wed','thu','fri','sat','sun'];
+  // 기존 6일 루틴을 읽으면 일요일을 덧붙여 7일로 맞춘다(기록·백업 호환용).
+  function normalizeRoutine(value){
+    if(!Array.isArray(value))return value;
+    if(value.length!==6)return value;
+    return value.concat([{key:'sun',letter:'일',title:'',cardio:false,ex:[]}]);
   }
 
   var memoryOnly = false;
   function routinePendingKey() { return keyFor('bulk-routine-pending-v1', activeProfile); }
   function isRoutine(value) {
-    return Array.isArray(value) && value.length===6 && value.every(function(d){
+    return Array.isArray(value) && (value.length===6 || value.length===7) && value.every(function(d){
       return d && typeof d.key==='string' && typeof d.title==='string' && Array.isArray(d.ex) &&
         d.ex.every(function(e){return e && typeof e.n==='string' && typeof e.m==='string';});
     });
@@ -2531,18 +2539,18 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   function loadSavedRoutine() {
     // v9 is a stable data key, not an app-release number. Never bump it on update.
     var saved=readJSON(STORAGE_KEY,null);
-    if(isRoutine(saved))return saved;
+    if(isRoutine(saved))return normalizeRoutine(saved);
     try {if(localStorage.getItem(STORAGE_KEY)!==null){memoryOnly=true;return defaults();}}
     catch(e){memoryOnly=true;return defaults();}
     for(var version=8;version>=4;version--){
       var old=readJSON(keyFor('bulk-routine-v'+version,activeProfile),null);
-      if(isRoutine(old)){writeJSON(STORAGE_KEY,old);return old;}
+      if(isRoutine(old)){var migrated=normalizeRoutine(old);writeJSON(STORAGE_KEY,migrated);return migrated;}
     }
     var initial=defaults();writeJSON(STORAGE_KEY,initial);return initial;
   }
   function load() {
     var saved=loadSavedRoutine(),pending=readJSON(routinePendingKey(),null);
-    return ensureRoutineIds(isRoutine(pending)?pending:saved);
+    return ensureRoutineIds(isRoutine(pending)?normalizeRoutine(pending):saved);
   }
   function ensureRoutineIds(routine) {
     var used=new Set();
@@ -3144,7 +3152,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   function refreshTemporaryViews() {
     temporaryWorkspaces.clear();
     routineEditing=false;
-    if(activeIndex===6 && !activeTemporary())activeIndex=todayIndex!==null?todayIndex:0;
+
     renderTabs();renderPanel();renderReport();renderPrinciples();refreshBackupStatus();
   }
   function registeredExerciseText(){return '\n\n[사용 가능한 등록 종목 — 이름과 부위를 그대로 사용]\n'+MUSCLES.filter(function(m){return m!=='복근';}).map(function(m){return m+': '+(catalog[m]||[]).map(function(e){return e.n;}).join(', ');}).join('\n')+'\n목록에 없는 이름을 만들거나 장비·그립을 바꿔 표기하지 마세요.';}
@@ -3490,23 +3498,21 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   var restNoteEl = document.getElementById('restNote');
 
   var jsDay = new Date(todayStr()+'T00:00:00Z').getUTCDay();
-  var todayIndex = jsDay === 0 ? null : jsDay - 1;
-  if (todayIndex === null) restNoteEl.hidden = false;
-  var activeIndex = todayIndex !== null ? todayIndex : activeTemporary()?6:0;
+  var todayIndex = (jsDay + 6) % 7;   // 월=0 … 일=6
+  var activeIndex = todayIndex;
 
   var selectedRecordDate = todayStr();
   document.getElementById('recordDate').addEventListener('change',function(){
     if(!validRecordDate(this.value)){this.value=selectedRecordDate;return;}
     selectedRecordDate=this.value;
-    if(activeTemporary())activeIndex=(new Date(this.value+'T00:00:00Z').getUTCDay()+6)%7;
+    activeIndex=(new Date(this.value+'T00:00:00Z').getUTCDay()+6)%7;
     renderTabs();renderPanel();
   });
   document.getElementById('btnRecordToday').addEventListener('click',function(){
     selectedRecordDate=todayStr();
     var currentDay=new Date(todayStr()+'T00:00:00Z').getUTCDay();
-    todayIndex=currentDay===0?null:currentDay-1;
-    activeIndex=todayIndex!==null?todayIndex:activeTemporary()?6:0;
-    restNoteEl.hidden=todayIndex!==null;
+    todayIndex=(currentDay+6)%7;
+    activeIndex=todayIndex;
     renderTabs();
     renderPanel();
   });
@@ -3820,8 +3826,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var d = effectiveRoutineDay(selectedRecordDate,activeIndex);
     panelEl.innerHTML = '';
     panelEl.classList.toggle('temporary-panel',!!d.temporary);
-    var editButton=document.getElementById('btnRoutineEdit');editButton.disabled=!d.temporary && activeIndex===6;
-    restNoteEl.hidden=!(todayIndex===null && selectedRecordDate===todayStr() && !d.temporary);
+    var editButton=document.getElementById('btnRoutineEdit');editButton.disabled=false;
+    restNoteEl.hidden=!(!d.temporary && !(d.ex||[]).length && !d.cardio);
     if(d.temporary){var banner=document.createElement('div');banner.innerHTML=temporaryStatusHtml();panelEl.appendChild(banner);bindTemporaryCancel(banner);}
 
     var context=document.createElement('p');context.className='record-context'+(selectedRecordDate!==todayStr()?' past':'');
@@ -4183,7 +4189,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
             n: ex.n,
             m: ex.m,
             w: weight || '-',
-            reps: doneReps || '-'
+            reps: doneReps || '-',
+            createdAt: nowStamp()
           });
           savedIndexes.push(idx);
         }
@@ -4490,9 +4497,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var day=new Date(date+'T12:00:00').getDay();
     return keys[day] || 'mon';
   }
+  // 4번: 기록 데이터 보강 — 생성 시각은 수정해도 유지하고, 수정 시각은 따로 남긴다.
+  // 기존 기록에는 두 값이 없으므로 임의로 만들어 넣지 않고 없는 채로 둔다.
+  function nowStamp(){return new Date().toISOString();}
   function saveDirectRecord(name,muscle,date,weight,reps) {
     var values=cleanRecordValues(date,weight,reps);
-    var entry={id:genId(),n:name,m:muscle,w:values.w,reps:values.reps};
+    var entry={id:genId(),n:name,m:muscle,w:values.w,reps:values.reps,createdAt:nowStamp()};
     var prUpdates=detectPrUpdates([entry],logs);
     var next=logs.map(function(rec){return {date:rec.date,dayKey:rec.dayKey,entries:(rec.entries||[]).map(function(e){return Object.assign({},e);})};});
     var dayKey=weekdayKeyForDate(date);
@@ -4664,12 +4674,13 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
 
   function editedRecords(source,id,values) {
+    var stamp=nowStamp();
     var sameDate=source.some(function(rec){return rec.date===values.date && rec.entries.some(function(e){return e.id===id;});});
-    if(sameDate)return source.map(function(rec){return Object.assign({},rec,{entries:rec.entries.map(function(e){return e.id===id?Object.assign({},e,{w:values.w,reps:values.reps}):Object.assign({},e);})});});
+    if(sameDate)return source.map(function(rec){return Object.assign({},rec,{entries:rec.entries.map(function(e){return e.id===id?Object.assign({},e,{w:values.w,reps:values.reps,updatedAt:stamp}):Object.assign({},e);})});});
     var next=JSON.parse(JSON.stringify(source)),edited=null,dayKey=null;
     next.forEach(function(rec){rec.entries=rec.entries.filter(function(e){
       if(e.id!==id)return true;
-      edited=Object.assign({},e,{w:values.w,reps:values.reps});dayKey=rec.dayKey;return false;
+      edited=Object.assign({},e,{w:values.w,reps:values.reps,updatedAt:stamp});dayKey=rec.dayKey;return false;
     });});
     if(!edited)throw new Error('해당 기록을 찾을 수 없어요. 다시 열어주세요.');
     next=next.filter(function(rec){return rec.entries.length;});
@@ -6569,7 +6580,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var toInput = document.getElementById('recFilterTo');
     if (fromInput) fromInput.value = '';
     if (toInput) toInput.value = '';
-    activeIndex = todayIndex !== null ? todayIndex : activeTemporary()?6:0;
+    activeIndex = todayIndex;
     updateProfileLabel();
     if (mode === 'catalog') renderCatalog();
     else if (mode === 'records') renderRecords();
@@ -6701,7 +6712,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     function text(value,max){return typeof value==='string' && value.length<=max && !/[<>]/.test(value) && !['__proto__','constructor','prototype'].includes(value);}
     function routine(r){
       if(!isRoutine(r))fail();
-      var keys=['mon','tue','wed','thu','fri','sat'];
+      var keys=ROUTINE_KEYS;
       r.forEach(function(d,i){
         if(d.key!==keys[i] || !text(d.title,500) || !text(d.letter,10) || (d.note!=null&&!text(d.note,5000)) || typeof d.cardio!=='boolean' || d.ex.length>1000)fail();
         d.ex.forEach(function(e){if(!text(e.n,200)||!MUSCLES.includes(e.m)||!Number.isInteger(Number(e.s))||Number(e.s)<1||Number(e.s)>20||!text(String(e.r),100)||!text(String(e.rir),100))fail();});
@@ -7017,7 +7028,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var p=data.profile,name=p.name+' (가져옴)',suffix=2;
     while(profiles.includes(name)){name=p.name+' (가져옴 '+suffix+')';suffix++;}
     var operations=[
-      {key:keyFor('bulk-routine-v9',name),value:p.routine},
+      {key:keyFor('bulk-routine-v9',name),value:normalizeRoutine(p.routine)},
       {key:keyFor('bulk-routine-catalog-v3',name),value:p.catalog},
       {key:keyFor('bulk-routine-log-v1',name),value:p.logs},
       {key:keyFor('bulk-routine-memos-v1',name),value:p.memos},
@@ -7407,9 +7418,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var focused=document.activeElement;
     if(document.querySelector('dialog[open],.record-edit-form') || (focused && /^(INPUT|TEXTAREA|SELECT)$/.test(focused.tagName)))return;
     var old=lastCalendarDate;lastCalendarDate=now;
-    todayIndex=(new Date(now+'T00:00:00Z').getUTCDay()+6)%7;if(todayIndex===6)todayIndex=null;
+    todayIndex=(new Date(now+'T00:00:00Z').getUTCDay()+6)%7;
     if(selectedRecordDate===old || (selectedRecordDate>=adjustmentWeek(old).from && selectedRecordDate<=adjustmentWeek(old).to && adjustmentWeek(old).from!==adjustmentWeek(now).from)){
-      selectedRecordDate=now;activeIndex=todayIndex!==null?todayIndex:activeTemporary()?6:0;
+      selectedRecordDate=now;activeIndex=todayIndex;
     }
     renderTabs();renderPanel();if(mode==='report')renderReport();if(mode==='stats')renderStats();
   }
