@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="25">
+<meta name="workout-app-version" content="26">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1766,16 +1766,20 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .mc-period strong{display:block;font-size:13px;letter-spacing:-.01em;}
 .bulk-app .mc-period small{display:block;margin-top:1px;font-size:10.5px;color:var(--faint);}
 .bulk-app .mc-table{display:flex;flex-direction:column;}
-.bulk-app .mc-row{display:grid;grid-template-columns:38px minmax(48px,1fr) 52px minmax(62px,auto) minmax(56px,auto);gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;}
-.bulk-app .mc-row.mc-head{border-top:0;padding:0 0 7px;font-size:10.5px;color:var(--muted);}
+.bulk-app .mc-row{display:grid;grid-template-columns:36px 56px 50px auto minmax(58px,1fr);gap:9px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;}
+.bulk-app .mc-row.mc-head{border-top:0;padding:0 0 7px;font-size:10.5px;color:var(--muted);align-items:end;}
+.bulk-app .mc-head small{font-size:9.5px;color:var(--faint);}
+.bulk-app .mc-head .mc-sets small{display:inline;margin-left:1px;}
 /* 헤더는 부위와 막대 칸을 하나로 합쳐 한 줄로 유지한다. */
-.bulk-app .mc-head-label{grid-column:1 / span 2;text-align:left;}
+.bulk-app .mc-head-label{text-align:left;}
+.bulk-app .mc-head-spacer{}
 .bulk-app .mc-name{font-weight:600;color:var(--ink);}
 .bulk-app .mc-head .mc-name{font-weight:400;color:var(--muted);}
 .bulk-app .mc-bar{position:relative;height:8px;border-radius:8px;background:var(--sunken);overflow:hidden;}
 .bulk-app .mc-bar-prev{position:absolute;left:0;top:0;height:100%;border-radius:8px;background:var(--line);}
 .bulk-app .mc-bar-now{position:absolute;left:0;top:0;height:100%;border-radius:8px;}
-.bulk-app .mc-sets,.bulk-app .mc-vol,.bulk-app .mc-delta{text-align:right;font-variant-numeric:tabular-nums;}
+.bulk-app .mc-sets,.bulk-app .mc-vol{text-align:right;font-variant-numeric:tabular-nums;}
+.bulk-app .mc-delta{text-align:right;font-variant-numeric:tabular-nums;}
 .bulk-app .mc-sets{font-weight:700;color:var(--ink);}
 .bulk-app .mc-sets small{display:block;font-size:10px;font-weight:400;color:var(--faint);}
 .bulk-app .mc-head .mc-sets{font-weight:400;color:var(--muted);}
@@ -1786,7 +1790,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .mc-down{color:var(--drop);}
 .bulk-app .mc-flat,.bulk-app .mc-new{color:var(--faint);font-weight:400;}
 .bulk-app .mc-empty{margin:14px 0;}
-@media(max-width:360px){.bulk-app .mc-row{grid-template-columns:32px minmax(36px,1fr) 44px minmax(54px,auto) minmax(48px,auto);gap:6px;font-size:12px;}.bulk-app .mc-nav{margin-left:0;}.bulk-app .mc-period{min-width:80px;}}
+@media(max-width:380px){.bulk-app .mc-row{grid-template-columns:30px 40px 42px auto minmax(52px,1fr);gap:6px;font-size:11.5px;}.bulk-app .mc-delta{font-size:11px;}.bulk-app .mc-sets small{font-size:9.5px;}.bulk-app .mc-nav{margin-left:0;}.bulk-app .mc-period{min-width:80px;}}
 .bulk-app .muscle-vol-guide{margin-top:12px;border-top:1px solid var(--line);}
 .bulk-app .muscle-vol-guide>summary{padding:10px 0 2px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;}
 .bulk-app .muscle-vol-guide .stats-note{margin-top:6px;}
@@ -2264,7 +2268,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 25 · 2026-09-17</strong>
+      <strong>앱 버전 26 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -5377,7 +5381,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           '<button type="button" class="nav-chevron nav-chevron-next" data-muscle-move="next" aria-label="다음 기간"'+(mcHasNext?'':' disabled')+'></button>'+
         '</div>'+
       '</div>'+
-      (mc.total?'<div class="mc-table"><div class="mc-row mc-head"><span class="mc-head-label">부위</span><span class="mc-sets">세트</span><span class="mc-vol">볼륨</span><span class="mc-delta">변화</span></div>'+mcRows+'</div>'
+      (mc.total?'<div class="mc-table"><div class="mc-row mc-head"><span class="mc-head-label">부위</span><span class="mc-head-spacer" aria-hidden="true"></span><span class="mc-sets">세트<small>(직전)</small></span><span class="mc-vol">볼륨</span><span class="mc-delta">변화</span></div>'+mcRows+'</div>'
        :'<p class="stats-note mc-empty">이 기간에는 기록이 없어요. 위 화살표로 다른 기간을 확인해보세요.</p>');
     var groups=MUSCLES.concat(data.muscles['기타']?['기타']:[]).map(function(m){
       var muscleKey='muscle:'+m;
