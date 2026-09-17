@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="28">
+<meta name="workout-app-version" content="29">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -347,8 +347,8 @@
   .bulk-app .reset-row { margin-top: 20px; display: flex; gap: 6px; flex-wrap: wrap; }
   .bulk-app .reset-row > button { flex: 1; min-width: 0; }
   /* 편집 중에는 저장(확정) / 되돌리기 / 종목 손보기 세 묶음으로 나눈다. */
-  .bulk-app #dayView.routine-editing .reset-row > #btnSaveNow { flex-basis: 100%; }
-  .bulk-app .edit-action-row { display: flex; gap: 6px; margin-top: 6px; }
+  .bulk-app #dayView.routine-editing .reset-row > #btnSaveNow { flex-basis: 100%; margin-bottom: 4px; }
+  .bulk-app .edit-action-row { display: flex; gap: 6px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
   .bulk-app .edit-action-row > button { flex: 1; min-width: 0; margin: 0; }
   .bulk-app .edit-action-row:empty { display: none; }
   .bulk-app .btn-reset {
@@ -454,6 +454,10 @@
 
   /* ---------- 종목 관리 ---------- */
   .bulk-app .cat-toolbar { margin-bottom: 12px; }
+  .bulk-app #catalogView .cat-toolbar { margin-bottom: 8px; }
+  .bulk-app #catalogView .cat-toolbar-row { justify-content: flex-end; align-items: center; min-height: 40px; }
+  .bulk-app #catalogView .muscle-search { margin-bottom: 18px; }
+  .bulk-app #catalogView #catalogList > .rec-group:first-child { margin-top: 0; }
   .bulk-app .cat-toolbar-row { display: flex; gap: 6px; }
   .bulk-app .cat-toolbar .save-hint { margin: 8px 0 0; }
   .bulk-app .cat-item { padding: 12px 0; border-top: 1px solid var(--line); }
@@ -2273,7 +2277,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 28 · 2026-09-17</strong>
+      <strong>앱 버전 29 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
