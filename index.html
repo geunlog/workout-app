@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="27">
+<meta name="workout-app-version" content="28">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -344,7 +344,13 @@
   .bulk-app .bar-legend { font-size: 10.5px; color: var(--faint); margin: 10px 0 0; line-height: 1.6; }
 
   /* ---------- 하단 액션 ---------- */
-  .bulk-app .reset-row { margin-top: 20px; display: flex; gap: 6px; }
+  .bulk-app .reset-row { margin-top: 20px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .bulk-app .reset-row > button { flex: 1; min-width: 0; }
+  /* 편집 중에는 저장(확정) / 되돌리기 / 종목 손보기 세 묶음으로 나눈다. */
+  .bulk-app #dayView.routine-editing .reset-row > #btnSaveNow { flex-basis: 100%; }
+  .bulk-app .edit-action-row { display: flex; gap: 6px; margin-top: 6px; }
+  .bulk-app .edit-action-row > button { flex: 1; min-width: 0; margin: 0; }
+  .bulk-app .edit-action-row:empty { display: none; }
   .bulk-app .btn-reset {
     flex: 1; background: transparent; border: 1px solid var(--line); color: var(--muted);
     font-family: var(--ui); font-size: 11.5px; font-weight: 600; letter-spacing: -0.01em;
@@ -1710,7 +1716,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .record-more > summary::-webkit-details-marker,.bulk-app .suggest-details > summary::-webkit-details-marker,.bulk-app .pin-manager > summary::-webkit-details-marker{display:none;}
 .bulk-app .record-day-summary-value .record-number-group{display:inline-block;white-space:nowrap;}
 .bulk-app .history-tappable{min-height:44px;box-sizing:border-box;}
-.bulk-app #catalogSaveHint{min-height:20px;opacity:1;}
+.bulk-app #catalogSaveHint{opacity:1;}
+.bulk-app #catalogSaveHint:empty{display:none;}
 @media(max-width:350px){.bulk-app #dayPanel .log-fields{grid-template-columns:minmax(0,1fr);}.bulk-app #dayPanel .log-fields > .field{justify-content:flex-end;}.bulk-app #dayPanel .log-fields > .field input{max-width:100px;}}
 .bulk-app .record-edit-form{display:flex;flex-wrap:wrap;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);}
 .bulk-app .record-edit-form .field{min-width:0;display:flex;gap:4px;align-items:center;}
@@ -2266,7 +2273,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 27 · 2026-09-17</strong>
+      <strong>앱 버전 28 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -2288,6 +2295,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         <button class="btn-reset routine-edit-only" id="btnClearDay" type="button">운동 초기화</button>
         <button class="btn-reset routine-edit-only" id="btnReset" type="button">기본 루틴 적용</button>
       </div>
+      <div class="edit-action-row routine-edit-only" id="editActionRow"></div>
 
       <div class="record-date-row routine-read-only">
         <label>기록 날짜 <input type="date" id="recordDate" aria-label="운동 기록 날짜"></label>
@@ -2303,12 +2311,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     <div id="catalogView" hidden>
       <div class="cat-toolbar">
         <div class="cat-toolbar-row">
-          <span id="btnCatalogSave" role="status">자동 저장</span>
+          <span id="btnCatalogSave" class="sr-only" role="status">자동 저장</span>
           <details class="catalog-maintenance"><summary>종목 관리 옵션</summary><button class="btn-reset" id="btnCatalogReset" type="button">기본 종목으로 초기화</button></details>
         </div>
-        <p class="save-hint" id="catalogSaveHint" role="status">변경사항은 자동 저장돼요.</p>
+        <p class="save-hint" id="catalogSaveHint" role="status"></p>
       </div>
-      <div class="muscle-search"><select id="catalogSearchMuscle" aria-label="검색할 부위"></select><input type="search" id="catalogSearchName" placeholder="종목 검색" aria-label="운동 관리 종목 검색"></div><p id="catalogSearchCount" class="stats-note" role="status"></p><div id="catalogList"></div>
+      <div class="muscle-search"><select id="catalogSearchMuscle" aria-label="검색할 부위"></select><input type="search" id="catalogSearchName" placeholder="종목 검색" aria-label="운동 관리 종목 검색"></div><p id="catalogSearchCount" class="sr-only" role="status"></p><div id="catalogList"></div>
     </div>
     <div id="recordsView" hidden>
       <p class="save-hint" id="recordsActionHint" role="status" aria-live="polite"></p>
@@ -2330,7 +2338,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         <svg class="stats-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
         <datalist id="recordExerciseSuggestions"></datalist>
       </div>
-      <p id="recordSearchCount" class="stats-note" role="status"></p><p class="stats-search-empty" id="recordSearchEmpty" hidden>검색한 종목의 기록이 현재 조회 기간에 없어요.</p>
+      <p class="stats-search-empty" id="recordSearchEmpty" hidden>검색한 종목의 기록이 현재 조회 기간에 없어요.</p>
       <div class="records-disclosure-actions"><button type="button" class="btn-reset" id="btnRecordsExpand" aria-controls="recordsList">전체 펼치기</button><select id="recordMuscleSelect" aria-label="펼치거나 접을 부위 선택"><option value="">펼칠 부위</option></select><button type="button" class="btn-reset" id="btnRecordMuscleToggle" aria-controls="recordsList" disabled>펼치기</button></div>
       <div id="recordsList"></div>
       <div class="reset-row">
@@ -4094,8 +4102,16 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       toggleCardio(d);
     });
 
-    actions.appendChild(addBtn);
-    if(!d.temporary)actions.appendChild(cardioBtn);
+    // 종목 추가·유산소는 루틴 편집 버튼 묶음 아래로 올려 바로 손댈 수 있게 한다.
+    var editRow=document.getElementById('editActionRow');
+    if(editRow){
+      editRow.innerHTML='';
+      editRow.appendChild(addBtn);
+      if(!d.temporary)editRow.appendChild(cardioBtn);
+    }else{
+      actions.appendChild(addBtn);
+      if(!d.temporary)actions.appendChild(cardioBtn);
+    }
 
     var logBtn = document.createElement('button');
     logBtn.className = 'btn btn-log';
@@ -4808,7 +4824,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       recordsListEl.appendChild(group.section);
     });
     if(recordSearchEmpty){recordSearchEmpty.hidden=matchedExerciseCount>0;recordSearchEmpty.textContent='해당 조건의 운동기록이 없어요.';}
-    var recordCount=document.getElementById('recordSearchCount');if(recordCount)recordCount.textContent=matchedExerciseCount+'개 종목';
+
     refreshRecordMuscleOptions();
     if (!recordsListEl.children.length && !recordQuery) {var empty=document.createElement('p');empty.className='rec-empty';empty.textContent=recFilterFrom||recFilterTo?'선택한 기간에는 기록이 없어요.':'아직 저장된 운동기록이 없어요.';recordsListEl.appendChild(empty);}
   }
@@ -4833,7 +4849,10 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     catalogListEl.querySelectorAll('.rec-group').forEach(function(group,index){var matches=0,m=MUSCLES[index];
       group.querySelectorAll('.cat-item').forEach(function(item){var found=(!muscle || m===muscle) && item.querySelector('.cat-name').textContent.toLocaleLowerCase('ko-KR').includes(query);item.hidden=!found;if(found)matches++;});
       group.hidden=!!(muscle || query) && !matches;if((muscle || query) && matches)group.open=true;total+=matches;
-    });document.getElementById('catalogSearchCount').textContent=total+'개 종목';
+    });
+    document.getElementById('catalogSearchCount').textContent=total+'개 종목';
+    var catalogInput=document.getElementById('catalogSearchName');
+    if(catalogInput)catalogInput.placeholder='종목 검색 ('+total+'개 종목)';
   }
   document.getElementById('catalogSearchMuscle').innerHTML=makeMuscleSelect().innerHTML;
   document.getElementById('catalogSearchMuscle').onchange=applyCatalogSearch;
@@ -5445,8 +5464,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var attendanceHtml='<section class="stats-card"><div class="stats-attendance"><h3>기록한 날</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">일</span></div></div><p class="stats-note">선택 기간에 기록이 있는 날짜 수예요.</p></section>';
     var muscleHtml='<section class="stats-card"><h3>부위별 기록 세트 · 볼륨</h3>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>볼륨 집계 기준</summary><p class="stats-note">이 카드는 <strong>아래 조회 기간과 무관하게</strong> 선택한 주·월과 그 직전 기간을 비교해요. 주는 월요일에 시작해요.<br>세트 칸의 <strong>괄호 안 숫자는 직전 기간 세트 수</strong>이고, 막대의 회색 부분도 직전 기간을 뜻해요. 볼륨은 무게×횟수의 합이라 무게나 횟수가 빠진 세트는 제외돼요. 부위마다 관여 근육량이 달라서 <strong>부위끼리 볼륨을 비교하는 건 의미가 없어요.</strong><br>비교 기간: '+mcRange.prevFrom+' ~ '+mcRange.prevTo+'</p></details></section>';
     statsViewEl.innerHTML=scopeHtml+
-      big3Html+
       muscleHtml+
+      big3Html+
       rangeHtml+
       attendanceHtml+
       pinnedStatsHtml()+
