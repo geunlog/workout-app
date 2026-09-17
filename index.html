@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="29">
+<meta name="workout-app-version" content="32">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -281,6 +281,26 @@
     transition: background .15s ease;
   }
   .bulk-app .btn:hover { background: #454C86; }
+  /* 종목 추가는 주 동작이라 강조하고, 유산소는 켜짐/꺼짐이 보이는 토글로 둔다. */
+  .bulk-app .edit-action-row .btn-add-ex{
+    background: var(--primary); color: var(--on-primary); font-weight: 700; font-size: 13px;
+    border: 1px solid var(--primary);
+  }
+  .bulk-app .edit-action-row .btn-add-ex:hover{ background: var(--primary); }
+  .bulk-app .edit-action-row .btn-cardio{
+    position: relative; padding-left: 26px;
+    background: transparent; border: 1px dashed var(--line-strong);
+    color: var(--muted); font-weight: 600;
+  }
+  .bulk-app .edit-action-row .btn-cardio::before{
+    content: ''; position: absolute; left: 11px; top: 50%; width: 9px; height: 9px;
+    margin-top: -4px; border-radius: 50%; background: var(--line-strong);
+  }
+  .bulk-app .edit-action-row .btn-cardio[aria-pressed="true"]{
+    background: rgba(19,116,84,.08); border: 1px solid var(--gain);
+    color: var(--gain); font-weight: 700;
+  }
+  .bulk-app .edit-action-row .btn-cardio[aria-pressed="true"]::before{ background: var(--gain); }
   .bulk-app .btn-cardio[aria-pressed="true"] { color: var(--gain); }
   .bulk-app .btn-log {
     flex-basis: 100%; background: var(--primary); color: var(--on-primary); font-weight: 700;
@@ -347,8 +367,8 @@
   .bulk-app .reset-row { margin-top: 20px; display: flex; gap: 6px; flex-wrap: wrap; }
   .bulk-app .reset-row > button { flex: 1; min-width: 0; }
   /* 편집 중에는 저장(확정) / 되돌리기 / 종목 손보기 세 묶음으로 나눈다. */
-  .bulk-app #dayView.routine-editing .reset-row > #btnSaveNow { flex-basis: 100%; margin-bottom: 4px; }
-  .bulk-app .edit-action-row { display: flex; gap: 6px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .bulk-app #dayView.routine-editing .reset-row > #btnSaveNow { flex-basis: 100%; }
+  .bulk-app .edit-action-row { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
   .bulk-app .edit-action-row > button { flex: 1; min-width: 0; margin: 0; }
   .bulk-app .edit-action-row:empty { display: none; }
   .bulk-app .btn-reset {
@@ -1037,6 +1057,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
 
   .bulk-app .btn-direct-record{color:var(--primary);font-weight:700;}
+  /* 편집 중에는 기록 동작을 숨기고 편집 관련 버튼만 남긴다. */
+  .bulk-app #dayView.routine-editing .btn-direct-record{display:none;}
   .direct-record-overlay{
     position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;
     padding:18px;background:rgba(8,10,20,.72);backdrop-filter:blur(5px);
@@ -1365,7 +1387,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 </style>
 <style>
 .bulk-app .routine-mode-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;}
-.bulk-app #dayView.routine-editing .reset-row{margin-bottom:24px;}
+.bulk-app #dayView.routine-editing .routine-mode-bar{margin-bottom:10px;}
+.bulk-app #dayView.routine-editing .routine-mode-bar>button{flex:1;}
+.bulk-app #dayView.routine-editing .reset-row{margin-top:0;}
+.bulk-app #dayView.routine-editing .reset-row{margin-bottom:0;}
+.bulk-app #dayView.routine-editing .edit-action-row{margin-bottom:22px;}
 .bulk-app .routine-mode-note{margin:0;color:var(--muted);font-size:13px;line-height:1.6;}
 .bulk-app #btnRoutineEdit{flex-shrink:0;min-height:44px;}
 .bulk-app #btnRoutineEdit[aria-pressed=true]{background:var(--primary);color:var(--on-primary);}
@@ -2277,7 +2303,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 29 · 2026-09-17</strong>
+      <strong>앱 버전 32 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -4089,7 +4115,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     actions.className = 'panel-actions';
 
     var addBtn = document.createElement('button');
-    addBtn.className = 'btn routine-edit-only';
+    addBtn.className = 'btn btn-add-ex routine-edit-only';
     addBtn.type = 'button';
     addBtn.textContent = '+ 종목 추가';
     addBtn.addEventListener('click', function () {
@@ -5461,7 +5487,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         '<p>모든 값은 <strong>조회 기간과 무관하게 전체 기간</strong> 기준이에요.</p>'+
         '<p class="big3-guide-warn">운동 관리에서 이 세 종목의 이름을 바꾸거나 삭제하면 집계가 끊겨요. 이름 옆 <strong>‘3대운동’ 배지</strong>가 보이면 정상이에요.</p>'+
       '</div></details></section>';
-    var scopeHtml='<h3 class="stats-scope-heading">통계에 포함할 기록</h3><div class="stats-periods" role="group" aria-label="통계 플랜 범위"><button type="button" data-stats-scope="current" aria-pressed="'+(statsScope==='current')+'">이 플랜만</button><button type="button" data-stats-scope="all" aria-pressed="'+(statsScope==='all')+'">모든 플랜 합산</button></div><p class="stats-note scope-caption">'+statsEscape(statsScope==='all'?'모든 플랜의 기록 합산':'플랜: '+activeProfile)+'</p>';
+    var scopeHtml='<h3 class="stats-scope-heading">통계에 포함할 기록</h3><div class="stats-periods" role="group" aria-label="통계 플랜 범위"><button type="button" data-stats-scope="current" aria-pressed="'+(statsScope==='current')+'">현재 플랜만</button><button type="button" data-stats-scope="all" aria-pressed="'+(statsScope==='all')+'">모든 플랜 합산</button></div><p class="stats-note scope-caption">'+statsEscape(statsScope==='all'?'모든 플랜의 기록 합산':'플랜: '+activeProfile)+'</p>';
     // 조회 기간은 기록한 날·관심 종목·종목별 변화에만 적용되므로 그 묶음 바로 위에 둔다.
     var rangeHtml='<section class="stats-card stats-section"><h3>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></h3><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><button type="button" data-stats-reset'+(statsPeriod==='custom'?'':' hidden')+'>기간 초기화</button></div><details data-stats-panel="range"><summary>달력으로 기간 선택</summary>'+
       statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details></section>';
