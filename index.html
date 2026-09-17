@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="20">
+<meta name="workout-app-version" content="21">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1727,28 +1727,52 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .stats-metric span{display:block;margin-top:6px;font-size:12px;color:var(--muted);}
 .bulk-app .stats-card{padding:20px;margin:14px 0;background:var(--raised);border:1px solid var(--line);border-radius:20px;}
 .bulk-app .stats-card h3{margin:0 0 14px;font-size:16px;color:var(--ink);}
-.bulk-app .stats-bar-row{display:grid;grid-template-columns:42px minmax(0,1fr) 80px;gap:10px;align-items:center;margin:14px 0;font-size:13px;}
-.bulk-app .stats-bar-track{height:8px;border-radius:8px;background:var(--sunken);overflow:hidden;}
-.bulk-app .stats-bar-fill{display:block;height:100%;border-radius:8px;background:var(--primary);}
-.bulk-app .stats-bar-count{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;}
 .bulk-app .pin-remove-row{display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
 .bulk-app .pin-remove-row button{font-size:12px;padding:7px 12px;color:var(--muted);}
-.bulk-app .stats-bar-group{margin:14px 0;}
-.bulk-app .stats-bar-group .stats-bar-row{margin:0;}
-.bulk-app .stats-bar-sub{margin:3px 0 0 52px;font-size:11.5px;line-height:1.5;color:var(--faint);font-variant-numeric:tabular-nums;word-break:keep-all;overflow-wrap:break-word;}
-@media(max-width:360px){.bulk-app .stats-bar-row{grid-template-columns:38px minmax(0,1fr) 74px;gap:7px;}.bulk-app .stats-bar-count{font-size:11px;}.bulk-app .stats-bar-sub{margin-left:45px;}}
+.bulk-app .mc-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:2px 0 14px;}
+.bulk-app .mc-scope{display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--sunken);}
+.bulk-app .mc-scope button{min-height:34px;padding:6px 14px;border:0;border-radius:8px;background:transparent;font-size:12.5px;font-weight:600;color:var(--muted);}
+.bulk-app .mc-scope button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.bulk-app .mc-nav{display:flex;align-items:center;gap:4px;margin-left:auto;}
+.bulk-app .mc-nav button{width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--panel);font-size:17px;line-height:1;color:var(--ink);}
+.bulk-app .mc-nav button:disabled{opacity:.3;}
+.bulk-app .mc-period{min-width:92px;text-align:center;}
+.bulk-app .mc-period strong{display:block;font-size:13px;letter-spacing:-.01em;}
+.bulk-app .mc-period small{display:block;margin-top:1px;font-size:10.5px;color:var(--faint);}
+.bulk-app .mc-table{display:flex;flex-direction:column;}
+.bulk-app .mc-row{display:grid;grid-template-columns:38px minmax(0,1fr) 52px minmax(62px,auto) minmax(56px,auto);gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;}
+.bulk-app .mc-row.mc-head{border-top:0;padding:0 0 6px;font-size:10.5px;color:var(--muted);}
+.bulk-app .mc-head small{display:block;font-size:9.5px;color:var(--faint);}
+.bulk-app .mc-name{font-weight:600;color:var(--ink);}
+.bulk-app .mc-head .mc-name{font-weight:400;color:var(--muted);}
+.bulk-app .mc-bar{position:relative;height:8px;border-radius:8px;background:var(--sunken);overflow:hidden;}
+.bulk-app .mc-bar-prev{position:absolute;left:0;top:0;height:100%;border-radius:8px;background:var(--line);}
+.bulk-app .mc-bar-now{position:absolute;left:0;top:0;height:100%;border-radius:8px;}
+.bulk-app .mc-sets,.bulk-app .mc-vol,.bulk-app .mc-delta{text-align:right;font-variant-numeric:tabular-nums;}
+.bulk-app .mc-sets{font-weight:700;color:var(--ink);}
+.bulk-app .mc-sets small{display:block;font-size:10px;font-weight:400;color:var(--faint);}
+.bulk-app .mc-head .mc-sets{font-weight:400;color:var(--muted);}
+.bulk-app .mc-vol{color:var(--muted);}
+.bulk-app .mc-vol small{display:block;font-size:9.5px;color:var(--faint);}
+.bulk-app .mc-delta{font-size:11.5px;font-weight:600;white-space:nowrap;}
+.bulk-app .mc-up{color:var(--gain);}
+.bulk-app .mc-down{color:var(--drop);}
+.bulk-app .mc-flat,.bulk-app .mc-new{color:var(--faint);font-weight:400;}
+.bulk-app .mc-empty{margin:14px 0;}
+@media(max-width:360px){.bulk-app .mc-row{grid-template-columns:32px minmax(0,1fr) 44px minmax(54px,auto) minmax(48px,auto);gap:6px;font-size:12px;}.bulk-app .mc-nav{margin-left:0;}.bulk-app .mc-period{min-width:80px;}}
 .bulk-app .muscle-vol-guide{margin-top:12px;border-top:1px solid var(--line);}
 .bulk-app .muscle-vol-guide>summary{padding:10px 0 2px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;}
 .bulk-app .muscle-vol-guide .stats-note{margin-top:6px;}
 .bulk-app .big3-badge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:-0.01em;color:#1746b4;background:#e8eefc;border:1px solid #c3d3f5;vertical-align:middle;}
-.bulk-app .big3-table{display:grid;grid-template-columns:minmax(0,1fr) auto auto;column-gap:12px;align-items:baseline;font-size:13px;}
+.bulk-app .big3-table{display:grid;grid-template-columns:minmax(58px,0.9fr) minmax(74px,auto) minmax(74px,auto);column-gap:10px;align-items:baseline;font-size:13px;}
 .bulk-app .big3-table>span{padding:9px 0;min-width:0;}
-.bulk-app .big3-table>span.big3-col1{text-align:left;}
-.bulk-app .big3-table>span.big3-num{text-align:right;font-variant-numeric:tabular-nums;min-width:64px;}
+.bulk-app .big3-table>span.big3-col1{text-align:left;overflow-wrap:break-word;}
+.bulk-app .big3-table>span.big3-num{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:break-word;}
 .bulk-app .big3-table>span.big3-head-cell{padding:0 0 6px;font-size:11px;color:var(--muted);font-weight:400;}
 .bulk-app .big3-table>span.big3-head-cell small{display:block;font-size:9.5px;font-weight:400;color:var(--faint);margin-top:1px;}
 .bulk-app .big3-table .big3-name{font-weight:600;font-size:13.5px;}
-.bulk-app .big3-table span small{display:block;font-size:10.5px;color:var(--faint);font-weight:400;}
+.bulk-app .big3-table span small{display:block;font-size:10.5px;color:var(--faint);font-weight:400;line-height:1.45;word-break:keep-all;overflow-wrap:break-word;}
+@media(max-width:360px){.bulk-app .big3-table{grid-template-columns:minmax(48px,0.8fr) minmax(68px,auto) minmax(68px,auto);column-gap:8px;font-size:12.5px;}.bulk-app .big3-table span small{font-size:10px;}}
 .bulk-app .big3-table span strong{font-size:14px;font-weight:700;letter-spacing:-0.01em;}
 .bulk-app .big3-divider{grid-column:1/-1;height:1px;background:var(--line);}
 .bulk-app .big3-divider-total{height:2px;margin-top:1px;}
@@ -2213,7 +2237,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 20 · 2026-09-17</strong>
+      <strong>앱 버전 21 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -3387,6 +3411,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   var statsPeriod = 'week';
   var statsCalendarMonth = '';
   var statsCustomRange = null, statsRangeAnchor = '';
+  var muscleScope = 'week', muscleAnchor = '';
   var statsExerciseQuery = '';
   var statsScope=readJSON('bulk-workout-stats-scope-v1','current')==='all'?'all':'current';
   var statsMuscleQuery='',pinMuscleQuery='',recordMuscleQuery='';
@@ -4905,6 +4930,66 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   function statsOffset(date,offset) {
     var d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+offset);return d.toISOString().slice(0,10);
   }
+  // 부위별 카드 전용 기간 계산 — 주는 월요일 시작, 월은 1일 시작.
+  function muscleWeekStart(date){
+    var d=new Date(date+'T00:00:00Z');
+    var dow=d.getUTCDay();            // 0=일요일
+    var back=(dow+6)%7;               // 월요일까지 되돌릴 일수
+    return statsOffset(date,-back);
+  }
+  function muscleRangeFor(scope,anchorDate){
+    if(scope==='month'){
+      var from=anchorDate.slice(0,7)+'-01';
+      var d=new Date(from+'T00:00:00Z');
+      d.setUTCMonth(d.getUTCMonth()+1);
+      var to=statsOffset(d.toISOString().slice(0,10),-1);
+      var pd=new Date(from+'T00:00:00Z');pd.setUTCMonth(pd.getUTCMonth()-1);
+      var pFrom=pd.toISOString().slice(0,10);
+      return {from:from,to:to,prevFrom:pFrom,prevTo:statsOffset(from,-1),prevAnchor:pFrom,nextAnchor:statsOffset(to,1)};
+    }
+    var wFrom=muscleWeekStart(anchorDate);
+    return {from:wFrom,to:statsOffset(wFrom,6),prevFrom:statsOffset(wFrom,-7),prevTo:statsOffset(wFrom,-1),
+      prevAnchor:statsOffset(wFrom,-7),nextAnchor:statsOffset(wFrom,7)};
+  }
+  function muscleRangeLabel(scope,range){
+    var y=range.from.slice(0,4),m=Number(range.from.slice(5,7));
+    if(scope==='month')return y+'년 '+m+'월';
+    // 그 달 첫 월요일을 1주차로 세되, 1일이 속한 주도 1주차로 본다.
+    var firstOfMonth=range.from.slice(0,7)+'-01';
+    var firstWeek=muscleWeekStart(firstOfMonth);
+    var nth=Math.round((new Date(range.from+'T00:00:00Z')-new Date(firstWeek+'T00:00:00Z'))/604800000)+1;
+    return m+'월 '+nth+'주차';
+  }
+  function muscleShortDate(d){return Number(d.slice(5,7))+'/'+Number(d.slice(8,10));}
+  // 선택한 기간과 직전 동일 기간의 부위별 세트·볼륨을 집계한다.
+  function buildMuscleCompare(source,scope,anchorDate){
+    var range=muscleRangeFor(scope,anchorDate);
+    var keys=MUSCLES.concat(['기타']);
+    var cur={},prev={},curVol={},prevVol={},skipped={};
+    keys.forEach(function(m){cur[m]=0;prev[m]=0;curVol[m]=0;prevVol[m]=0;skipped[m]=0;});
+    var earliest=null;
+    (source||[]).forEach(function(rec){
+      if(!rec || !rec.date)return;
+      if(!earliest || rec.date<earliest)earliest=rec.date;
+      var inCur=rec.date>=range.from && rec.date<=range.to;
+      var inPrev=rec.date>=range.prevFrom && rec.date<=range.prevTo;
+      if(!inCur && !inPrev)return;
+      (rec.entries||[]).forEach(function(e){
+        if(!e)return;
+        var m=entryMuscle(e);if(!keys.includes(m))m='기타';
+        var w=statsNumber(e.w),r=statsNumber(e.reps);
+        var vol=(w!==null && r!==null && r>0)?w*r:null;
+        if(inCur){cur[m]++;if(vol!==null)curVol[m]+=vol;else skipped[m]++;}
+        else{prev[m]++;if(vol!==null)prevVol[m]+=vol;}
+      });
+    });
+    var rows=keys.filter(function(m){return m!=='기타' || cur[m] || prev[m];}).map(function(m){
+      return {muscle:m,sets:cur[m],prevSets:prev[m],volume:curVol[m],prevVolume:prevVol[m],skipped:skipped[m]};
+    });
+    return {range:range,rows:rows,earliest:earliest,
+      total:rows.reduce(function(n,r){return n+r.sets;},0),
+      max:Math.max.apply(null,[1].concat(rows.map(function(r){return Math.max(r.sets,r.prevSets);})))};
+  }
   function statsNumber(value) {
     if(value==null || String(value).trim()==='' || value==='-')return null;
     var n=Number(value);return Number.isFinite(n) && n>=0?n:null;
@@ -4929,25 +5014,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       });
     });
     var selected=all.filter(function(e){return (!from || e.date>=from) && e.date<=to;});
-    var muscles={},muscleVolume={},muscleUnweighted={},prevSets={},prevVolume={},muscleNames={};
-    MUSCLES.concat(['기타']).forEach(function(m){muscles[m]=0;muscleVolume[m]=0;muscleUnweighted[m]=0;prevSets[m]=0;prevVolume[m]=0;muscleNames[m]=new Set();});
-    var spanDays=null,prevFrom=null,prevTo=null;
-    if(from){
-      spanDays=Math.round((new Date(to+'T00:00:00Z').getTime()-new Date(from+'T00:00:00Z').getTime())/86400000)+1;
-      if(spanDays>0){prevTo=statsOffset(from,-1);prevFrom=statsOffset(prevTo,-(spanDays-1));}
-    }
-    if(prevFrom){
-      all.forEach(function(e){
-        if(e.date<prevFrom || e.date>prevTo)return;
-        prevSets[e.m]++;
-        if(e.w!==null && e.reps!==null && e.reps>0)prevVolume[e.m]+=e.w*e.reps;
-      });
-    }
+    var muscles={};
+    MUSCLES.concat(['기타']).forEach(function(m){muscles[m]=0;});
     var grouped=new Map();
     selected.forEach(function(e){
-      if(e.w!==null && e.reps!==null && e.reps>0)muscleVolume[e.m]+=e.w*e.reps;
-      else muscleUnweighted[e.m]++;
-      muscles[e.m]++;muscleNames[e.m].add(e.n);var key=JSON.stringify([e.m,e.n]);
+      muscles[e.m]++;var key=JSON.stringify([e.m,e.n]);
       if(!grouped.has(key))grouped.set(key,{key:key,name:e.n,muscle:e.m,entries:[],dates:new Set(),maxWeight:null});
       var group=grouped.get(key);group.entries.push(e);group.dates.add(e.date);
       if(e.w!==null && (group.maxWeight===null || e.w>group.maxWeight))group.maxWeight=e.w;
@@ -5023,7 +5094,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     return {from:from || (all.length?all.map(function(e){return e.date;}).sort()[0]:asOf),to:to,count:selected.length,days:new Set(selected.map(function(e){return e.date;})).size,
       muscles:muscles,exercises:exercises,weeks:weeks,allDates:Array.from(new Set(all.map(function(e){return e.date;}))).sort(),
       big3:big3,
-      volumeStats:{volume:muscleVolume,unweighted:muscleUnweighted,prevSets:prevSets,prevVolume:prevVolume,spanDays:spanDays,prevFrom:prevFrom,prevTo:prevTo,exerciseCount:MUSCLES.concat(['기타']).reduce(function(acc,m){acc[m]=muscleNames[m].size;return acc;},{})},
       frequent:exercises.slice().sort(function(a,b){return b.days-a.days || b.count-a.count || a.name.localeCompare(b.name,'ko');}).slice(0,5)};
   }
   function statsValue(entry) {
@@ -5241,28 +5311,48 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var muscleMax=Math.max.apply(null,[1].concat(Object.values(data.muscles)));
     var labels={week:'이번 주',month:'이번 달',all:'전체 기간'};
     var periods=Object.keys(labels).map(function(key){return '<button type="button" data-stats-period="'+key+'" aria-pressed="'+(!statsRangeAnchor && key===statsPeriod)+'">'+labels[key]+'</button>';}).join('');
-    var vs=data.volumeStats || {volume:{},unweighted:{},prevSets:{},prevVolume:{},spanDays:null,prevFrom:null,exerciseCount:{}};
-    var weeksSpan=vs.spanDays?vs.spanDays/7:null;
-    function statsKg(v){return Math.round(v).toLocaleString('ko-KR')+'kg';}
-    // 증감률만 보여주면 분모가 작을 때 과장돼 보이므로 이전 기간 절대값을 같이 적는다.
-    function statsDelta(cur,prev){
-      if(!vs.prevFrom)return '';
-      if(!prev)return cur?' · 이전 기간 기록 없음':'';
-      var d=(cur-prev)/prev*100;
-      return ' · 이전 '+statsKg(prev)+' · '+(d>0?'+':'')+d.toFixed(0)+'%';
+    if(!muscleAnchor)muscleAnchor=asOf;
+    var mc=buildMuscleCompare(statsSource(),muscleScope,muscleAnchor);
+    var mcRange=mc.range;
+    function mcKg(v){
+      if(!v)return '–';
+      if(v>=100000)return (v/1000).toFixed(1).replace(/\.0$/,'')+'t';
+      return Math.round(v).toLocaleString('ko-KR')+'kg';
     }
-    var muscleBars=MUSCLES.concat(data.muscles['기타']?['기타']:[]).map(function(m){
-      var sets=data.muscles[m],vol=vs.volume[m]||0,skipped=vs.unweighted[m]||0;
-      var exCount=(vs.exerciseCount||{})[m]||0;
-      var countText=sets?exCount+'종목 '+sets+'세트':'0세트';
-      var parts=[];
-      if(sets){
-        if(weeksSpan && weeksSpan>=1)parts.push('주당 '+(sets/weeksSpan).toFixed(1)+'세트');
-        parts.push(vol>0?'볼륨 '+statsKg(vol)+statsDelta(vol,vs.prevVolume[m]||0):'볼륨 집계 대상 없음');
-        if(skipped)parts.push('무게 미입력 '+skipped+'세트 제외');
-      }
-      return '<div class="stats-bar-group"><div class="stats-bar-row"><span>'+m+'</span><span class="stats-bar-track" aria-hidden="true"><span class="stats-bar-fill" style="width:'+(sets/muscleMax*100)+'%;background:'+(MUSCLE_COLOR[m] || 'var(--muted)')+'"></span></span><span class="stats-bar-count">'+countText+'</span></div>'+(parts.length?'<p class="stats-bar-sub">'+parts.join(' · ')+'</p>':'')+'</div>';
+    function mcDelta(cur,prev){
+      if(!prev)return cur?'<span class="mc-new">신규</span>':'<span class="mc-flat">–</span>';
+      if(!cur)return '<span class="mc-down">▼ 전량</span>';
+      var d=(cur-prev)/prev*100;
+      if(Math.abs(d)<0.5)return '<span class="mc-flat">= 유지</span>';
+      return '<span class="'+(d>0?'mc-up">▲ +':'mc-down">▼ ')+d.toFixed(0)+'%</span>';
+    }
+    var mcRows=mc.rows.map(function(r){
+      var pct=Math.min(100,r.sets/mc.max*100);
+      var prevPct=Math.min(100,r.prevSets/mc.max*100);
+      return '<div class="mc-row">'+
+        '<span class="mc-name">'+r.muscle+'</span>'+
+        '<span class="mc-bar" aria-hidden="true"><span class="mc-bar-prev" style="width:'+prevPct+'%"></span><span class="mc-bar-now" style="width:'+pct+'%;background:'+(MUSCLE_COLOR[r.muscle]||'var(--muted)')+'"></span></span>'+
+        '<span class="mc-sets">'+r.sets+'<small>'+(r.prevSets?'('+r.prevSets+')':'(–)')+'</small></span>'+
+        '<span class="mc-vol">'+mcKg(r.volume)+(r.skipped?'<small>'+r.skipped+'세트 제외</small>':'')+'</span>'+
+        '<span class="mc-delta">'+mcDelta(r.volume,r.prevVolume)+'</span>'+
+        '</div>';
     }).join('');
+    var mcHasPrev=!mc.earliest || mcRange.prevFrom>=mc.earliest || mcRange.from>mc.earliest;
+    var mcHasNext=mcRange.nextAnchor<=asOf;
+    var muscleBars=
+      '<div class="mc-controls">'+
+        '<div class="mc-scope" role="group" aria-label="비교 단위">'+
+          '<button type="button" data-muscle-scope="week" aria-pressed="'+(muscleScope==='week')+'">주간</button>'+
+          '<button type="button" data-muscle-scope="month" aria-pressed="'+(muscleScope==='month')+'">월간</button>'+
+        '</div>'+
+        '<div class="mc-nav">'+
+          '<button type="button" data-muscle-move="prev" aria-label="이전 기간"'+(mcHasPrev?'':' disabled')+'>‹</button>'+
+          '<span class="mc-period"><strong>'+muscleRangeLabel(muscleScope,mcRange)+'</strong><small>'+muscleShortDate(mcRange.from)+' – '+muscleShortDate(mcRange.to)+'</small></span>'+
+          '<button type="button" data-muscle-move="next" aria-label="다음 기간"'+(mcHasNext?'':' disabled')+'>›</button>'+
+        '</div>'+
+      '</div>'+
+      (mc.total?'<div class="mc-table"><div class="mc-row mc-head"><span class="mc-name">부위</span><span class="mc-bar"></span><span class="mc-sets">세트<small>(직전)</small></span><span class="mc-vol">볼륨</span><span class="mc-delta">변화</span></div>'+mcRows+'</div>'
+       :'<p class="stats-note mc-empty">이 기간에는 기록이 없어요. ‹ › 로 다른 기간을 확인해보세요.</p>');
     var groups=MUSCLES.concat(data.muscles['기타']?['기타']:[]).map(function(m){
       var muscleKey='muscle:'+m;
       var exercises=data.exercises.filter(function(g){return g.muscle===m;});if(!exercises.length)return '';
@@ -5285,7 +5375,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         ? '<strong>'+statsFormatMetric(b.actual.value,'weight')+'</strong><small>'+b.actual.date+' PR</small>'
         : '<span class="big3-empty">–</span><small>1회 기록 없음</small>';
       var estCell=b.estimated
-        ? '<strong>'+statsFormatMetric(b.estimated.value,'e1rm')+'</strong><small>'+b.estimated.w+'kg×'+b.estimated.reps+'회 · '+b.estimated.date+'</small>'
+        ? '<strong>'+statsFormatMetric(b.estimated.value,'e1rm')+'</strong><small>'+b.estimated.w+'kg×'+b.estimated.reps+'회</small><small>'+b.estimated.date+'</small>'
         : '<span class="big3-empty">–</span><small>'+(b.actual?'2회 이상 기록 없음':'기록 없음')+'</small>';
       if(i>0)big3RowCells.push('<div class="big3-divider"></div>');
       big3RowCells.push('<span class="big3-col1 big3-name">'+statsEscape(b.label)+'<small>'+statsEscape(b.name)+'</small></span>'+
@@ -5325,7 +5415,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       '<section class="stats-card"><div class="stats-attendance"><h3>기록한 날</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">일</span></div></div><p class="stats-note">선택 기간에 기록이 있는 날짜 수예요.</p></section>'+
       big3Html+
       (!data.count?'<p class="stats-note">이 기간에는 기록이 없어요. 운동 탭에서 기록을 추가하거나 조회 기간을 바꿔보세요.</p>':'')+
-      (data.count?'<section class="stats-card"><h3>부위별 기록 세트 · 볼륨</h3>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>볼륨 집계 기준</summary><p class="stats-note">막대는 세트 수예요. 볼륨은 무게×횟수의 합이며, 무게나 횟수가 빠진 세트는 볼륨에서 제외돼요. 부위마다 관여 근육량이 달라서 <strong>부위끼리 볼륨을 비교하는 건 의미가 없어요.</strong> 같은 부위의 이전 기간 대비 변화만 참고하세요.'+(vs.prevFrom?'<br>비교 기간: '+vs.prevFrom+' ~ '+vs.prevTo:'')+'</p></details></section>':'')+
+      '<section class="stats-card"><h3>부위별 기록 세트 · 볼륨</h3>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>볼륨 집계 기준</summary><p class="stats-note">이 카드는 <strong>위쪽 조회 기간과 무관하게</strong> 선택한 주·월과 그 직전 기간을 비교해요. 주는 월요일에 시작해요.<br>세트 옆 괄호는 직전 기간 세트 수예요. 볼륨은 무게×횟수의 합이라 무게나 횟수가 빠진 세트는 제외돼요. 부위마다 관여 근육량이 달라서 <strong>부위끼리 볼륨을 비교하는 건 의미가 없어요.</strong><br>비교 기간: '+mcRange.prevFrom+' ~ '+mcRange.prevTo+'</p></details></section>'+
       '<h3 class="stats-heading">종목별 기록 변화</h3><p class="stats-note">선택 기간의 기록 변화를 비교해보세요. 역대 PR은 전체 기간 기준이에요.</p>'+searchHtml+groups;
     statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;writeJSON('bulk-workout-stats-scope-v1',statsScope);renderStats();};});
     statsViewEl.querySelectorAll('details[data-stats-key]').forEach(function(el){if(opened.has(el.dataset.statsKey))el.open=true;});
@@ -5337,6 +5427,20 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     statsViewEl.querySelectorAll('[data-stats-period]').forEach(function(button){button.addEventListener('click',function(){
       chooseStatsPeriod(button.dataset.statsPeriod);renderStats();
       var active=statsViewEl.querySelector('[data-stats-period="'+statsPeriod+'"]');if(active)active.focus({preventScroll:true});
+    });});
+    // 부위별 카드는 상단 조회 기간과 독립적으로 움직인다.
+    statsViewEl.querySelectorAll('[data-muscle-scope]').forEach(function(button){button.addEventListener('click',function(){
+      if(muscleScope===button.dataset.muscleScope)return;
+      muscleScope=button.dataset.muscleScope;muscleAnchor=todayStr();renderStats();
+      var active=statsViewEl.querySelector('[data-muscle-scope="'+muscleScope+'"]');if(active)active.focus({preventScroll:true});
+    });});
+    statsViewEl.querySelectorAll('[data-muscle-move]').forEach(function(button){button.addEventListener('click',function(){
+      if(button.disabled)return;
+      var range=muscleRangeFor(muscleScope,muscleAnchor||todayStr());
+      muscleAnchor=button.dataset.muscleMove==='prev'?range.prevAnchor:range.nextAnchor;
+      renderStats();
+      var again=statsViewEl.querySelector('[data-muscle-move="'+button.dataset.muscleMove+'"]');
+      if(again && !again.disabled)again.focus({preventScroll:true});
     });});
     statsViewEl.querySelectorAll('[data-stats-date]').forEach(function(button){button.addEventListener('click',function(){
       chooseStatsDate(button.dataset.statsDate);renderStats();
