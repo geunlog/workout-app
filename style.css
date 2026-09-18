@@ -379,10 +379,9 @@
   .bulk-app .rep-ex-list li:first-child { border-top: none; }
   .bulk-app .rep-ex-name { flex: 1; min-width: 0; letter-spacing: -0.01em; }
   .bulk-app .rep-ex-spec {
-    flex-shrink: 0; color: var(--faint); white-space: nowrap; font-size: 11px;
+    flex-shrink: 0; color: var(--faint); font-weight: 400; white-space: nowrap; font-size: 11px;
     font-variant-numeric: tabular-nums;
   }
-  .bulk-app .rep-ex-spec b { color: var(--muted); font-weight: 600; }
   .bulk-app .rep-note { font-size: 10.5px; color: var(--warn); margin-top: 11px; line-height: 1.55; }
 
   /* ---------- 운동 기록 ---------- */
