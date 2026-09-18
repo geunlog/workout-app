@@ -1,10 +1,11 @@
 #!/bin/bash
 # 버전 하나만 넣으면 세 곳(메타 태그 / 화면 문구 / sw.js 캐시명)을 한 번에 맞춘다.
-# 사용법: ./bump-version.sh 41
+# 사용법: bash bump-version.sh 46
 set -euo pipefail
 
-VERSION="${1:?사용법: ./bump-version.sh <버전번호>}"
-TODAY="$(date +%Y-%m-%d)"
+VERSION="${1:?사용법: bash bump-version.sh <버전번호>}"
+[[ "$VERSION" =~ ^[1-9][0-9]*$ ]] || { echo '버전번호는 양의 정수여야 합니다.' >&2; exit 1; }
+TODAY="$(TZ=Asia/Seoul date +%Y-%m-%d)"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # 1) index.html <meta> 태그

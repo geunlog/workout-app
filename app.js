@@ -4396,8 +4396,14 @@
     return text.length+':'+(a>>>0)+':'+(b>>>0);
   }
   function noteBackup(data,confirmed){
-    var status={at:new Date().toISOString(),fingerprint:backupFingerprint(data.profile),confirmed:confirmed};
-    if(!writeJSON(keyFor('bulk-workout-backup-status-v1',data.profile.name),status))showToast('파일 내보내기는 처리했지만 백업 상태를 저장하지 못했어요.','error');
+    var at=new Date().toISOString();
+    var backedUpProfiles=data.version===2?data.profiles:[data.profile];
+    var operations=backedUpProfiles.map(function(profile){
+      return {key:keyFor('bulk-workout-backup-status-v1',profile.name),value:{
+        at:at,fingerprint:backupFingerprint(profile),confirmed:confirmed
+      }};
+    });
+    if(!storageTransaction(operations))showToast('파일 내보내기는 처리했지만 백업 상태를 저장하지 못했어요.','error');
     refreshBackupStatus();
   }
   // 1번: 마지막 백업 이후 경과일을 보여주고, 오래됐으면 백업을 권한다.
@@ -4948,7 +4954,7 @@
             try{
               await saveBlobToDirectory(dirHandle,fileName,blob);
               hint.textContent=(dirHandle.name || '백업 폴더')+' / '+fileName+' 에 저장했어요.';
-              if(data.version===1)noteBackup(data,true);
+              noteBackup(data,true);
               return;
             }catch(dirError){
               // 폴더 저장 실패 시 아래 저장창/다운로드 방식으로 자동 대체
@@ -4968,7 +4974,7 @@
           await writable.write(blob);
           await writable.close();
           hint.textContent=fileName+' 파일을 저장했어요.';
-          if(data.version===1)noteBackup(data,true);
+          noteBackup(data,true);
           return;
         }catch(saveError){
           if(saveError && saveError.name==='AbortError'){
@@ -4987,7 +4993,7 @@
       a.remove();
       setTimeout(function(){URL.revokeObjectURL(url);},60000);
       hint.textContent=fileName+' 다운로드를 요청했어요.';
-      if(data.version===1)noteBackup(data,false);
+      noteBackup(data,false);
     }catch(e){
       hint.textContent='파일을 만들지 못했어요. 다시 시도해주세요.';
     }
