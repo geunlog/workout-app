@@ -3481,7 +3481,11 @@
       var exHtml = d.ex.length
         ? '<ul class="rep-ex-list">' + d.ex.map(function (e) {
             return '<li><span class="rep-ex-name">' + statsEscape(e.n) + '</span>' +
-              '<span class="rep-ex-spec">' + statsEscape(e.s) + '세트 · ' + statsEscape(e.r) + '회 · RIR ' + statsEscape(e.rir) + '</span></li>';
+              '<span class="rep-ex-spec">' +
+                '<span class="rep-chip rep-chip-set">' + statsEscape(e.s) + '세트</span>' +
+                '<span class="rep-chip">' + statsEscape(e.r) + '회</span>' +
+                '<span class="rep-chip rep-chip-rir">RIR ' + statsEscape(e.rir) + '</span>' +
+              '</span></li>';
           }).join('') + '</ul>'
         : '<p class="empty-note">종목이 없어요.</p>';
       var noteHtml = d.note ? '<p class="rep-note">' + statsEscape(d.note) + '</p>' : '';

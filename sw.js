@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'workout-routine-pwa-';
-const CACHE_NAME = CACHE_PREFIX + 'v46-release-46';
+const CACHE_NAME = CACHE_PREFIX + 'v47-release-47';
 const BASE = '/workout-app/';
 const APP_SHELL = [BASE, BASE+'index.html', BASE+'style.css', BASE+'app.js', BASE+'manifest.webmanifest', BASE+'icon-192.png', BASE+'icon-512.png'];
 
