@@ -749,10 +749,7 @@
   function effectiveWeek() {
     var week=adjustmentWeek(todayStr());return week.dates.map(function(date,i){return effectiveRoutineDay(date,i);});
   }
-  function temporarySummary(temp) {
-    return temp.days.map(function(d){return d.date+' · '+d.title+(d.rest?' · 휴식':'\n'+d.exercises.map(function(e){return '• '+e.name+' · '+e.sets+'세트 · '+e.reps+'회 · RIR '+e.rir;}).join('\n'));}).join('\n\n');
-  }
-  function temporaryStatusHtml() {
+    function temporaryStatusHtml() {
     var temp=activeTemporary();if(!temp)return '';
     return '<div class="temporary-status temporary-status-compact"><strong>이번 주 임시 루틴 · '+temp.weekEnd.slice(5).replace('-','/')+'까지</strong><button type="button" class="btn-reset" data-temp-details>상세 보기</button></div>';
   }
@@ -841,10 +838,7 @@
   function todayStr() {
     return new Date(Date.now()+9*3600000).toISOString().slice(0,10);
   }
-  function daysAgoStr(n) {
-    return statsOffset(todayStr(),-n);
-  }
-  function draftEntryKey(name,uid) { return uid ? JSON.stringify([uid,name]) : name; }
+    function draftEntryKey(name,uid) { return uid ? JSON.stringify([uid,name]) : name; }
   function getDraft(dayKey, name, uid) {
     if(!draft || typeof draft!=='object' || Array.isArray(draft))draft={};
     var datedKey=dayKey+'@'+selectedRecordDate;
@@ -1882,31 +1876,7 @@
     return out;
   }
 
-  function numberedHistory(h) {
-    var blocks = [];
-    h.forEach(function (r) {
-      var last = blocks[blocks.length - 1];
-      if (last && last.date === r.date) last.items.push(r);
-      else blocks.push({ date: r.date, items: [r] });
-    });
-    var out = [];
-    var prevWeight = null;
-    blocks.forEach(function (block) {
-      block.items.forEach(function (r, idx) {
-        var w = parseFloat(r.w);
-        var trend = null;
-        if (prevWeight !== null && !isNaN(w)) {
-          if (w > prevWeight) trend = 'up';
-          else if (w < prevWeight) trend = 'down';
-        }
-        out.push({ date: r.date, w: r.w, reps: r.reps, id: r.id, setNum: idx + 1, trend: trend });
-        if (!isNaN(w)) prevWeight = w;
-      });
-    });
-    return out;
-  }
-
-  function volumeBarsHtml(vol) {
+    function volumeBarsHtml(vol) {
     var highest = Math.max.apply(null, VOLUME_MUSCLES.map(function (m) { return Number(vol[m]) || 0; }));
     var volumeMax = Math.max(18, highest + 2);
     return VOLUME_MUSCLES.map(function (m) {
@@ -2795,12 +2765,7 @@
       big3:big3,
       frequent:exercises.slice().sort(function(a,b){return b.days-a.days || b.count-a.count || a.name.localeCompare(b.name,'ko');}).slice(0,5)};
   }
-  function statsValue(entry) {
-    if(!entry)return '이전 기록 없음';
-    var parts=[];if(entry.w!==null)parts.push(entry.w+'kg');if(entry.reps!==null)parts.push(entry.reps+'회');
-    return parts.length?parts.join(' · '):'입력값 없음';
-  }
-  function statsMonthOffset(month,offset) {
+    function statsMonthOffset(month,offset) {
     var date=new Date(month+'-01T00:00:00Z');date.setUTCMonth(date.getUTCMonth()+offset);
     return date.toISOString().slice(0,7);
   }
@@ -3638,8 +3603,8 @@
           '<span class="routine-reset-chevron" aria-hidden="true"></span>' +
         '</button>' +
         '<button class="routine-reset-option danger" type="button" data-reset-scope="all">' +
-          '<span class="routine-reset-icon">6</span>' +
-          '<span class="routine-reset-copy"><strong>전체 요일 초기화</strong><span>월~토의 모든 운동 루틴을 삭제합니다.</span></span>' +
+          '<span class="routine-reset-icon">7</span>' +
+          '<span class="routine-reset-copy"><strong>전체 요일 초기화</strong><span>월~일의 모든 운동 루틴을 삭제합니다.</span></span>' +
           '<span class="routine-reset-chevron" aria-hidden="true"></span>' +
         '</button>' +
       '</div>' +
@@ -3707,7 +3672,7 @@
           renderPrinciples();
           showToast(label + ' 운동 루틴 초기화됨 · 루틴 저장 필요','pending');
         } else {
-          var acceptedAll = await confirmDataAction('전체 요일 루틴 초기화','월~토의 운동 루틴을 모두 비워요. 운동 관리의 종목과 저장된 운동기록은 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','전체 초기화');
+          var acceptedAll = await confirmDataAction('전체 요일 루틴 초기화','월~일의 운동 루틴을 모두 비워요. 운동 관리의 종목과 저장된 운동기록은 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','전체 초기화');
           if (!acceptedAll) return;
 
           days = defaults();
@@ -3870,6 +3835,11 @@
         ['이두','인클라인 덤벨 컬',3,'10~15','1~2']
       ]);
     }
+    // '기본 루틴 적용'은 월~토만 바꾸는 기능이다. defaults()가 일요일도 빈 값으로
+    // 만들어버려서, 지금까지는 적용할 때마다 일요일 루틴이 조용히 지워지고 있었다.
+    // 현재 요일 배열에 일요일이 있으면 그대로 가져와 덮어쓰지 않게 한다.
+    var currentSunday = Array.isArray(days) ? days[days.length - 1] : null;
+    if (currentSunday && currentSunday.key === 'sun') r[6] = currentSunday;
     return ensureRoutineIds(r);
   }
 
@@ -3971,7 +3941,7 @@
       btn.addEventListener('click', async function() {
         var split = parseInt(btn.getAttribute('data-split'), 10);
         close();
-        if(!await confirmDataAction('기본 루틴 적용',split+'분할 기본 루틴으로 현재 월~토 루틴 전체를 교체할까요? 운동기록·운동 관리 종목·설정 메모는 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','루틴 적용'))return;
+        if(!await confirmDataAction('기본 루틴 적용',split+'분할 기본 루틴으로 현재 월~토 루틴을 교체할까요? 일요일 루틴은 그대로 유지돼요. 운동기록·운동 관리 종목·설정 메모도 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','루틴 적용'))return;
         days = makeBaseSplitRoutine(split);
         save();
         renderTabs();

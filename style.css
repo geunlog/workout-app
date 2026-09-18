@@ -3,36 +3,11 @@
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap');
 
+  /* 색상 22개는 아래(542행 부근) 라이트 테마 :root가 항상 덮어써서 여기 값은 적용된 적이 없다.
+     실제로 살아남는 건 폰트 스택 두 개뿐이라 그것만 남긴다. (다크모드 전환 자체가 코드에 없음) */
   :root {
-    --void: #1C2036;
-    --panel: #2A2F56;
-    --raised: #383E72;
-    --sunken: #151830;
-    --line: rgba(255, 255, 255, 0.09);
-    --line-strong: rgba(255, 255, 255, 0.18);
-    --ink: #F4F5FA;
-    --muted: #9296C2;
-    --faint: #5F6392;
-    --gain: #34D399;
-    --drop: #FB7185;
-    --warn: #FBBF24;
-    --primary: #7C6CFF;
-    --on-primary: #ffffff;
-
-    --m-chest: #FF6B5C;
-    --m-back: #2DD4BF;
-    --m-shoulder: #FFB020;
-    --m-legs: #A78BFA;
-    --m-tri: #5B9EFF;
-    --m-bi: #FF7AC6;
-    --m-abs: #F4D35E;
-
     --ui: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', sans-serif;
     --num: 'Archivo', 'Pretendard', system-ui, sans-serif;
-
-    --r-lg: 18px;
-    --r-md: 12px;
-    --r-sm: 9px;
   }
 
   html, body {
@@ -238,7 +213,6 @@
     font-size: 11px; color: var(--faint); margin: 8px 0 0 32px; letter-spacing: -0.01em;
   }
   .bulk-app .prev-hint b { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .bulk-app .suggest-hint { margin-top: 4px; }
   .bulk-app .suggest-hint.suggest-up { color: var(--gain); }
   .bulk-app .suggest-hint.suggest-down { color: var(--drop); }
   .bulk-app .prev-hint .up { color: var(--gain); }
@@ -422,26 +396,12 @@
   .bulk-app .rec-title { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
   .bulk-app .rec-count { font-size: 11px; color: var(--faint); white-space: nowrap; }
   .bulk-app .rec-body { padding: 0 16px 14px; }
-  .bulk-app .rec-ex { margin-top: 14px; }
-  .bulk-app .rec-ex:first-child { margin-top: 0; }
-  .bulk-app .rec-ex-name {
-    font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; letter-spacing: -0.01em;
-  }
   .bulk-app .rec-empty { font-size: 12px; color: var(--faint); margin: 0; }
   .bulk-app .rec-item {
     display: flex; align-items: center; gap: 10px; padding: 7px 0;
     border-top: 1px solid var(--line);
   }
   .bulk-app .rec-ex-name + .rec-item { border-top: none; }
-  .bulk-app .rec-when {
-    width: 44px; flex-shrink: 0; font-family: var(--num); font-size: 11px;
-    font-variant-numeric: tabular-nums; color: var(--faint);
-  }
-  .bulk-app .rec-set { width: 38px; flex-shrink: 0; font-size: 10.5px; color: var(--faint); }
-  .bulk-app .rec-val {
-    flex: 1; font-family: var(--num); font-size: 19px; font-weight: 700; font-stretch: 105%;
-    font-variant-numeric: tabular-nums; color: var(--ink); letter-spacing: -0.025em;
-  }
   .bulk-app .rec-val .unit {
     font-family: var(--ui); font-size: 11px; font-weight: 500; font-stretch: normal;
     color: var(--faint); margin-left: 4px; letter-spacing: 0;
@@ -623,8 +583,8 @@ body {background:radial-gradient(ellipse at 85% 0%,#e7ecff 0%,transparent 45%),v
 .bulk-app .settings-head,.bulk-app .rep-summary h2 {font-size:14px;color:var(--muted);margin:8px 0 12px;}
 .bulk-app .record-export-note,.bulk-app .rec-empty,.bulk-app .cat-empty,.bulk-app .empty-note {font-size:14px;}
 .bulk-app .rec-group {margin-bottom:12px;}.bulk-app .rec-group summary {padding:20px;}.bulk-app .rec-title {font-size:17px;}.bulk-app .rec-count {font-size:12px;}.bulk-app .rec-body {padding:0 20px 20px;}
-.bulk-app .cat-name,.bulk-app .profile-select,.bulk-app .rec-ex-name {font-size:16px;}.bulk-app .cat-item {padding:16px 0;}.bulk-app .cat-item-specs {gap:10px;}.bulk-app .cat-add-specs {flex-wrap:wrap;}.bulk-app .cat-add-btn {min-height:44px;font-size:14px;}
-.bulk-app .rep-day-title,.bulk-app .rep-ex-list li {font-size:15px;}.bulk-app .rep-ex-spec,.bulk-app .rep-note,.bulk-app .rec-when,.bulk-app .rec-set {font-size:12px;}.bulk-app .rep-day-letter {color:var(--primary);font-size:20px;}
+.bulk-app .cat-name,.bulk-app .profile-select{font-size:16px;}.bulk-app .cat-item {padding:16px 0;}.bulk-app .cat-item-specs {gap:10px;}.bulk-app .cat-add-specs {flex-wrap:wrap;}.bulk-app .cat-add-btn {min-height:44px;font-size:14px;}
+.bulk-app .rep-day-title,.bulk-app .rep-ex-list li {font-size:15px;}.bulk-app .rep-ex-spec,.bulk-app .rep-note{font-size:12px;}.bulk-app .rep-day-letter {color:var(--primary);font-size:20px;}
 .bulk-app .rec-filter-row input[type=date] {font-size:14px;}.bulk-app .record-export-text-base {font-size:13px;}
 .tab-bar {max-width:712px;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));border:1px solid #dce2ed;background:#ffffffef;border-radius:24px;padding:7px;box-shadow:0 14px 40px #2838571a;backdrop-filter:blur(24px);}
 .mode-btn {font-size:12px;padding:11px 3px;gap:6px;min-width:0;min-height:62px;border-radius:17px;color:#69758a;white-space:nowrap;}
@@ -709,9 +669,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .memo-card summary {overflow-wrap:anywhere;}
 .bulk-app #principles > .fixed-guide {background:#f0f4ff;border:1px solid #c4d1f5;border-top:4px solid var(--primary);box-shadow:0 4px 16px #315bea0a;}
 .bulk-app .fixed-guide summary {align-items:center;}
-.bulk-app .fixed-guide-heading {display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;}
-.bulk-app .fixed-guide-badge {display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;background:#dde6ff;color:#294db5;font-size:12px;font-weight:700;}
-.bulk-app .fixed-guide-badge svg {width:13px;height:13px;}
 .bulk-app .memo-editor-card {padding:16px 0;border-bottom:1px solid var(--line);margin-bottom:16px;}
 .bulk-app .memo-editor-card label {display:block;font-size:14px;color:var(--muted);margin-bottom:12px;}
 .bulk-app .memo-editor-card input,.bulk-app .memo-editor-card textarea {display:block;width:100%;margin-top:6px;font-size:16px;}
@@ -719,13 +676,10 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .memo-delete-overlay{position:fixed;inset:0;z-index:1000;background:#15213c80;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;font-family:var(--ui);}
 .memo-delete-dialog{box-sizing:border-box;width:100%;max-width:380px;max-height:85dvh;overflow:auto;background:#fff;color:var(--ink);padding:24px;border-radius:22px;box-shadow:0 20px 60px #0003;}
 .memo-delete-dialog h2{font-size:20px;margin:0 0 12px;}.memo-delete-dialog p{font-size:15px;line-height:1.65;overflow-wrap:anywhere;color:var(--muted);}
-.memo-delete-actions{display:flex;gap:10px;margin-top:22px;}.memo-delete-actions button{flex:1;min-height:48px;border:0;border-radius:12px;background:var(--raised);color:var(--ink);font:600 16px var(--ui);cursor:pointer;}
-.memo-delete-actions .memo-delete-confirm{background:#c43f57;color:#fff;}
 .bulk-app .exercise-record-card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px;}
 .bulk-app .exercise-record-head{display:flex;align-items:center;gap:12px;justify-content:space-between;}
 .bulk-app .exercise-record-head h3{margin:0;font-size:17px;overflow-wrap:anywhere;}
 .bulk-app .exercise-record-delete{flex:0 0 auto;color:var(--drop);}
-.bulk-app .record-card-count{font-size:12px;color:var(--muted);margin:8px 0 12px;}
 .bulk-app .record-card-date{font-size:12px;color:var(--muted);flex-shrink:0;}
 .bulk-app .record-card-value{flex:1;font-size:15px;font-weight:600;overflow-wrap:anywhere;}
 .bulk-app .record-muscle-group .exercise-record-card{background:var(--sunken);padding:14px;margin:0 0 10px;border-radius:14px;}
@@ -841,18 +795,14 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   .bulk-app .settings-card,
   .bulk-app .stats-card,
   .bulk-app .record-muscle-group,
-  .bulk-app .catalog-muscle-group,
-  .bulk-app .routine-card,
-  .bulk-app .principle-card{
+  .bulk-app .routine-card{
     padding-bottom:14px;
   }
 
   .bulk-app .settings-card > :last-child,
   .bulk-app .stats-card > :last-child,
   .bulk-app .record-muscle-group > :last-child,
-  .bulk-app .catalog-muscle-group > :last-child,
-  .bulk-app .routine-card > :last-child,
-  .bulk-app .principle-card > :last-child{
+  .bulk-app .routine-card > :last-child{
     margin-bottom:0 !important;
   }
 
@@ -889,13 +839,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
   .bulk-app .record-muscle-group .exercise-record-card:last-child{
     margin-bottom:0;
-  }
-
-  .bulk-app .catalog-muscle-group{
-    padding-bottom:10px;
-  }
-  .bulk-app .catalog-muscle-group > :last-child{
-    margin-bottom:0 !important;
   }
 
   .bulk-app .settings-card .record-export-note:last-child,
@@ -962,7 +905,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     margin-bottom:12px;
   }
   .bulk-app #recordsView .record-muscle-group:last-child,
-  .bulk-app #catalogView .catalog-muscle-group:last-child,
   .bulk-app #statsView .stats-card:last-child{
     margin-bottom:0;
   }
@@ -1097,7 +1039,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   }
   .recent-history-date{font-family:var(--num);font-size:11.5px;color:var(--faint);}
   .recent-history-value{font-family:var(--num);font-size:14px;font-weight:650;color:var(--ink);}
-  .recent-history-empty{font-size:12px;color:var(--faint);padding:18px 0 4px;}
   .recent-history-pr{
     margin:2px 0 14px;
   }
@@ -1117,11 +1058,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   .stats-pr-row span{color:var(--muted);}
   .stats-pr-row strong{font-family:var(--num);font-size:13px;color:var(--ink);font-weight:700;text-align:right;}
   .stats-pr-date{font-size:10.5px;color:var(--faint);font-weight:500;margin-left:5px;}
-
-
-  .stats-period-label{
-    display:inline-block;margin-left:4px;font-size:9.5px;font-weight:600;color:var(--faint);
-  }
   .weight-point.is-pr{
     stroke:currentColor;stroke-width:2.2px;
   }
@@ -1372,12 +1308,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .saved-set-summary{font-size:12px;color:var(--muted);line-height:1.7;margin-top:10px;}
 .bulk-app .record-context{position:sticky;top:0;z-index:12;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:12px;}
 .bulk-app .record-context.past{border-color:var(--primary);color:var(--primary);font-weight:700;}
-.bulk-app .suggest-hint{white-space:pre-line;}
 .bulk-app .record-edit-trigger::after{content:' ✎';font-size:12px;color:var(--primary);}
 .bulk-app .update-banner{padding:12px;border:1px solid var(--primary);border-radius:12px;background:var(--panel);margin-bottom:12px;}
-.bulk-app .pin-list{display:flex;gap:6px;flex-wrap:wrap;}
-.bulk-app .pin-list button{min-height:44px;flex:0 1 auto;}
-.bulk-app .pin-list button[aria-pressed=true]{border-color:var(--primary);color:var(--primary);}
 .bulk-app .btn-log:disabled{opacity:.45;cursor:default;}
 .bulk-app .record-edit-form{max-width:100%;}
 .bulk-app #dayPanel .log-fields .field{min-width:0;}
@@ -1393,7 +1325,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #dayView.routine-editing .reset-row{margin-top:0;}
 .bulk-app #dayView.routine-editing .reset-row{margin-bottom:0;}
 .bulk-app #dayView.routine-editing .edit-action-row{margin-bottom:22px;}
-.bulk-app .routine-mode-note{margin:0;color:var(--muted);font-size:13px;line-height:1.6;}
 .bulk-app #btnRoutineEdit{flex-shrink:0;min-height:44px;}
 .bulk-app #btnRoutineEdit[aria-pressed=true]{background:var(--primary);color:var(--on-primary);}
 .bulk-app .empty-routine-note{
@@ -1725,9 +1656,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #dayPanel .weight-control .field{flex:1;gap:3px;}
 .bulk-app #dayPanel .weight-control .in-weight{width:100%;max-width:none;min-width:0;flex:1;}
 .bulk-app #dayPanel .weight-control button{flex:0 0 44px;min-width:44px;min-height:44px;padding:0;font-size:20px;}
-.bulk-app .record-more > summary,.bulk-app .suggest-details > summary,.bulk-app .pin-manager > summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;line-height:1.6;gap:6px;list-style:none;}
-.bulk-app .record-more > summary::after,.bulk-app .suggest-details > summary::after,.bulk-app .pin-manager > summary::after{content:'⌄';margin-left:auto;}
-.bulk-app details[open].record-more > summary::after,.bulk-app details[open].suggest-details > summary::after,.bulk-app details[open].pin-manager > summary::after{content:'⌃';}
+.bulk-app .record-more > summary,.bulk-app .suggest-details > summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:13px;line-height:1.6;gap:6px;list-style:none;}
+.bulk-app .record-more > summary::after,.bulk-app .suggest-details > summary::after{content:'⌄';margin-left:auto;}
+.bulk-app details[open].record-more > summary::after,.bulk-app details[open].suggest-details > summary::after{content:'⌃';}
 .bulk-app .suggest-details p{margin:0 0 10px;font-size:12px;line-height:1.7;color:var(--muted);word-break:keep-all;overflow-wrap:anywhere;}
 .bulk-app .record-more{border-top:1px solid var(--line);margin-top:8px;}
 .bulk-app .btn-del,.bulk-app .btn-hist-del{width:44px;height:44px;min-width:44px;min-height:44px;}
@@ -1744,7 +1675,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .exercise-goal-read{margin-top:6px;gap:4px 6px;}
 .bulk-app .exercise-goal-read span{padding:2px 7px;}
 .direct-record-modal .stats-note{font-size:12px;line-height:1.65;color:var(--muted);margin:8px 0 14px;word-break:keep-all;overflow-wrap:anywhere;}
-.bulk-app .record-more > summary::-webkit-details-marker,.bulk-app .suggest-details > summary::-webkit-details-marker,.bulk-app .pin-manager > summary::-webkit-details-marker{display:none;}
+.bulk-app .record-more > summary::-webkit-details-marker,.bulk-app .suggest-details > summary::-webkit-details-marker{display:none;}
 .bulk-app .record-day-summary-value .record-number-group{display:inline-block;white-space:nowrap;}
 .bulk-app .history-tappable{min-height:44px;box-sizing:border-box;}
 .bulk-app #catalogSaveHint{opacity:1;}
@@ -1761,7 +1692,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .stats-periods{display:flex;gap:8px;margin-bottom:12px;}
 .bulk-app .stats-periods button{flex:1;min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--raised);color:var(--muted);font:600 14px var(--ui);}
 .bulk-app .stats-periods button[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:var(--on-primary);}
-.bulk-app .stats-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0;}
 .bulk-app .stats-metric{padding:16px 8px;border:1px solid var(--line);border-radius:16px;background:var(--raised);text-align:center;}
 .bulk-app .stats-metric strong{display:block;color:var(--primary);font:700 25px var(--num);overflow-wrap:anywhere;}
 .bulk-app .stats-metric span{display:block;margin-top:6px;font-size:12px;color:var(--muted);}
@@ -1854,15 +1784,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .big3-guide-body h4:first-child{margin-top:4px;}
 .bulk-app .big3-guide-body p{margin:0 0 5px;font-size:11.5px;line-height:1.6;color:var(--muted);}
 .bulk-app .big3-guide-body strong{color:var(--ink);}
-.bulk-app .big3-gap-list{margin:6px 0;padding-left:16px;}
-.bulk-app .big3-gap-list li{font-size:11.5px;line-height:1.6;color:var(--muted);margin-bottom:3px;}
 .bulk-app .big3-guide-warn{margin-top:8px!important;}
-.bulk-app .stats-week-row{grid-template-columns:85px minmax(0,1fr) 50px;}
-.bulk-app .stats-week-row small{display:block;color:var(--muted);font-size:11px;margin-top:3px;}
-.bulk-app .stats-rank{padding:0;margin:0;list-style:none;}
-.bulk-app .stats-rank li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px;}
-.bulk-app .stats-rank li:last-child{border-bottom:0;}
-.bulk-app .stats-rank-name{min-width:0;overflow-wrap:anywhere;}.bulk-app .stats-rank-value{flex-shrink:0;text-align:right;font-size:12px;color:var(--muted);}
 .bulk-app .stats-exercise{margin:10px 0;border:1px solid var(--line);border-radius:16px;background:var(--raised);overflow:hidden;}
 .bulk-app .stats-exercise summary{display:flex;align-items:center;gap:10px;cursor:pointer;padding:16px;list-style:none;min-height:44px;box-sizing:border-box;}
 .bulk-app .stats-exercise summary::-webkit-details-marker{display:none;}
@@ -1871,8 +1793,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .stats-exercise-title{min-width:0;flex:1;overflow-wrap:anywhere;font-size:14px;font-weight:600;}
 .bulk-app .stats-exercise-title small{display:block;margin-top:5px;font-size:12px;color:var(--muted);font-weight:400;}
 .bulk-app .stats-exercise-body{padding:0 16px 16px;}
-.bulk-app .stats-detail-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;}
-.bulk-app .stats-detail-row span{color:var(--muted);}.bulk-app .stats-detail-row strong{text-align:right;font-weight:600;overflow-wrap:anywhere;}
 .bulk-app .stats-attendance{display:flex;align-items:center;justify-content:space-between;gap:16px;}
 .bulk-app .stats-attendance strong{font:700 32px var(--num);color:var(--primary);}.bulk-app .stats-attendance small{font-size:14px;margin-left:5px;}
 .bulk-app .stats-calendar-head{display:flex;align-items:center;gap:6px;margin-bottom:14px;}
@@ -1894,7 +1814,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .stats-muscle-group>.rec-body{padding:0 12px 12px;}
 .bulk-app .stats-muscle-group .stats-exercise summary{padding:14px 12px;}
 .bulk-app .stats-muscle-group .stats-exercise-body{padding:0 10px 12px;}
-.bulk-app .stats-weight-peak{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:6px 0 8px;font-size:12px;color:var(--muted);}.bulk-app .stats-weight-peak strong{color:var(--primary);font:700 19px var(--num);}.bulk-app .stats-weight-peak strong.stats-weight-empty{font:500 12px var(--ui);}
 .bulk-app .stats-weight-figure{margin:0;}.bulk-app .stats-weight-graph{display:block;width:100%;height:auto;overflow:visible;color:var(--primary);}
 .bulk-app .stats-weight-graph text{fill:var(--muted);font:12px var(--ui);}.bulk-app .stats-weight-graph .weight-grid{stroke:var(--line);stroke-width:1;}
 .bulk-app .stats-weight-graph .weight-line{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;}
@@ -1917,7 +1836,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .app-toast[data-kind=pending]{background:#2459b8;}
 .app-toast[data-kind=error]{background:#a72c42;}
 @media(prefers-reduced-motion:reduce){.app-toast{transition:none;}}
-@media(max-width:400px){.bulk-app .routine-mode-note{font-size:12px;}.bulk-app .exercise-name-read{font-size:16px;}}
+@media(max-width:400px){.bulk-app .exercise-name-read{font-size:16px;}}
 
 /* v3: mobile controls and shared disclosure indicators */
 .bulk-app .record-edit-form,.bulk-app #dayPanel .record-edit-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 8px;width:100%;box-sizing:border-box;padding:12px 0;}
@@ -2000,8 +1919,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 @media(max-width:350px){.bulk-app .adjustment-fields{grid-template-columns:1fr;}}
 /* v7: temporary plans, compact filters and settings */
 .bulk-app .temporary-status{background:#f3efff;border:1px solid #c9b8ef;border-radius:16px;padding:16px;margin:0 0 16px;}
-.bulk-app .temporary-status summary{min-height:44px;}
-.bulk-app .temporary-preview,.data-confirm-dialog .temporary-preview{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;}
+.bulk-app .temporary-status summary{min-height:44px;}.data-confirm-dialog .temporary-preview{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;}
 .bulk-app .temporary-panel .ex-row{background:#faf7ff;}
 .bulk-app .temporary-badge{display:inline-block;color:#6941a5;background:#ece3ff;border-radius:8px;padding:3px 8px;font-size:13px;font-weight:700;}
 .bulk-app .adjustment-fields{grid-template-columns:1fr;}
@@ -2099,7 +2017,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .rec-filter-row label{flex:1;min-width:0;font-size:13px;display:flex;flex-direction:column;gap:4px;}
 .bulk-app .rec-filter-row input[type=date]{width:100%;box-sizing:border-box;}
 .bulk-app .rec-filter-sep{align-self:center;}
-.bulk-app .settings-card summary,.bulk-app .memo-item>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:10px 0;}
+.bulk-app .settings-card summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:10px 0;}
 .bulk-app .settings-card summary:after{flex-shrink:0;margin:0 0 0 auto;align-self:center;}
 .bulk-app .memo-editor-card{padding:4px 0;margin:0;}
 .bulk-app .memo-settings>.settings-card{padding:8px 0 0;}
