@@ -1,7 +1,7 @@
 const CACHE_PREFIX = 'workout-routine-pwa-';
 const CACHE_NAME = CACHE_PREFIX + 'v40-release-40';
 const BASE = '/workout-app/';
-const APP_SHELL = [BASE, BASE+'index.html', BASE+'manifest.webmanifest', BASE+'icon-192.png', BASE+'icon-512.png'];
+const APP_SHELL = [BASE, BASE+'index.html', BASE+'style.css', BASE+'app.js', BASE+'manifest.webmanifest', BASE+'icon-192.png', BASE+'icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache =>
@@ -22,7 +22,7 @@ self.addEventListener('fetch', event => {
   const url=new URL(event.request.url);
   if(url.origin !== self.location.origin || !url.pathname.startsWith(BASE))return;
   const navigation=event.request.mode==='navigate';
-  const fresh=navigation || /\/(index\.html|manifest\.webmanifest|icon-192\.png|icon-512\.png)$/.test(url.pathname);
+  const fresh=navigation || /\/(index\.html|style\.css|app\.js|manifest\.webmanifest|icon-192\.png|icon-512\.png)$/.test(url.pathname);
   const key=navigation ? BASE+'index.html' : event.request;
   const cacheWrite=[];
   const task=(async()=>{
