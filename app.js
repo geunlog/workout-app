@@ -2683,9 +2683,11 @@
     var rows=keys.filter(function(m){return m!=='기타' || cur[m] || prev[m];}).map(function(m){
       return {muscle:m,sets:cur[m],prevSets:prev[m],volume:curVol[m],prevVolume:prevVol[m],skipped:skipped[m]};
     });
+    // 루틴탭 volumeBarsHtml과 같은 방식: 실제 최고값에 여유 2를 더해 막대가 꽉 차 보이지 않게 한다.
+    var highestSets=Math.max.apply(null,[0].concat(rows.map(function(r){return Math.max(r.sets,r.prevSets);})));
     return {range:range,rows:rows,earliest:earliest,
       total:rows.reduce(function(n,r){return n+r.sets;},0),
-      max:Math.max.apply(null,[1].concat(rows.map(function(r){return Math.max(r.sets,r.prevSets);})))};
+      max:Math.max(1,highestSets+2)};
   }
   function statsNumber(value) {
     if(value==null || String(value).trim()==='' || value==='-')return null;
