@@ -372,16 +372,25 @@
     font-family: var(--ui); font-size: 10px; font-weight: 500; color: var(--faint); margin-left: 3px; letter-spacing: 0;
   }
   .bulk-app .rep-ex-list { list-style: none; margin: 0; padding: 0; }
+  /* 종목명이 길어(15자 이상) 한 행에 배지까지 못 넣으므로,
+     이름 아래에 배지를 가로로 나열하는 2행 구조로 둔다. */
   .bulk-app .rep-ex-list li {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-    padding: 7px 0; border-top: 1px solid var(--line); font-size: 12.5px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+    padding: 12px 0; border-top: 1px solid var(--line); font-size: 12.5px;
   }
   .bulk-app .rep-ex-list li:first-child { border-top: none; }
-  .bulk-app .rep-ex-name { flex: 1; min-width: 0; letter-spacing: -0.01em; }
+  .bulk-app .rep-ex-name { min-width: 0; letter-spacing: -0.01em; font-weight: 600; }
+  /* 세트·횟수·RIR을 각각 배지로 끊어 한눈에 구분되게 한다. */
   .bulk-app .rep-ex-spec {
-    flex-shrink: 0; color: var(--faint); font-weight: 400; white-space: nowrap; font-size: 11px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
     font-variant-numeric: tabular-nums;
   }
+  .bulk-app .rep-chip {
+    padding: 4px 9px; border-radius: 8px; background: var(--sunken);
+    color: var(--muted); font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+  .bulk-app .rep-chip-set { background: #e7ecff; color: var(--primary); }
+  .bulk-app .rep-chip-rir { background: transparent; color: var(--faint); padding-left: 2px; padding-right: 0; font-weight: 400; }
   .bulk-app .rep-note { font-size: 10.5px; color: var(--warn); margin-top: 11px; line-height: 1.55; }
 
   /* ---------- 운동 기록 ---------- */
@@ -591,7 +600,7 @@ body {background:radial-gradient(ellipse at 85% 0%,#e7ecff 0%,transparent 45%),v
 .bulk-app .record-export-note,.bulk-app .rec-empty,.bulk-app .cat-empty,.bulk-app .empty-note {font-size:14px;}
 .bulk-app .rec-group {margin-bottom:12px;}.bulk-app .rec-group summary {padding:20px;}.bulk-app .rec-title {font-size:17px;}.bulk-app .rec-count {font-size:12px;}.bulk-app .rec-body {padding:0 20px 20px;}
 .bulk-app .cat-name,.bulk-app .profile-select{font-size:16px;}.bulk-app .cat-item {padding:16px 0;}.bulk-app .cat-item-specs {gap:10px;}.bulk-app .cat-add-specs {flex-wrap:wrap;}.bulk-app .cat-add-btn {min-height:44px;font-size:14px;}
-.bulk-app .rep-day-title,.bulk-app .rep-ex-list li {font-size:15px;}.bulk-app .rep-ex-spec,.bulk-app .rep-note{font-size:12px;}.bulk-app .rep-day-letter {color:var(--primary);font-size:20px;}
+.bulk-app .rep-day-title,.bulk-app .rep-ex-list li {font-size:15px;}.bulk-app .rep-note{font-size:12px;}.bulk-app .rep-chip{font-size:12px;}.bulk-app .rep-day-letter {color:var(--primary);font-size:20px;}
 .bulk-app .rec-filter-row input[type=date] {font-size:14px;}.bulk-app .record-export-text-base {font-size:13px;}
 .tab-bar {max-width:712px;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));border:1px solid #dce2ed;background:#ffffffef;border-radius:24px;padding:7px;box-shadow:0 14px 40px #2838571a;backdrop-filter:blur(24px);}
 .mode-btn {font-size:12px;padding:11px 3px;gap:6px;min-width:0;min-height:62px;border-radius:17px;color:#69758a;white-space:nowrap;}
@@ -667,7 +676,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
  .bulk-app .set-total{font-size:34px;}.bulk-app .masthead-actions{gap:4px;}
  .bulk-app .rec-filter-row input[type=date]{min-width:0;width:0;font-size:16px;}
  .bulk-app .cat-item-specs{flex-wrap:wrap;}.bulk-app .cat-add-specs{flex-wrap:wrap;}
- .bulk-app .rep-ex-list li{flex-wrap:wrap;}
  .tab-bar{width:auto;max-width:596px;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(8px + env(safe-area-inset-bottom,0px));}
 }
 .bulk-app #principles {background:transparent;border:0;overflow:visible;display:grid;gap:12px;}
@@ -2052,4 +2060,4 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .match-row input,.match-row select{min-height:44px;max-width:100%;font-size:16px;}
 .match-row>select{width:100%;margin-top:8px;}
 .exercise-match-dialog{max-height:85vh;overflow:auto;}
-@media(max-width:480px){.bulk-app .rep-ex-list li{display:block;padding:10px 0;}.bulk-app .rep-ex-spec{display:block;margin-top:4px;font-size:13px;}.bulk-app .rep-ex-name{font-size:16px;}.bulk-app .stats-pr-row{flex-wrap:wrap;}.bulk-app .settings-card{padding:16px;}}
+@media(max-width:480px){.bulk-app .stats-pr-row{flex-wrap:wrap;}.bulk-app .settings-card{padding:16px;}}
