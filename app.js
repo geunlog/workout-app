@@ -1473,7 +1473,7 @@
     if (d.ex.length === 0 && !d.cardio) {
       var empty = document.createElement('p');
       empty.className = 'empty-note empty-routine-note';
-      empty.textContent = routineEditing ? '아직 종목이 없어요. 아래 버튼으로 추가하세요.' : '등록된 운동이 없어요. 루틴 편집에서 종목을 추가하세요.';
+      empty.textContent = routineEditing ? '아직 종목이 없어요. + 종목 추가 버튼으로 추가하세요.' : '등록된 운동이 없어요. 루틴 편집에서 종목을 추가하세요.';
       panelEl.appendChild(empty);
 
       // 운동이 없는 날에는 사용자가 바로 편집으로 들어갈 수 있도록
