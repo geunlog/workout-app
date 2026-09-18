@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="34">
+<meta name="workout-app-version" content="40">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -366,10 +366,18 @@
   /* ---------- 하단 액션 ---------- */
   .bulk-app .reset-row { margin-top: 20px; display: flex; gap: 6px; flex-wrap: wrap; }
   .bulk-app .reset-row > button { flex: 1; min-width: 0; }
-  /* 편집 중에는 저장(확정) / 되돌리기 / 종목 손보기 세 묶음으로 나눈다. */
-  .bulk-app #dayView.routine-editing .reset-row > #btnSaveNow { flex-basis: 100%; }
+  /* 저장/취소, 종목추가/유산소 모두 반반 너비로 맞춘다. */
+  .bulk-app #dayView.routine-editing .reset-row > button { flex: 0 0 calc(50% - 3px); }
+  /* 변경 취소는 되돌릴 수 없는 동작이라 채움색으로 분명히 드러낸다. */
+  .bulk-app #btnRevertNow[hidden] { display: none !important; }
+  .bulk-app #btnRoutineEdit[hidden] { display: none !important; }
+  /* 자주 안 쓰는 두 버튼은 접어서 평소 화면 무게를 줄인다. */
+  .bulk-app .routine-advanced-options{margin-top:4px;}
+  .bulk-app .routine-advanced-options>summary{min-height:40px;display:flex;align-items:center;color:var(--muted);font-size:13px;cursor:pointer;}
+  .bulk-app .routine-advanced-row{display:flex;gap:6px;margin-top:8px;}
+  .bulk-app .routine-advanced-row>button{flex:0 0 calc(50% - 3px);}
   .bulk-app .edit-action-row { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-  .bulk-app .edit-action-row > button { flex: 1; min-width: 0; margin: 0; }
+  .bulk-app .edit-action-row > button { flex: 0 0 calc(50% - 3px); min-width: 0; margin: 0; }
   .bulk-app .edit-action-row:empty { display: none; }
   .bulk-app .btn-reset {
     flex: 1; background: transparent; border: 1px solid var(--line); color: var(--muted);
@@ -380,6 +388,9 @@
   .bulk-app .btn-reset:hover { color: var(--ink); border-color: var(--line-strong); }
   .bulk-app .btn-save-now { background: var(--raised); border-color: transparent; color: var(--ink); }
   .bulk-app .btn-save-now:hover { background: #454C86; border-color: transparent; }
+  /* 되돌릴 수 없는 동작이라 채움색으로 분명히 드러낸다. .btn-reset보다 뒤에 둬야 실제로 적용된다. */
+  .bulk-app .btn-revert-now { background: var(--drop); border-color: var(--drop); color: #fff; font-weight: 700; }
+  .bulk-app .btn-revert-now:hover { background: var(--drop); border-color: var(--drop); }
 
   /* ---------- 전체 요약 ---------- */
   .bulk-app .rep-summary { padding: 16px; margin-bottom: 12px; }
@@ -685,7 +696,7 @@ button {touch-action:manipulation;transition:background .18s ease,transform .18s
 html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .ex-row,.bulk-app .ex-row:last-child {padding-left:46px!important;}
 @media(max-width:700px),(pointer:coarse){
- .bulk-app {width:100%;max-width:620px;min-height:100dvh;padding:calc(20px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(118px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));}
+ .bulk-app {width:100%;max-width:620px;min-height:var(--app-vvh,100dvh);padding:calc(20px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(118px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));}
  .bulk-app .exercise-list {grid-template-columns:minmax(0,1fr);}
  .bulk-app .ex-row,.bulk-app .ex-row:last-child {min-width:0;padding:16px 12px 16px 46px!important;}
  .bulk-app .ex-top {gap:7px;}.bulk-app .ex-num{width:25px;height:28px;flex-shrink:0;}
@@ -1943,6 +1954,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .sr-only{position:absolute!important;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
 .recent-history-date .recent-set-number{display:block;font-size:11px;margin-top:4px;color:var(--muted);}
 .bulk-app.keyboard-open #modeToggle{display:none!important;}
+/* 탭바가 숨는 동안에는 탭바용 하단 여백도 줄여 키보드 위 빈 칸을 없앤다. */
+.bulk-app.keyboard-open{padding-bottom:calc(16px + env(safe-area-inset-bottom))!important;}
 .bulk-app details > summary::-webkit-details-marker{display:none;}
 .bulk-app details > summary{list-style:none;}
 .bulk-app details > summary .chev,.bulk-app details > summary .rec-chev,.bulk-app details > summary .record-day-chevron,.bulk-app details > summary .exercise-record-chevron{display:none!important;}
@@ -2021,8 +2034,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
 
 .data-confirm-actions .btn-save-now{background:#315bea;border-color:#315bea;color:white;}
-.data-confirm-actions.routine-unsaved-actions{grid-template-columns:1fr;gap:8px;}
-.data-confirm-actions.routine-unsaved-actions .routine-unsaved-stay{background:transparent;border-color:transparent;color:#5a6273;font-weight:600;min-height:40px;}
 .bulk-app .temporary-badge{flex-shrink:0;}
 /* v8: compact headings and clear editing controls */
 .bulk-app .stamp-row{padding:14px 16px;margin:0 0 12px;min-height:64px;box-sizing:border-box;background:#e9efff;border:1px solid #c8d5fb;border-left:4px solid #315bea;border-radius:16px;gap:12px;align-items:center;}
@@ -2192,10 +2203,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">플랜 백업·복원</div>
     <div class="settings-card"><p id="backupStatus" class="record-export-note"></p>
-      <p class="record-export-note">현재 플랜의 루틴·종목·기록·메모를 JSON 파일로 백업해요.</p>
+      <p class="record-export-note">루틴·종목·기록·메모를 JSON 파일로 백업해요. 전체 백업은 모든 플랜을 한 파일에 담아요.</p>
       <div class="transfer-actions">
         <details class="backup-options"><summary>백업 설정</summary><button class="btn-reset" id="btnBackupFolder" type="button">백업 폴더 선택</button></details>
-        <button class="btn-reset btn-save-now" id="btnDataExport" type="button">플랜 백업</button>
+        <button class="btn-reset btn-save-now" id="btnDataExport" type="button">현재 플랜 백업</button>
+        <button class="btn-reset" id="btnDataExportAll" type="button">전체 플랜 백업</button>
         <button class="btn-reset" id="btnDataImport" type="button">파일 가져오기</button>
         <input id="dataImportFile" type="file" accept=".json,application/json" hidden>
       </div>
@@ -2243,7 +2255,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           <h4>루틴에 없는 운동</h4>
           <p><strong>＋ 직접 기록</strong>으로 남겨요. 부위와 종목을 고르고 무게·횟수를 넣으면 돼요. 목록에 없는 이름도 직접 쳐서 기록할 수 있지만, 그렇게 넣은 이름은 운동 관리에 자동으로 추가되지는 않아요.</p>
           <h4>루틴 편집</h4>
-          <p><strong>루틴 편집</strong>을 누르면 종목 추가·삭제, 순서 이동, 세트·횟수·RIR 수정이 가능해요. 고친 내용은 <strong>루틴 변경사항 저장</strong>을 눌러야 확정돼요. 저장하지 않고 편집을 닫으면 저장할지 되돌릴지 물어봐요.</p>
+          <p><strong>루틴 편집</strong>을 누르면 종목 추가·삭제, 순서 이동, 세트·횟수·RIR 수정이 가능해요. 편집 중에는 <strong>루틴 저장</strong> 또는 <strong>변경 취소</strong> 둘 중 하나로만 편집을 마칠 수 있어요. 저장하면 고친 내용이 확정되고, 취소하면 편집 전으로 되돌아가요.</p>
+          <p>자주 쓰지 않는 <strong>운동 초기화</strong>·<strong>기본 루틴 적용</strong>은 <strong>고급 옵션</strong>을 펼치면 나와요.</p>
           <p><strong>기본 루틴 적용</strong>을 누르면 분할을 골라 월~토 루틴 전체를 한 번에 교체할 수 있어요.</p>
         </div>
       </details>
@@ -2294,7 +2307,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           <h4>운동 플랜</h4>
           <p>루틴과 기록을 통째로 나눠 쓰는 단위예요. 벌크업과 다이어트처럼 시기를 나눠 관리하고 싶을 때 새 플랜을 만들면 돼요.</p>
           <h4>백업하기</h4>
-          <p class="app-guide-warn"><strong>기록은 이 브라우저 안에만 저장돼요.</strong> 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니, <strong>플랜 백업</strong>으로 JSON 파일을 주기적으로 받아두세요. 받은 파일은 <strong>플랜 복원</strong>으로 다시 불러올 수 있어요.</p>
+          <p class="app-guide-warn"><strong>기록은 이 브라우저 안에만 저장돼요.</strong> 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니 주기적으로 백업해두세요. 백업 카드 맨 위에 마지막 백업이 며칠 전인지 나오고, 오래됐거나 기록이 바뀌었으면 주황색으로 알려줘요.</p>
+          <p><strong>현재 플랜 백업</strong>은 지금 보고 있는 플랜만, <strong>전체 플랜 백업</strong>은 모든 플랜을 한 파일에 담아요. 기기를 옮길 때는 전체 백업이 편해요.</p>
+          <p><strong>파일 가져오기</strong>로 백업 파일을 다시 불러와요. 전체 백업 파일은 담긴 플랜이 모두 새 플랜으로 추가돼요.</p>
           <h4>홈 화면에 설치</h4>
           <p>브라우저 메뉴에서 <strong>홈 화면에 추가</strong>를 누르면 앱처럼 열리고, 저장 데이터도 더 안전하게 유지돼요.</p>
         </div>
@@ -2303,7 +2318,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 34 · 2026-09-17</strong>
+      <strong>앱 버전 40 · 2026-09-17</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -2322,10 +2337,16 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
       <div class="reset-row">
         <button class="btn-reset btn-save-now" id="btnSaveNow" type="button">루틴 저장</button>
-        <button class="btn-reset routine-edit-only" id="btnClearDay" type="button">운동 초기화</button>
-        <button class="btn-reset routine-edit-only" id="btnReset" type="button">기본 루틴 적용</button>
+        <button class="btn-reset btn-revert-now" id="btnRevertNow" type="button">변경 취소</button>
       </div>
       <div class="edit-action-row routine-edit-only" id="editActionRow"></div>
+      <details class="routine-advanced-options routine-edit-only">
+        <summary>고급 옵션</summary>
+        <div class="routine-advanced-row">
+          <button class="btn-reset" id="btnClearDay" type="button">운동 초기화</button>
+          <button class="btn-reset" id="btnReset" type="button">기본 루틴 적용</button>
+        </div>
+      </details>
 
       <div class="record-date-row routine-read-only">
         <label>기록 날짜 <input type="date" id="recordDate" aria-label="운동 기록 날짜"></label>
@@ -3535,26 +3556,16 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var pending=isTemp?temporaryWorkspace(activeTemporary()).dirty:routineOrderPending;
     document.getElementById('btnSaveNow').textContent=isTemp?'임시 루틴 변경사항 저장':'루틴 변경사항 저장';
     document.getElementById('btnSaveNow').hidden = !pending;
-    document.getElementById('btnClearDay').hidden=isTemp;
-    document.getElementById('btnReset').hidden=isTemp;
+    document.getElementById('btnRevertNow').hidden = !pending;
+    // 변경사항이 있으면 저장/취소 중 하나를 거쳐야 편집을 벗어난다.
+    button.hidden = routineEditing && pending;
+    // 임시 루틴에는 초기화/기본적용이 없으므로 고급 옵션 자체를 접어 숨긴다(빈 채로 펼쳐지는 것 방지).
+    var advanced=document.getElementById('btnClearDay').closest('.routine-advanced-options');
+    if(advanced){advanced.hidden=isTemp;if(isTemp)advanced.open=false;}
     document.getElementById('btnSaveNow').closest('.reset-row').hidden = !routineEditing && !pending;
     document.getElementById('btnSaveNow').classList.toggle('pending-save',pending);
   }
   document.getElementById('btnRoutineEdit').addEventListener('click', function () {
-    if(routineEditing){
-      var tempDay=currentTemporaryDay();
-      var temp=activeTemporary();
-      var pending=tempDay.temporary?(temp?temporaryWorkspace(temp).dirty:false):routineOrderPending;
-      if(pending){
-        confirmUnsavedRoutine().then(function(choice){
-          if(choice==='stay')return;
-          if(choice==='save'){if(!save(true))return;}
-          else if(!revertRoutineEdits())return;
-          routineEditing=false;renderPanel();
-        });
-        return;
-      }
-    }
     routineEditing = !routineEditing;
     renderPanel();
   });
@@ -5720,34 +5731,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       try{dialog.showModal();cancel.focus();}catch(e){pendingActionDialog=false;dialog.remove();showToast('확인창을 열지 못했어요. 작업은 실행하지 않았어요.','error');resolve(false);}
     });
   }
-  function confirmUnsavedRoutine() {
-    if(pendingActionDialog)return Promise.resolve('stay');
-    clearConfirmation();pendingActionDialog=true;
-    var owner=activeProfile;
-    return new Promise(function(resolve){
-      var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';
-      dialog.setAttribute('aria-labelledby','routineUnsavedTitle');dialog.setAttribute('aria-describedby','routineUnsavedMessage');
-      var heading=document.createElement('h2');heading.id='routineUnsavedTitle';heading.textContent='저장하지 않은 루틴 변경사항';
-      var body=document.createElement('p');body.id='routineUnsavedMessage';body.className='data-confirm-message';
-      body.textContent='편집한 내용이 아직 확정되지 않았어요. 저장하거나 편집 전으로 되돌릴 수 있어요.';
-      var actions=document.createElement('div');actions.className='data-confirm-actions routine-unsaved-actions';
-      var accept=document.createElement('button');accept.type='button';accept.className='btn-save-now';accept.textContent='저장하고 닫기';
-      var revert=document.createElement('button');revert.type='button';revert.className='confirm-destructive';revert.textContent='변경 취소';
-      var stay=document.createElement('button');stay.type='button';stay.className='routine-unsaved-stay';stay.textContent='계속 편집';
-      actions.appendChild(accept);actions.appendChild(revert);actions.appendChild(stay);
-      dialog.appendChild(heading);dialog.appendChild(body);dialog.appendChild(actions);
-      var done=false;
-      function finish(choice){if(done)return;done=true;pendingActionDialog=false;dialog.close();dialog.remove();resolve(activeProfile===owner?choice:'stay');}
-      stay.addEventListener('click',function(){finish('stay');});
-      revert.addEventListener('click',function(){finish('revert');});
-      accept.addEventListener('click',function(){finish('save');});
-      dialog.addEventListener('cancel',function(e){e.preventDefault();finish('stay');});
-      dialog.addEventListener('keydown',function(e){e.stopPropagation();});
-      dialog.addEventListener('close',function(){finish('stay');});
-      document.body.appendChild(dialog);
-      try{dialog.showModal();accept.focus();}catch(e){pendingActionDialog=false;dialog.remove();showToast('확인창을 열지 못했어요. 편집을 계속합니다.','error');resolve('stay');}
-    });
-  }
   function revertRoutineEdits() {
     var temp=activeTemporary();
     if(currentTemporaryDay().temporary && temp){
@@ -5947,6 +5930,21 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var ok = save(true);
     if (ok && routineEditing) {
       routineEditing = false;
+      renderPanel();
+    }
+  });
+
+  // 편집을 닫지 않고도 편집 전 상태로 되돌린다. 되돌리면 복구할 수 없어 확인을 받는다.
+  document.getElementById('btnRevertNow').addEventListener('click', async function () {
+    var isTemp = currentTemporaryDay().temporary;
+    var ok = await confirmDataAction(
+      '변경 취소',
+      (isTemp ? '임시 루틴에서 ' : '') + '편집한 내용을 모두 버리고 마지막으로 저장한 상태로 되돌려요. 되돌린 내용은 복구할 수 없어요.',
+      '되돌리기'
+    );
+    if (!ok) return;
+    if (revertRoutineEdits()) {
+      routineEditing = false;   // 저장과 마찬가지로 되돌리기도 편집을 마치는 동작이다.
       renderPanel();
     }
   });
@@ -6718,8 +6716,26 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
         d.ex.forEach(function(e){if(!text(e.n,200)||!MUSCLES.includes(e.m)||!Number.isInteger(Number(e.s))||Number(e.s)<1||Number(e.s)>20||!text(String(e.r),100)||!text(String(e.rir),100))fail();});
       });
     }
-    if(!data || data.format!=='workout-routine-transfer' || data.version!==1 || !data.profile)fail();
-    var p=data.profile;if(!text(p.name,100))fail();routine(p.routine);
+    if(!data || data.format!=='workout-routine-transfer')fail();
+    // v2(전체 플랜)는 프로필 배열을 담는다. 각 프로필은 v1과 동일한 규칙으로 검증한다.
+    if(data.version===2){
+      if(!Array.isArray(data.profiles) || !data.profiles.length || data.profiles.length>50)fail();
+      var names=new Set();
+      data.profiles.forEach(function(one){
+        if(!one || !text(one.name,100) || names.has(one.name))fail();
+        names.add(one.name);
+        validateProfilePayload(one,fail,text,routine);
+      });
+      return data;
+    }
+    if(data.version!==1 || !data.profile)fail();
+    var p=data.profile;if(!text(p.name,100))fail();
+    validateProfilePayload(p,fail,text,routine);
+    return data;
+  }
+  // v1 프로필 본문 검증 — v2의 각 프로필에도 그대로 적용한다.
+  function validateProfilePayload(p,fail,text,routine){
+    routine(p.routine);
     if(p.pins!=null && (!Array.isArray(p.pins)||p.pins.length>5||p.pins.some(function(n){return !text(n,200);})))fail();
     if(p.pending!=null)routine(p.pending);
     if(!p.catalog || typeof p.catalog!=='object')fail();
@@ -6743,13 +6759,35 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       Object.keys(group).forEach(function(name){var v=group[name];if(!text(name,500)||!v||!text(String(v.w),30)||!text(String(v.reps),30))fail();});
     });
     if(p.temporaryRoutine)validateTemporary(p.temporaryRoutine,todayStr(),true);
-    return data;
   }
   function transferSnapshot() {
     return {format:'workout-routine-transfer',version:1,exportedAt:new Date().toISOString(),profile:{
       name:activeProfile,routine:loadSavedRoutine(),pending:routineOrderPending?days:null,
       catalog:readJSON(CATALOG_KEY,catalog),logs:logs,memos:getMemos(),draft:draft,pins:pinnedExercises(),temporaryRoutine:temporaryRoutine()
     }};
+  }
+  // 10번: 활성 플랜이 아닌 플랜은 저장소에서 직접 읽어 스냅샷을 만든다.
+  function profileSnapshotFor(name){
+    if(name===activeProfile)return transferSnapshot().profile;
+    var savedRoutine=readJSON(keyFor('bulk-routine-v9',name),null);
+    if(!isRoutine(savedRoutine))savedRoutine=defaults();
+    var pending=readJSON(keyFor('bulk-routine-pending-v1',name),null);
+    return {
+      name:name,
+      routine:normalizeRoutine(savedRoutine),
+      pending:isRoutine(pending)?normalizeRoutine(pending):null,
+      catalog:readJSON(keyFor('bulk-routine-catalog-v3',name),readJSON(keyFor('bulk-routine-catalog-v2',name),{})) || {},
+      logs:readJSON(keyFor('bulk-routine-log-v1',name),[]) || [],
+      memos:readJSON(keyFor('bulk-routine-memos-v1',name),[]) || [],
+      draft:readJSON(keyFor('bulk-routine-draft-v2',name),{}) || {},
+      pins:readJSON(keyFor('bulk-workout-pins-v1',name),[]) || [],
+      temporaryRoutine:readJSON(keyFor('bulk-workout-temporary-v1',name),null)
+    };
+  }
+  function allProfilesSnapshot(){
+    return {format:'workout-routine-transfer',version:2,exportedAt:new Date().toISOString(),
+      activeProfile:activeProfile,
+      profiles:profiles.map(profileSnapshotFor)};
   }
   function backupFingerprint(profile){
     var clean=JSON.parse(JSON.stringify(profile));
@@ -6763,14 +6801,24 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     if(!writeJSON(keyFor('bulk-workout-backup-status-v1',data.profile.name),status))showToast('파일 내보내기는 처리했지만 백업 상태를 저장하지 못했어요.','error');
     refreshBackupStatus();
   }
+  // 1번: 마지막 백업 이후 경과일을 보여주고, 오래됐으면 백업을 권한다.
+  var BACKUP_WARN_DAYS = 14;
   function refreshBackupStatus(){
     var el=document.getElementById('backupStatus');if(!el)return;
     var state=readJSON(keyFor('bulk-workout-backup-status-v1',activeProfile),null);
     el.classList.remove('backup-stale','backup-fresh');
-    if(!state){el.textContent='현재 플랜 · 아직 파일 내보내기 이력이 없어요.';el.classList.add('backup-stale');return;}
+    if(!state){el.textContent='현재 플랜 · 아직 백업한 적이 없어요. 기록이 사라지지 않게 백업해두세요.';el.classList.add('backup-stale');return;}
     var changed=state.fingerprint!==backupFingerprint(transferSnapshot().profile);
-    el.classList.add(changed||!state.confirmed?'backup-stale':'backup-fresh');
-    el.textContent='현재 플랜 · 마지막 '+(state.confirmed?'파일 저장':'다운로드 요청')+' '+new Date(state.at).toLocaleString('ko-KR')+' · '+(changed?'이후 데이터가 변경됐어요.':'내보낸 내용과 같아요.')+(state.confirmed?'':' 파일 앱에서 저장 여부를 확인해주세요.');
+    var days=Math.floor((Date.now()-new Date(state.at).getTime())/86400000);
+    var ago=days<=0?'오늘':days===1?'어제':days+'일 전';
+    var stale=changed||!state.confirmed||days>=BACKUP_WARN_DAYS;
+    el.classList.add(stale?'backup-stale':'backup-fresh');
+    var parts=['현재 플랜 · 마지막 백업 '+ago+' ('+new Date(state.at).toLocaleDateString('ko-KR')+')'];
+    if(changed)parts.push('이후 기록이 바뀌었어요. 다시 백업해주세요.');
+    else if(days>=BACKUP_WARN_DAYS)parts.push(days+'일이 지났어요. 한 번 더 백업해두면 안전해요.');
+    else parts.push('백업한 내용과 같아요.');
+    if(!state.confirmed)parts.push('파일 앱에서 저장 여부를 확인해주세요.');
+    el.textContent=parts.join(' · ');
   }
   function recordSignature(date,dayKey,entry) {
     return JSON.stringify([
@@ -7023,8 +7071,36 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     };
   }
 
+  function profileImportOperations(p,name){
+    return [
+      {key:keyFor('bulk-routine-v9',name),value:normalizeRoutine(p.routine)},
+      {key:keyFor('bulk-routine-catalog-v3',name),value:p.catalog},
+      {key:keyFor('bulk-routine-log-v1',name),value:p.logs},
+      {key:keyFor('bulk-routine-memos-v1',name),value:p.memos},
+      {key:keyFor('bulk-routine-draft-v2',name),value:p.draft},
+      {key:keyFor('bulk-workout-pins-v1',name),value:p.pins || []},
+      {key:keyFor('bulk-catalog-hypertrophy-v1',name),value:true},
+      {key:keyFor('bulk-catalog-expand-all-v2',name),value:true}
+    ];
+  }
+  // v2(전체 플랜) 파일은 담긴 플랜을 모두 새 플랜으로 추가한다.
+  function importAllProfiles(data){
+    var next=profiles.slice(),operations=[],added=[];
+    data.profiles.forEach(function(p){
+      var name=p.name+' (가져옴)',suffix=2;
+      while(next.includes(name)){name=p.name+' (가져옴 '+suffix+')';suffix++;}
+      next.push(name);added.push(name);
+      operations=operations.concat(profileImportOperations(p,name));
+      if(p.temporaryRoutine)operations.push({key:keyFor('bulk-workout-temporary-v1',name),value:p.temporaryRoutine});
+      if(p.pending)operations.push({key:keyFor('bulk-routine-pending-v1',name),value:p.pending});
+    });
+    operations.push({key:PROFILES_KEY,value:next});
+    if(!storageTransaction(operations))throw new Error('가져오기를 저장하지 못했어요. 저장 공간을 확인해주세요.');
+    profiles=next;return added;
+  }
   function importTransfer(data) {
     validateTransfer(data);
+    if(data.version===2)return importAllProfiles(data);
     var p=data.profile,name=p.name+' (가져옴)',suffix=2;
     while(profiles.includes(name)){name=p.name+' (가져옴 '+suffix+')';suffix++;}
     var operations=[
@@ -7049,7 +7125,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var old = document.getElementById('importChoiceOverlay');
     if (old) old.remove();
 
-    var p = data.profile;
+    var isAll = data.version === 2;
+    var p = isAll ? {name: data.profiles.length + '개 플랜'} : data.profile;
     var overlay = document.createElement('div');
     overlay.id = 'importChoiceOverlay';
     overlay.className = 'import-choice-overlay';
@@ -7063,16 +7140,16 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     dialog.innerHTML =
       '<h2 id="importChoiceTitle">파일 가져오기</h2>' +
       '<p class="import-choice-summary">' +
-        '<strong>' + statsEscape(p.name) + '</strong> · 운동기록 ' +
-        mergeInfo.importedRecordCount + '세트' +
-        (mergeInfo.duplicateRecordCount ? ' · 중복 ' + mergeInfo.duplicateRecordCount + '세트' : '') +
+        '<strong>' + statsEscape(p.name) + '</strong>' +
+        (isAll ? ' 전체 백업' : ' · 운동기록 ' + mergeInfo.importedRecordCount + '세트' +
+        (mergeInfo.duplicateRecordCount ? ' · 중복 ' + mergeInfo.duplicateRecordCount + '세트' : '')) +
       '</p>' +
-      '<p class="import-choice-question">이 파일을 어떻게 가져올까요?</p>' +
+      '<p class="import-choice-question">' + (isAll ? '담긴 플랜을 모두 새 플랜으로 추가합니다.' : '이 파일을 어떻게 가져올까요?') + '</p>' +
       '<div class="import-choice-actions">' +
-        '<button type="button" class="import-choice-overwrite">' +
+        (isAll ? '' : '<button type="button" class="import-choice-overwrite">' +
           '<strong>현재 플랜에 덮어쓰기</strong>' +
           '<span>루틴은 파일 내용으로 변경하고, 운동 관리와 기록은 필요한 데이터만 추가합니다.</span>' +
-        '</button>' +
+        '</button>') +
         '<button type="button" class="import-choice-new">' +
           '<strong>새 플랜으로 가져오기</strong>' +
           '<span>현재 플랜은 그대로 두고 파일 내용을 새 플랜으로 만듭니다.</span>' +
@@ -7120,7 +7197,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     });
     document.addEventListener('keydown', keydown);
 
-    dialog.querySelector('.import-choice-overwrite').addEventListener('click', async function() {
+    var overwriteBtn = dialog.querySelector('.import-choice-overwrite');
+    if(overwriteBtn) overwriteBtn.addEventListener('click', async function() {
       close(false);
       var hint = document.getElementById('dataTransferHint');
       try {
@@ -7139,13 +7217,16 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     dialog.querySelector('.import-choice-new').addEventListener('click', function() {
       close(false);
       try {
-        var name = importTransfer(importCandidate);
+        var result = importTransfer(importCandidate);
         importCandidate = null;
-        switchProfile(name);
+        var names = Array.isArray(result) ? result : [result];
+        switchProfile(names[0]);
         renderProfileList();
-        document.getElementById('dataTransferHint').textContent =
-          name + ' 플랜으로 가져왔어요. 기존 플랜은 그대로 유지됩니다.';
-        showToast(name + ' 플랜으로 가져왔어요.');
+        var message = names.length > 1
+          ? names.length + '개 플랜을 가져왔어요. 기존 플랜은 그대로 유지됩니다.'
+          : names[0] + ' 플랜으로 가져왔어요. 기존 플랜은 그대로 유지됩니다.';
+        document.getElementById('dataTransferHint').textContent = message;
+        showToast(names.length > 1 ? names.length + '개 플랜을 가져왔어요.' : names[0] + ' 플랜으로 가져왔어요.');
       } catch(e) {
         document.getElementById('dataTransferHint').textContent =
           e && e.message ? e.message : '새 플랜 가져오기에 실패했어요.';
@@ -7157,7 +7238,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       document.getElementById('dataTransferHint').textContent = '가져오기를 취소했어요.';
     });
 
-    dialog.querySelector('.import-choice-overwrite').focus();
+    (overwriteBtn || dialog.querySelector('.import-choice-new')).focus();
   }
 
 
@@ -7166,6 +7247,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   var BACKUP_DIR_STORE='handles';
   var BACKUP_DIR_KEY='backup-directory';
 
+  function exportAllTimestampName(){
+    var d=new Date();
+    function pad(n){return String(n).padStart(2,'0');}
+    return '전체플랜_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+
+      '_'+pad(d.getHours())+pad(d.getMinutes())+pad(d.getSeconds())+'.json';
+  }
   function exportTimestampName(){
     var d=new Date();
     function pad(n){return String(n).padStart(2,'0');}
@@ -7242,18 +7329,16 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     }
   });
 
-  document.getElementById('btnDataExport').addEventListener('click',async function(){
+  // 현재 플랜/전체 플랜 백업이 저장 경로를 공유한다.
+  async function runBackupExport(data,fileName,scopeLabel){
     var hint=document.getElementById('dataTransferHint');
     try{
-      var data=JSON.parse(JSON.stringify(transferSnapshot()));
       var json=JSON.stringify(data,null,2);
       var blob=new Blob([json],{type:'application/json'});
       if(blob.size>5*1024*1024){
-        hint.textContent='현재 플랜은 5MB를 초과해 파일 가져오기 지원 범위를 넘습니다. 운동기록 텍스트 내보내기를 이용해주세요.';
+        hint.textContent=scopeLabel+'이 5MB를 초과해 파일 가져오기 지원 범위를 넘습니다. 운동기록 텍스트 내보내기를 이용해주세요.';
         return;
       }
-
-      var fileName=exportTimestampName();
 
       // 처음 선택해 둔 백업 폴더가 있으면 그곳에 바로 저장
       if(typeof window.showDirectoryPicker==='function'){
@@ -7264,7 +7349,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
             try{
               await saveBlobToDirectory(dirHandle,fileName,blob);
               hint.textContent=(dirHandle.name || '백업 폴더')+' / '+fileName+' 에 저장했어요.';
-              noteBackup(data,true);
+              if(data.version===1)noteBackup(data,true);
               return;
             }catch(dirError){
               // 폴더 저장 실패 시 아래 저장창/다운로드 방식으로 자동 대체
@@ -7284,7 +7369,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
           await writable.write(blob);
           await writable.close();
           hint.textContent=fileName+' 파일을 저장했어요.';
-          noteBackup(data,true);
+          if(data.version===1)noteBackup(data,true);
           return;
         }catch(saveError){
           if(saveError && saveError.name==='AbortError'){
@@ -7303,11 +7388,19 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
       a.remove();
       setTimeout(function(){URL.revokeObjectURL(url);},60000);
       hint.textContent=fileName+' 다운로드를 요청했어요.';
-      noteBackup(data,false);
+      if(data.version===1)noteBackup(data,false);
     }catch(e){
       hint.textContent='파일을 만들지 못했어요. 다시 시도해주세요.';
     }
+  }
+
+  document.getElementById('btnDataExport').addEventListener('click',function(){
+    runBackupExport(JSON.parse(JSON.stringify(transferSnapshot())),exportTimestampName(),'현재 플랜');
   });
+  document.getElementById('btnDataExportAll').addEventListener('click',function(){
+    runBackupExport(JSON.parse(JSON.stringify(allProfilesSnapshot())),exportAllTimestampName(),'전체 플랜');
+  });
+
   document.getElementById('btnRecoveryDownload').addEventListener('click',function(){
     try {
       var history=readJSON(logRecoveryKey(),[]);
@@ -7355,8 +7448,10 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
   document.getElementById('btnImportConfirm').addEventListener('click',function(){
     if(!importCandidate)return;
     try{
-      var name=importTransfer(importCandidate);importCandidate=null;document.getElementById('dataImportPreview').hidden=true;
-      switchProfile(name);renderProfileList();document.getElementById('dataTransferHint').textContent=name+' 플랜으로 가져왔어요. 기존 플랜은 그대로 유지됩니다.';
+      var result=importTransfer(importCandidate);importCandidate=null;document.getElementById('dataImportPreview').hidden=true;
+      var names=Array.isArray(result)?result:[result];
+      switchProfile(names[0]);renderProfileList();
+      document.getElementById('dataTransferHint').textContent=(names.length>1?names.length+'개 플랜을 가져왔어요.':names[0]+' 플랜으로 가져왔어요.')+' 기존 플랜은 그대로 유지됩니다.';
     }catch(e){document.getElementById('dataTransferHint').textContent=e.message;}
   });
 
@@ -7520,12 +7615,15 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
     var shrunk=Math.max(baseline,window.innerHeight)-viewport.height>140;
     app.classList.toggle('keyboard-open',editable() && shrunk);
     app.style.setProperty('--keyboard-inset',Math.max(0,window.innerHeight-viewport.height-viewport.offsetTop)+'px');
+    // 키보드가 올라오면 100dvh가 화면 밖까지 잡아 빈 칸이 생긴다. 실제 보이는 높이로 맞춘다.
+    app.style.setProperty('--app-vvh',Math.round(viewport.height)+'px');
     cancelAnimationFrame(memoScrollFrame);memoScrollFrame=requestAnimationFrame(keepMemoCaretVisible);
   }
   document.addEventListener('input',function(e){if(e.target.closest('#memoEditor'))update();});
   document.addEventListener('keyup',function(e){if(e.target.closest('#memoEditor'))update();});
   viewport.addEventListener('resize',update);document.addEventListener('focusin',update);document.addEventListener('focusout',function(){setTimeout(update,0);});
   window.addEventListener('orientationchange',function(){baseline=viewport.height;update();});
+  update();   // 첫 렌더에도 높이를 잡아둔다
 })();
 </script>
 
