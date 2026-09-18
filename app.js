@@ -1092,6 +1092,9 @@
   var recordsViewEl = document.getElementById('recordsView');
   var recordsListEl = document.getElementById('recordsList');
   var reportViewEl = document.getElementById('reportView');
+  // 루틴 탭 요일 선택. undefined면 아직 안 열어본 상태(첫 진입 시 오늘 요일로 초기화),
+  // null이면 사용자가 '전체'를 골라 요일 전부를 세로로 보는 상태, 그 외엔 0~6 인덱스.
+  var reportSelectedDay;
   var statsViewEl = document.getElementById('statsView');
   var statsPeriod = 'week';
   var statsCalendarMonth = '';
@@ -3458,8 +3461,23 @@
   function renderReport() {
     var vol = weeklyVolume(effectiveWeek());
     var barsHtml = volumeBarsHtml(vol);
+    var week = effectiveWeek();
 
-    var daysHtml = effectiveWeek().map(function (d) {
+    if (reportSelectedDay === undefined) reportSelectedDay = todayIndex;
+
+    // 요일 탭: 월~일 7개 + '전체'. 운동 탭의 day-tab과 같은 스타일을 쓴다.
+    var dayTabsHtml = '<div class="report-day-tabs" role="tablist" aria-label="루틴 탭 요일 선택">' +
+      week.map(function (d, i) {
+        var selected = reportSelectedDay === i;
+        return '<button type="button" class="day-tab" role="tab" aria-selected="' + selected + '" data-report-day="' + i + '">' +
+          statsEscape(d.letter) +
+          (i === todayIndex ? '<span class="today-dot"></span>' : '') +
+        '</button>';
+      }).join('') +
+      '<button type="button" class="day-tab report-day-all" role="tab" aria-selected="' + (reportSelectedDay === null) + '" data-report-day="all">전체</button>' +
+    '</div>';
+
+    function dayCardHtml(d) {
       var exHtml = d.ex.length
         ? '<ul class="rep-ex-list">' + d.ex.map(function (e) {
             return '<li><span class="rep-ex-name">' + statsEscape(e.n) + '</span>' +
@@ -3476,7 +3494,11 @@
         '</div>' +
         exHtml + noteHtml + cardioHtml +
       '</div>';
-    }).join('');
+    }
+
+    var daysHtml = reportSelectedDay === null
+      ? week.map(dayCardHtml).join('')
+      : dayCardHtml(week[reportSelectedDay]);
 
     reportViewEl.innerHTML = temporaryStatusHtml()+adjustmentHtml()+
       '<div class="rep-summary">' +
@@ -3485,8 +3507,17 @@
         '<div class="bars">' + barsHtml + '</div>' +
         '<p class="bar-legend">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +
       '</div>' +
+      dayTabsHtml +
       daysHtml;
     bindAdjustment();bindTemporaryCancel(reportViewEl);
+
+    reportViewEl.querySelectorAll('[data-report-day]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var v = btn.dataset.reportDay;
+        reportSelectedDay = v === 'all' ? null : Number(v);
+        renderReport();
+      });
+    });
   }
 
   document.getElementById('btnSaveNow').addEventListener('click', function () {

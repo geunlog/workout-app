@@ -545,6 +545,14 @@ body {background:radial-gradient(ellipse at 85% 0%,#e7ecff 0%,transparent 45%),v
 .bulk-app .day-tab[aria-selected=true] {background:var(--primary);color:var(--on-primary);border-color:var(--primary);box-shadow:0 6px 20px #315bea18;}
 .bulk-app .day-tab .today-dot {background:var(--primary);}
 .bulk-app .day-tab[aria-selected=true] .today-dot {background:var(--on-primary);}
+/* 루틴 탭: 7일 + '전체' 8칸. 기본 day-tab보다 칸이 하나 많아 살짝 압축한다. */
+.bulk-app .report-day-tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) auto;gap:6px;margin:18px 0;}
+.bulk-app .report-day-tabs .day-tab{padding:13px 4px;font-size:14px;}
+.bulk-app .report-day-tabs .report-day-all{padding:13px 14px;font-weight:700;white-space:nowrap;}
+@media(max-width:400px){
+  .bulk-app .report-day-tabs{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .bulk-app .report-day-tabs .report-day-all{grid-column:span 4;}
+}
 .bulk-app .day-panel {background:transparent;border:0;padding:0;margin:0 0 24px;}
 .bulk-app .stamp-row {background:linear-gradient(115deg,#315bea,#5278f1);border:1px solid #315bea;border-radius:22px;padding:23px 24px;margin-bottom:20px;align-items:center;}
 .bulk-app .stamp::before {content:none;display:block;color:#dfe6ff;font:600 12px var(--ui);letter-spacing:.14em;margin-bottom:8px;}
