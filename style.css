@@ -389,7 +389,7 @@
     padding: 4px 9px; border-radius: 8px; background: var(--sunken);
     color: var(--muted); font-size: 11px; font-weight: 600; white-space: nowrap;
   }
-  .bulk-app .rep-chip-set { background: #e7ecff; color: var(--primary); }
+  .bulk-app .rep-chip-set { color: var(--ink); font-weight: 700; }
   .bulk-app .rep-chip-rir { background: transparent; color: var(--faint); padding-left: 2px; padding-right: 0; font-weight: 400; }
   .bulk-app .rep-note { font-size: 10.5px; color: var(--warn); margin-top: 11px; line-height: 1.55; }
 
