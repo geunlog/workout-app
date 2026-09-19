@@ -3480,7 +3480,7 @@
     function dayCardHtml(d) {
       var exHtml = d.ex.length
         ? '<ul class="rep-ex-list">' + d.ex.map(function (e) {
-            return '<li><span class="rep-ex-name">' + statsEscape(e.n) + '</span>' +
+            return '<li style="border-left:3px solid ' + (MUSCLE_COLOR[e.m] || 'transparent') + '"><span class="rep-ex-name">' + statsEscape(e.n) + '</span>' +
               '<span class="rep-ex-spec">' +
                 '<span class="rep-chip rep-chip-set">' + statsEscape(e.s) + '세트</span>' +
                 '<span class="rep-chip">' + statsEscape(e.r) + '회</span>' +

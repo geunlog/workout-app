@@ -376,7 +376,7 @@
      이름 아래에 배지를 가로로 나열하는 2행 구조로 둔다. */
   .bulk-app .rep-ex-list li {
     display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
-    padding: 12px 0; border-top: 1px solid var(--line); font-size: 12.5px;
+    padding: 12px 0 12px 10px; border-top: 1px solid var(--line); font-size: 12.5px;
   }
   .bulk-app .rep-ex-list li:first-child { border-top: none; }
   .bulk-app .rep-ex-name { min-width: 0; letter-spacing: -0.01em; font-weight: 600; }
