@@ -386,6 +386,8 @@
     font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
     margin-bottom: -2px;
   }
+  /* 운동 탭 종목 카드는 리스트가 아니라 개별 카드라 여백 기준이 다르다. */
+  .bulk-app .ex-row > .rep-muscle-tag { display: block; margin: 0 0 8px; }
   .bulk-app .rep-ex-name { min-width: 0; letter-spacing: -0.01em; font-weight: 600; }
   /* 세트·횟수·RIR을 각각 배지로 끊어 한눈에 구분되게 한다. */
   .bulk-app .rep-ex-spec {
@@ -575,7 +577,7 @@ body {background:radial-gradient(ellipse at 85% 0%,#e7ecff 0%,transparent 45%),v
 .bulk-app .set-total {font-size:44px;color:var(--primary);letter-spacing:-.04em;}
 .bulk-app .set-total span {display:block;text-align:right;font-size:12px;margin:6px 0 0;color:#e4e9ff;}
 .bulk-app .exercise-list {display:grid;gap:12px;margin:0;}
-.bulk-app .ex-row,.bulk-app .ex-row:last-child {padding:20px!important;background:var(--panel);border:1px solid var(--line);border-left-width:3px;border-radius:20px;box-shadow:0 4px 14px #0000000b;}
+.bulk-app .ex-row,.bulk-app .ex-row:last-child {padding:20px!important;background:var(--panel);border:1px solid var(--line);border-left-width:4px;border-radius:20px;box-shadow:0 4px 14px #0000000b;}
 .bulk-app .ex-top {gap:12px;}
 .bulk-app .ex-num {width:32px;height:32px;border-radius:10px;font-size:14px;color:var(--primary);background:#e7ecff;}
 .bulk-app select.in-name {font-size:17px;font-weight:700;padding:5px 0;}

@@ -1503,8 +1503,19 @@
       li.className = 'ex-row';
       li._exercise = ex;
       if (routineEditing) attachReorderButtons(li, d);
-      li.style.borderLeft = '3px solid ' + (MUSCLE_COLOR[ex.m] || 'transparent');
+      var muscleColor = MUSCLE_COLOR[ex.m] || 'transparent';
+      li.style.borderLeft = '4px solid ' + muscleColor;
       li.style.paddingLeft = '10px';
+      // 부위가 바뀌는 첫 종목에만 이름을 붙여 색만으로 부족한 구분을 보완한다(루틴 탭과 동일 패턴).
+      var isNewMuscle = idx === 0 || d.ex[idx - 1].m !== ex.m;
+      if (isNewMuscle) {
+        li.classList.add('rep-muscle-start');
+        var muscleTag = document.createElement('span');
+        muscleTag.className = 'rep-muscle-tag routine-read-only';
+        muscleTag.style.color = muscleColor;
+        muscleTag.textContent = ex.m;
+        li.appendChild(muscleTag);
+      }
 
       var top = document.createElement('div');
       top.className = 'ex-top';
