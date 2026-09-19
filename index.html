@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="49">
+<meta name="workout-app-version" content="50">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -22,7 +22,13 @@
 <div id="recordUndoToast" class="record-undo-toast" role="status" aria-live="polite" aria-atomic="true" hidden><span id="recordUndoMessage"></span><button id="recordUndoButton" type="button">되돌리기</button></div>
 
 <div class="bulk-app" id="bulkApp">
-  <div class="update-banner" id="updateBanner" hidden role="status">새 버전을 사용할 수 있어요. 입력 중인 내용을 마친 뒤 적용하세요. <button class="btn-reset" id="btnApplyUpdate" type="button">새 버전 적용</button></div>
+  <div class="update-banner" id="updateBanner" hidden role="status">
+    <div class="update-banner-body">
+      <strong>새 버전이 준비됐어요</strong>
+      <span>입력 중인 내용을 마친 뒤 적용하세요.</span>
+    </div>
+    <button class="btn-reset" id="btnApplyUpdate" type="button">지금 적용</button>
+  </div>
   <div class="masthead">
     <div>
       <h1>운동 루틴<span class="profile-tag" id="profileTag"></span></h1>
@@ -194,7 +200,7 @@
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 49 · 2026-09-19</strong>
+      <strong>앱 버전 50 · 2026-09-19</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
