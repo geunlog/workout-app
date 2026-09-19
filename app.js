@@ -3479,8 +3479,13 @@
 
     function dayCardHtml(d) {
       var exHtml = d.ex.length
-        ? '<ul class="rep-ex-list">' + d.ex.map(function (e) {
-            return '<li style="border-left:3px solid ' + (MUSCLE_COLOR[e.m] || 'transparent') + '"><span class="rep-ex-name">' + statsEscape(e.n) + '</span>' +
+        ? '<ul class="rep-ex-list">' + d.ex.map(function (e, idx) {
+            var color = MUSCLE_COLOR[e.m] || 'transparent';
+            // 부위가 바뀌는 첫 종목에만 부위명을 붙여 그룹 시작을 분명히 한다.
+            var isNewMuscle = idx === 0 || d.ex[idx - 1].m !== e.m;
+            return '<li class="' + (isNewMuscle ? 'rep-muscle-start' : '') + '" style="border-left:4px solid ' + color + '">' +
+              (isNewMuscle ? '<span class="rep-muscle-tag" style="color:' + color + '">' + statsEscape(e.m) + '</span>' : '') +
+              '<span class="rep-ex-name">' + statsEscape(e.n) + '</span>' +
               '<span class="rep-ex-spec">' +
                 '<span class="rep-chip rep-chip-set">' + statsEscape(e.s) + '세트</span>' +
                 '<span class="rep-chip">' + statsEscape(e.r) + '회</span>' +

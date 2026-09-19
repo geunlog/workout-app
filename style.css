@@ -379,6 +379,13 @@
     padding: 12px 0 12px 10px; border-top: 1px solid var(--line); font-size: 12.5px;
   }
   .bulk-app .rep-ex-list li:first-child { border-top: none; }
+  /* 부위가 바뀌는 지점은 구분선을 진하게 해서 그룹 경계를 드러낸다. */
+  .bulk-app .rep-ex-list li.rep-muscle-start { border-top-color: var(--line-strong); padding-top: 14px; }
+  .bulk-app .rep-ex-list li.rep-muscle-start:first-child { border-top: none; padding-top: 12px; }
+  .bulk-app .rep-muscle-tag {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
+    margin-bottom: -2px;
+  }
   .bulk-app .rep-ex-name { min-width: 0; letter-spacing: -0.01em; font-weight: 600; }
   /* 세트·횟수·RIR을 각각 배지로 끊어 한눈에 구분되게 한다. */
   .bulk-app .rep-ex-spec {
@@ -537,7 +544,7 @@
  --line:#e3e7ef; --line-strong:#aebbd4; --ink:#19233b; --muted:#58657b; --faint:#69758a;
  --primary:#315bea; --on-primary:#ffffff; --gain:#137454; --drop:#c43f57; --warn:#926016;
  --r-lg:24px; --r-md:14px; --r-sm:10px;
- --m-chest:#be5841; --m-back:#187f78; --m-shoulder:#926016; --m-legs:#7956b4; --m-tri:#315bea; --m-bi:#ad467c; --m-abs:#8a7412;
+ --m-chest:#d94a3d; --m-back:#0f8a6b; --m-shoulder:#e8940f; --m-legs:#5b3fa8; --m-tri:#2f6fd0; --m-bi:#c02d7a; --m-abs:#7a6a12;
 }
 html,body {background:var(--void);color-scheme:light;}
 body {background:radial-gradient(ellipse at 85% 0%,#e7ecff 0%,transparent 45%),var(--void);background-attachment:fixed;}
