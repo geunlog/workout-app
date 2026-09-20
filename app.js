@@ -1706,7 +1706,7 @@
         var undo=document.createElement('button');undo.type='button';undo.className='btn-reset';undo.textContent='최근 저장 되돌리기';undo.onclick=function(){
           requireSecondClick(undo,'되돌리기 확인',function(){var next=logs.map(function(g){return Object.assign({},g,{entries:g.entries.filter(function(e){return e.id!==lastSaved.id;})});}).filter(function(g){return g.entries.length;});if(!writeJSON(LOG_KEY,next)){showToast('저장 취소 실패 · 기존 기록 유지','error');return;}clearRecordUndo();logs=next;renderPanel();renderRecords();showToast('선택한 1세트 저장을 되돌렸어요.');});
         };quick.appendChild(undo);
-      }else savedBox.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' 0세트';
+      }else savedBox.textContent='저장 0세트';
       li.appendChild(savedBox);
       if(saved.length)li.appendChild(more);
 
@@ -4449,18 +4449,23 @@
     var el=document.getElementById('backupStatus');if(!el)return;
     var state=readJSON(keyFor('bulk-workout-backup-status-v1',activeProfile),null);
     el.classList.remove('backup-stale','backup-fresh');
-    if(!state){el.textContent='현재 플랜 · 아직 백업한 적이 없어요. 기록이 사라지지 않게 백업해두세요.';el.classList.add('backup-stale');return;}
+    function display(title,detail){
+      var heading=document.createElement('strong');heading.className='backup-status-title';heading.textContent=title;
+      var note=document.createElement('span');note.className='backup-status-detail';note.textContent=detail;
+      el.replaceChildren(heading,note);
+    }
+    if(!state){display('현재 플랜 · 백업 필요','아직 백업한 적이 없어요. JSON 파일로 저장해주세요.');el.classList.add('backup-stale');return;}
     var changed=state.fingerprint!==backupFingerprint(transferSnapshot().profile);
     var days=Math.floor((Date.now()-new Date(state.at).getTime())/86400000);
     var ago=days<=0?'오늘':days===1?'어제':days+'일 전';
     var stale=changed||!state.confirmed||days>=BACKUP_WARN_DAYS;
     el.classList.add(stale?'backup-stale':'backup-fresh');
-    var parts=['현재 플랜 · 마지막 백업 '+ago+' ('+new Date(state.at).toLocaleDateString('ko-KR')+')'];
-    if(changed)parts.push('이후 기록이 바뀌었어요. 다시 백업해주세요.');
-    else if(days>=BACKUP_WARN_DAYS)parts.push(days+'일이 지났어요. 한 번 더 백업해두면 안전해요.');
-    else parts.push('백업한 내용과 같아요.');
+    var title=changed?'백업 이후 변경됨':!state.confirmed?'파일 저장 확인 필요':days>=BACKUP_WARN_DAYS?'백업 확인 필요':'백업 최신';
+    var parts=['마지막 내보내기 '+ago+' · '+new Date(state.at).toLocaleDateString('ko-KR')];
+    if(changed)parts.push('변경 내용을 다시 백업해주세요.');
+    else if(days>=BACKUP_WARN_DAYS)parts.push('백업 파일의 보관 상태를 확인해주세요.');
     if(!state.confirmed)parts.push('파일 앱에서 저장 여부를 확인해주세요.');
-    el.textContent=parts.join(' · ');
+    display('현재 플랜 · '+title,parts.join('\n'));
   }
   function recordSignature(date,dayKey,entry) {
     return JSON.stringify([
@@ -4990,7 +4995,7 @@
           if(allowed){
             try{
               await saveBlobToDirectory(dirHandle,fileName,blob);
-              hint.textContent=(dirHandle.name || '백업 폴더')+' / '+fileName+' 에 저장했어요.';
+              hint.textContent=scopeLabel+' 백업 완료\n'+(dirHandle.name || '백업 폴더')+' / '+fileName;
               noteBackup(data,true);
               return;
             }catch(dirError){
@@ -5010,7 +5015,7 @@
           var writable=await handle.createWritable();
           await writable.write(blob);
           await writable.close();
-          hint.textContent=fileName+' 파일을 저장했어요.';
+          hint.textContent=scopeLabel+' 백업 완료\n'+fileName;
           noteBackup(data,true);
           return;
         }catch(saveError){
@@ -5029,7 +5034,7 @@
       a.click();
       a.remove();
       setTimeout(function(){URL.revokeObjectURL(url);},60000);
-      hint.textContent=fileName+' 다운로드를 요청했어요.';
+      hint.textContent=scopeLabel+' 다운로드 요청 · 파일 앱에서 확인해주세요.\n'+fileName;
       noteBackup(data,false);
     }catch(e){
       hint.textContent='파일을 만들지 못했어요. 다시 시도해주세요.';
@@ -5241,6 +5246,14 @@
   var baseline=viewport.height;
   function editable(){var el=document.activeElement;return !!el && (el.tagName==='TEXTAREA' || (el.tagName==='INPUT' && !/^(checkbox|radio|button|submit|range|color|file)$/i.test(el.type)));}
   var memoScrollFrame=0;
+  function keepTitleVisible(){
+    var field=document.activeElement;
+    if(!app.classList.contains('keyboard-open') || !field || !field.matches('.stamp-edit-control .in-stamp'))return;
+    var rect=field.getBoundingClientRect(),top=viewport.offsetTop+20,bottom=viewport.offsetTop+viewport.height-32;
+    if(bottom-top<rect.height)return;
+    if(rect.bottom>bottom)window.scrollBy({top:rect.bottom-bottom,behavior:'instant'});
+    else if(rect.top<top)window.scrollBy({top:rect.top-top,behavior:'instant'});
+  }
   function keepMemoCaretVisible(){
     var field=document.activeElement;if(!app.classList.contains('keyboard-open') || !field || !field.closest('#memoEditor') || !/^(INPUT|TEXTAREA)$/.test(field.tagName))return;
     var rect=field.getBoundingClientRect(),caretTop=rect.top,caretHeight=24;
@@ -5264,9 +5277,9 @@
     app.style.setProperty('--keyboard-inset',Math.max(0,window.innerHeight-viewport.height-viewport.offsetTop)+'px');
     // 키보드가 올라오면 100dvh가 화면 밖까지 잡아 빈 칸이 생긴다. 실제 보이는 높이로 맞춘다.
     app.style.setProperty('--app-vvh',Math.round(viewport.height)+'px');
-    cancelAnimationFrame(memoScrollFrame);memoScrollFrame=requestAnimationFrame(keepMemoCaretVisible);
+    cancelAnimationFrame(memoScrollFrame);memoScrollFrame=requestAnimationFrame(function(){keepMemoCaretVisible();keepTitleVisible();});
   }
-  document.addEventListener('input',function(e){if(e.target.closest('#memoEditor'))update();});
+  document.addEventListener('input',function(e){if(e.target.closest('#memoEditor') || e.target.matches('.stamp-edit-control .in-stamp'))update();});
   document.addEventListener('keyup',function(e){if(e.target.closest('#memoEditor'))update();});
   viewport.addEventListener('resize',update);document.addEventListener('focusin',update);document.addEventListener('focusout',function(){setTimeout(update,0);});
   window.addEventListener('orientationchange',function(){baseline=viewport.height;update();});

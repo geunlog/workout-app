@@ -241,12 +241,12 @@
     transition: background .15s ease;
   }
   .bulk-app .btn:hover { background: #454C86; }
-  /* 종목 추가는 주 동작이라 강조하고, 유산소는 켜짐/꺼짐이 보이는 토글로 둔다. */
+  /* 저장을 주 동작으로 두고, 종목 추가는 보조 버튼으로 구분한다. */
   .bulk-app .edit-action-row .btn-add-ex{
-    background: var(--primary); color: var(--on-primary); font-weight: 700; font-size: 13px;
-    border: 1px solid var(--primary);
+    background: transparent; color: var(--primary); font-weight: 700; font-size: 13px;
+    border: 1px solid var(--line-strong);
   }
-  .bulk-app .edit-action-row .btn-add-ex:hover{ background: var(--primary); }
+  .bulk-app .edit-action-row .btn-add-ex:hover{ background: var(--sunken); }
   .bulk-app .edit-action-row .btn-cardio{
     position: relative; padding-left: 26px;
     background: transparent; border: 1px dashed var(--line-strong);
@@ -349,8 +349,8 @@
   .bulk-app .btn-save-now { background: var(--raised); border-color: transparent; color: var(--ink); }
   .bulk-app .btn-save-now:hover { background: #454C86; border-color: transparent; }
   /* 되돌릴 수 없는 동작이라 채움색으로 분명히 드러낸다. .btn-reset보다 뒤에 둬야 실제로 적용된다. */
-  .bulk-app .btn-revert-now { background: var(--drop); border-color: var(--drop); color: #fff; font-weight: 700; }
-  .bulk-app .btn-revert-now:hover { background: var(--drop); border-color: var(--drop); }
+  .bulk-app .btn-revert-now { background: transparent; border-color: var(--line-strong); color: var(--drop); font-weight: 700; }
+  .bulk-app .btn-revert-now:hover { background: var(--sunken); border-color: var(--drop); }
 
   /* ---------- 전체 요약 ---------- */
   .bulk-app .rep-summary { padding: 16px; margin-bottom: 12px; }
@@ -376,7 +376,7 @@
      이름 아래에 배지를 가로로 나열하는 2행 구조로 둔다. */
   .bulk-app .rep-ex-list li {
     display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
-    padding: 12px 0 12px 10px; border-top: 1px solid var(--line); font-size: 12.5px;
+    padding: 9px 0 9px 10px; border-top: 1px solid var(--line); font-size: 12.5px;
   }
   .bulk-app .rep-ex-list li:first-child { border-top: none; }
   /* 부위가 바뀌는 지점은 구분선을 진하게 해서 그룹 경계를 드러낸다. */
@@ -1329,7 +1329,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
 .bulk-app .quick-actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center;}
 .bulk-app .quick-actions button{min-height:44px;flex:0 1 auto;}
-.bulk-app .saved-set-summary{font-size:12px;color:var(--muted);line-height:1.7;margin-top:10px;}
+.bulk-app .saved-set-summary{font-size:12px;color:var(--muted);line-height:1.7;margin-top:6px;}
 .bulk-app .record-context{position:sticky;top:0;z-index:12;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:12px;}
 .bulk-app .record-context.past{border-color:var(--primary);color:var(--primary);font-weight:700;}
 .bulk-app .record-edit-trigger::after{content:' ✎';font-size:12px;color:var(--primary);}
@@ -1368,7 +1368,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #dayView.routine-editing .routine-mode-bar>button{flex:1;}
 .bulk-app #dayView.routine-editing .reset-row{margin-top:0;}
 .bulk-app #dayView.routine-editing .reset-row{margin-bottom:0;}
-.bulk-app #dayView.routine-editing .edit-action-row{margin-bottom:22px;}
+.bulk-app #dayView.routine-editing .edit-action-row{margin-top:6px;padding-top:8px;margin-bottom:8px;}
+.bulk-app #dayView.routine-editing .routine-advanced-options{margin-top:0;margin-bottom:4px;}
+.bulk-app #dayView.routine-editing .record-context{margin:4px 0 8px;}
+.bulk-app #backupStatus .backup-status-title{display:block;font-size:14px;line-height:1.5;}
+.bulk-app #backupStatus .backup-status-detail{display:block;margin-top:4px;color:var(--muted);font-size:12px;font-weight:400;line-height:1.6;white-space:pre-line;overflow-wrap:anywhere;}
+.bulk-app #dataTransferHint{white-space:pre-line;overflow-wrap:anywhere;text-align:left;}
 .bulk-app #btnRoutineEdit{flex-shrink:0;min-height:44px;}
 .bulk-app #btnRoutineEdit[aria-pressed=true]{background:var(--primary);color:var(--on-primary);}
 .bulk-app .empty-routine-note{
