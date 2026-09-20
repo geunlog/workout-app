@@ -59,14 +59,17 @@
     clearRecordUndo();
     var toast=document.getElementById('recordUndoToast'),message=document.getElementById('recordUndoMessage'),button=document.getElementById('recordUndoButton');
     if(!toast || !message || !button)return;
-    recordUndoState={logs:JSON.parse(JSON.stringify(beforeLogs)),timer:null};
+    recordUndoState={logs:JSON.parse(JSON.stringify(beforeLogs)),owner:activeProfile,key:LOG_KEY,after:JSON.stringify(logs),timer:null};
     message.textContent='운동기록 '+removedCount+'세트 삭제됨';
     toast.hidden=false;
     requestAnimationFrame(function(){toast.classList.add('is-visible');});
     button.onclick=function(){
       if(!recordUndoState)return;
+      if(recordUndoState.owner!==activeProfile || recordUndoState.key!==LOG_KEY || recordUndoState.after!==JSON.stringify(logs)){
+        clearRecordUndo();showToast('플랜 또는 기록이 변경되어 되돌리기를 종료했어요.','pending');return;
+      }
       var restore=recordUndoState.logs;
-      if(!writeJSON(LOG_KEY,restore)){
+      if(!writeJSON(recordUndoState.key,restore)){
         clearRecordUndo();showToast('기록을 복구하지 못했어요.','error');return;
       }
       logs=restore;
@@ -155,15 +158,29 @@
   }
   function loadSavedRoutine() {
     // v9 is a stable data key, not an app-release number. Never bump it on update.
-    var saved=readJSON(STORAGE_KEY,null);
-    if(isRoutine(saved))return normalizeRoutine(saved);
-    try {if(localStorage.getItem(STORAGE_KEY)!==null){memoryOnly=true;return defaults();}}
-    catch(e){memoryOnly=true;return defaults();}
-    for(var version=8;version>=4;version--){
-      var old=readJSON(keyFor('bulk-routine-v'+version,activeProfile),null);
-      if(isRoutine(old)){var migrated=normalizeRoutine(old);writeJSON(STORAGE_KEY,migrated);return migrated;}
+    try {
+      var saved=readRoutineForProfile(activeProfile);
+      if(localStorage.getItem(STORAGE_KEY)===null)writeJSON(STORAGE_KEY,saved);
+      return saved;
+    } catch(e){memoryOnly=true;return defaults();}
+  }
+  // Read without changing the active profile or migrating another profile's storage.
+  function readRoutineForProfile(profile) {
+    var raw=localStorage.getItem(keyFor('bulk-routine-v9',profile));
+    if(raw!==null){
+      var saved=JSON.parse(raw);
+      if(!isRoutine(saved))throw new Error(profile+' 플랜의 루틴을 읽지 못했어요. 원본을 확인해주세요.');
+      return normalizeRoutine(saved);
     }
-    var initial=defaults();writeJSON(STORAGE_KEY,initial);return initial;
+    var damaged=false;
+    for(var version=8;version>=4;version--){
+      var legacy=localStorage.getItem(keyFor('bulk-routine-v'+version,profile));
+      if(legacy===null)continue;
+      try {var old=JSON.parse(legacy);if(isRoutine(old))return normalizeRoutine(old);}catch(e){}
+      damaged=true;
+    }
+    if(damaged)throw new Error(profile+' 플랜의 이전 루틴을 읽지 못했어요. 빈 루틴으로 백업하지 않았어요.');
+    return defaults();
   }
   function load() {
     var saved=loadSavedRoutine(),pending=readJSON(routinePendingKey(),null);
@@ -4162,6 +4179,7 @@
   }
 
   function switchProfile(name) {
+    clearRecordUndo();
     clearConfirmation();
     routineEditing = false;
     activeProfile = name;
@@ -4388,8 +4406,7 @@
   // 10번: 활성 플랜이 아닌 플랜은 저장소에서 직접 읽어 스냅샷을 만든다.
   function profileSnapshotFor(name){
     if(name===activeProfile)return transferSnapshot().profile;
-    var savedRoutine=readJSON(keyFor('bulk-routine-v9',name),null);
-    if(!isRoutine(savedRoutine))savedRoutine=defaults();
+    var savedRoutine=readRoutineForProfile(name);
     var pending=readJSON(keyFor('bulk-routine-pending-v1',name),null);
     return {
       name:name,
@@ -4615,7 +4632,7 @@
 
     // 운동 루틴은 병합하지 않고 JSON의 루틴으로 완전히 덮어쓴다.
     var nextRoutine = JSON.parse(JSON.stringify(
-      imported && Array.isArray(imported.routine) ? imported.routine : defaults()
+      imported && Array.isArray(imported.routine) ? normalizeRoutine(imported.routine) : defaults()
     ));
 
     var currentLogs = logs;
@@ -5023,7 +5040,9 @@
     runBackupExport(JSON.parse(JSON.stringify(transferSnapshot())),exportTimestampName(),'현재 플랜');
   });
   document.getElementById('btnDataExportAll').addEventListener('click',function(){
-    runBackupExport(JSON.parse(JSON.stringify(allProfilesSnapshot())),exportAllTimestampName(),'전체 플랜');
+    try {
+      runBackupExport(JSON.parse(JSON.stringify(allProfilesSnapshot())),exportAllTimestampName(),'전체 플랜');
+    } catch(e){document.getElementById('dataTransferHint').textContent='전체 백업을 만들지 못했어요. '+e.message;}
   });
 
   document.getElementById('btnRecoveryDownload').addEventListener('click',function(){
@@ -5180,12 +5199,14 @@
   (function(){
     var registration=null,applying=false,remoteAvailable=false;
     var status=document.getElementById('updateStatus'),banner=document.getElementById('updateBanner');
+    function reportClientRelease(){if(navigator.serviceWorker && navigator.serviceWorker.controller)navigator.serviceWorker.controller.postMessage({type:'CLIENT_RELEASE',version:document.querySelector('meta[name="workout-app-version"]').content});}
     function showAvailable(){banner.hidden=false;status.textContent='새 버전 사용 가능 · 입력을 마친 뒤 새 버전 적용을 눌러주세요.';}
     async function check(){
+      reportClientRelease();
       status.textContent='업데이트 확인 중…';
       try{
         if(registration)await registration.update();
-        var response=await fetch('/workout-app/index.html',{cache:'no-store'});
+        var response=await fetch('/workout-app/index.html?update-check=1',{cache:'no-store'});
         if(!response.ok)throw new Error('network');
         var text=await response.text(),match=text.match(/<meta name="workout-app-version" content="([^"]+)"/);
         remoteAvailable=!!match && match[1]!==document.querySelector('meta[name="workout-app-version"]').content;
@@ -5197,12 +5218,12 @@
     document.getElementById('btnApplyUpdate').onclick=function(){
       if(document.querySelector('[role="dialog"]') || document.querySelector('.record-edit-form')){status.textContent='열린 입력창을 저장하거나 닫은 뒤 적용해주세요.';return;}
       var ready=new Event('workout-before-update',{cancelable:true});if(!window.dispatchEvent(ready))return;
-      applying=true;
-      if(registration && registration.waiting){registration.waiting.postMessage({type:'SKIP_WAITING'});status.textContent='새 버전 적용 중…';}
+      if(registration && registration.waiting){applying=true;registration.waiting.postMessage({type:'SKIP_WAITING'});status.textContent='새 버전 적용 중…';}
+      else if('serviceWorker' in navigator){status.textContent='새 버전 파일이 아직 준비되지 않았어요. 연결 후 업데이트 확인을 다시 눌러주세요.';if(registration)registration.update().catch(function(){});}
       else location.reload();
     };
     if('serviceWorker' in navigator){
-      navigator.serviceWorker.addEventListener('controllerchange',function(){if(applying)location.reload();});
+      navigator.serviceWorker.addEventListener('controllerchange',function(){if(applying)location.reload();else reportClientRelease();});
       window.addEventListener('load',function(){
         navigator.serviceWorker.register('/workout-app/sw.js',{scope:'/workout-app/',updateViaCache:'none'}).then(function(r){
           registration=r;
