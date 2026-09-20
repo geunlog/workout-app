@@ -1126,7 +1126,6 @@
   var MODE_KEY = 'bulk-routine-active-mode-v1';
   var tabsEl = document.getElementById('dayTabs');
   var panelEl = document.getElementById('dayPanel');
-  var restNoteEl = document.getElementById('restNote');
 
   var jsDay = new Date(todayStr()+'T00:00:00Z').getUTCDay();
   var todayIndex = (jsDay + 6) % 7;   // 월=0 … 일=6
@@ -1168,7 +1167,7 @@
     document.getElementById('btnSaveNow').hidden = !pending;
     document.getElementById('btnRevertNow').hidden = !pending;
     // 변경사항이 있으면 저장/취소 중 하나를 거쳐야 편집을 벗어난다.
-    button.hidden = routineEditing && pending;
+    button.hidden = (routineEditing && pending) || (!routineEditing && !(tempDay.ex || []).length);
     // 임시 루틴에는 초기화/기본적용이 없으므로 고급 옵션 자체를 접어 숨긴다(빈 채로 펼쳐지는 것 방지).
     var advanced=document.getElementById('btnClearDay').closest('.routine-advanced-options');
     if(advanced){advanced.hidden=isTemp;if(isTemp)advanced.open=false;}
@@ -1442,13 +1441,18 @@
   function renderPanel() {
     ensureRoutineIds(days);
     updateRoutineMode();
+    // 요일/임시 루틴 전환 후에도 안내와 저장 버튼이 같은 변경 상태를 표시한다.
+    var hintDay=currentTemporaryDay();
+    var hintPending=hintDay.temporary?temporaryWorkspace(activeTemporary()).dirty:routineOrderPending;
+    var routineHint=document.getElementById('routineSaveHint');
+    routineHint.textContent=hintPending?(hintDay.temporary?'임시 루틴 변경사항이 있어요. 위의 저장 버튼을 눌러 확정하세요.':'미저장 변경사항이 있어요. 위의 저장 버튼을 눌러 확정하세요.'):'';
+    routineHint.className='save-hint';
     document.getElementById('recordDate').value=selectedRecordDate;document.getElementById('btnRecordToday').disabled=selectedRecordDate===todayStr();
     document.getElementById('recordDate').max=todayStr();
     var d = effectiveRoutineDay(selectedRecordDate,activeIndex);
     panelEl.innerHTML = '';
     panelEl.classList.toggle('temporary-panel',!!d.temporary);
     var editButton=document.getElementById('btnRoutineEdit');editButton.disabled=false;
-    restNoteEl.hidden=!(!d.temporary && !(d.ex||[]).length && !d.cardio);
     if(d.temporary){var banner=document.createElement('div');banner.innerHTML=temporaryStatusHtml();panelEl.appendChild(banner);bindTemporaryCancel(banner);}
 
     var context=document.createElement('p');context.className='record-context'+(selectedRecordDate!==todayStr()?' past':'');
@@ -1490,20 +1494,19 @@
       panelEl.appendChild(noteEl);
     }
 
-    if (d.ex.length === 0 && !d.cardio) {
+    if (d.ex.length === 0) {
       var empty = document.createElement('p');
       empty.className = 'empty-note empty-routine-note';
-      empty.textContent = routineEditing ? '아직 종목이 없어요. + 종목 추가 버튼으로 추가하세요.' : '등록된 운동이 없어요. 루틴 편집에서 종목을 추가하세요.';
+      empty.textContent = routineEditing ? '아직 종목이 없어요. + 종목 추가 버튼으로 추가하세요.' : '등록된 운동이 없어요.\n이 요일의 루틴에 운동을 추가해보세요.';
       panelEl.appendChild(empty);
 
-      // 운동이 없는 날에는 사용자가 바로 편집으로 들어갈 수 있도록
-      // 빈 화면 안에도 루틴 편집 버튼을 한 번 더 보여준다.
+      // 빈 루틴에서는 이 버튼을 편집 진입점으로 사용한다.
       if (!routineEditing) {
         var emptyEditBtn = document.createElement('button');
         emptyEditBtn.type = 'button';
         emptyEditBtn.className = 'btn-reset btn-save-now empty-routine-edit-btn';
-        emptyEditBtn.textContent = '루틴 편집';
-        emptyEditBtn.setAttribute('aria-label', d.letter + '요일 루틴 편집');
+        emptyEditBtn.textContent = '+ 운동 추가';
+        emptyEditBtn.setAttribute('aria-label', d.letter + '요일 루틴에 운동 추가');
         emptyEditBtn.addEventListener('click', function () {
           routineEditing = true;
           renderPanel();
