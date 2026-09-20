@@ -634,7 +634,7 @@ button {touch-action:manipulation;transition:background .18s ease,transform .18s
 .bulk-app .btn-record-one {flex:0 0 auto;min-height:42px;padding:9px 12px;border:0;border-radius:10px;background:var(--primary);color:var(--on-primary);font:600 14px var(--ui);cursor:pointer;white-space:nowrap;}
 .bulk-app .btn-record-one:hover {background:#234ad0;}
 @media(max-width:360px){.bulk-app .log-fields{gap:6px}.bulk-app .btn-record-one{padding:9px 8px}}
-  .bulk-app input.is-autofill{color:var(--muted);font-style:italic;}
+  .bulk-app input.is-autofill{color:var(--muted);font-style:normal;}
   .bulk-app .app-guide-lead{margin:0 0 12px;font-size:13px;line-height:1.65;color:var(--muted);word-break:keep-all;}
   .bulk-app .app-guide-lead strong{color:var(--ink);}
   .bulk-app .app-guide-sec{border-top:1px solid var(--line);}
@@ -2051,7 +2051,32 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .stamp-row .in-stamp{width:100%;padding-right:36px;box-sizing:border-box;}
 .bulk-app .title-edit-pencil{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:20px;height:20px;padding:0;border:0;box-shadow:none;background:transparent;color:#1746b4;pointer-events:none;}
 .bulk-app .title-edit-pencil svg{width:20px;height:20px;}
-.bulk-app .record-date-row{grid-template-columns:auto minmax(0,1fr) auto;}
+.bulk-app .record-date-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;font-size:12px;color:var(--muted);}
+.bulk-app .record-date-picker{min-width:0;width:100%;font-size:16px;min-height:44px;}
+.bulk-app #dayView .day-tabs{margin-bottom:12px;}
+.bulk-app #dayView .routine-mode-bar{margin:10px 0;}
+.bulk-app #dayPanel .stamp .record-context{position:static;font-size:11px;margin:0 0 4px;line-height:1.4;}
+.bulk-app #dayPanel .editing-last-set>.log-fields{display:none!important;}
+.bulk-app #dayPanel .workout-record-editor>.record-edit-primary{grid-column:auto;}
+.direct-record-form>.save-hint:empty{display:none;}
+.direct-record-head{position:sticky;top:0;z-index:2;background:var(--panel,#fff);padding:8px 0;}
+.workout-date-dialog{box-sizing:border-box;width:calc(100% - 32px);max-width:390px;max-height:90dvh;overflow:auto;border:1px solid #e2e5ed;border-radius:24px;padding:20px;background:#fff;color:#202838;box-shadow:0 20px 60px #18243b30;font-family:inherit;}
+.workout-date-dialog::backdrop{background:#18243b66;backdrop-filter:blur(3px);}
+.workout-date-dialog button{font-family:inherit;font-size:15px;font-weight:600;line-height:1.4;cursor:pointer;border:0;border-radius:12px;min-height:44px;background:#f1f3f9;color:#34445e;}
+.bulk-app .weight-source-note{display:block;color:var(--muted);font-size:11px;margin:8px 0 0;}
+.bulk-app #dayPanel .editing-last-set>.weight-source-note{display:none;}
+.bulk-app:has(#dayView:not([hidden])) .masthead{margin-bottom:20px;}
+.workout-date-dialog button:focus-visible{outline:3px solid #315bea;outline-offset:2px;}
+.workout-date-dialog button:disabled{opacity:.3;cursor:default;}
+.workout-date-head,.workout-date-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;}
+.workout-date-head h2{font-size:20px;margin:0;}.workout-date-head button,.workout-date-nav button{width:44px;font-size:24px;}
+.workout-date-week,.workout-date-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;text-align:center;}
+.workout-date-week{font-size:12px;color:#697386;margin:0 0 8px;}
+.workout-date-grid button{background:transparent;padding:0;min-width:0;font-size:15px;}
+.workout-date-grid button[aria-current=date]{box-shadow:inset 0 0 0 1px #315bea;color:#315bea;}
+.workout-date-grid button[aria-pressed=true]{background:#315bea;color:#fff;}
+.workout-date-actions{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:20px;}
+.workout-date-actions button[data-apply]{background:#315bea;color:#fff;}
 .bulk-app #btnRecordToday{flex:0 0 auto;width:auto;min-width:56px;}
 .bulk-app.keyboard-open #modeToggle,.bulk-app.keyboard-open ~ #modeToggle{display:none!important;}
 .bulk-app .suggest-details{margin-top:8px;}

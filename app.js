@@ -980,7 +980,7 @@
     if(!el || !prev)return;
     var prevW=parseFloat(prev.w), prevR=parseFloat(prev.reps);
     var curW=parseFloat(weight), curR=parseFloat(reps);
-    var html='이전 <b>'+statsEscape(prev.w)+'kg × '+statsEscape(prev.reps)+'회</b> <span>('+statsEscape(prev.date)+')</span>';
+    var html='최근 세트 <b>'+statsEscape(prev.w)+'kg × '+statsEscape(prev.reps)+'회</b> <span>('+statsEscape(prev.date)+')</span>';
     var changes=[];
     if(isFinite(curW) && isFinite(prevW)){
       var wd=curW-prevW;
@@ -1448,6 +1448,7 @@
     routineHint.textContent=hintPending?(hintDay.temporary?'임시 루틴 변경사항이 있어요. 위의 저장 버튼을 눌러 확정하세요.':'미저장 변경사항이 있어요. 위의 저장 버튼을 눌러 확정하세요.'):'';
     routineHint.className='save-hint';
     document.getElementById('recordDate').value=selectedRecordDate;document.getElementById('btnRecordToday').disabled=selectedRecordDate===todayStr();
+    document.getElementById('btnRecordDate').textContent=selectedRecordDate.replace(/-/g,'. ')+' ▾';
     document.getElementById('recordDate').max=todayStr();
     var d = effectiveRoutineDay(selectedRecordDate,activeIndex);
     panelEl.innerHTML = '';
@@ -1457,7 +1458,6 @@
 
     var context=document.createElement('p');context.className='record-context'+(selectedRecordDate!==todayStr()?' past':'');
     context.textContent=(selectedRecordDate===todayStr()?'':selectedRecordDate+' · ')+(d.temporary?'임시 루틴 사용 중':d.letter+'요일 루틴 사용 중');
-    panelEl.appendChild(context);
 
 
     var stampRow = document.createElement('div');
@@ -1465,6 +1465,7 @@
 
     var stampWrap = document.createElement('div');
     stampWrap.className = 'stamp';
+    stampWrap.appendChild(context);
     var stampIn = document.createElement('input');
     stampIn.className = 'in-stamp routine-edit-only';
     stampIn.type = 'text';
@@ -1674,7 +1675,7 @@
       var addRecordBtn = document.createElement('button');
       addRecordBtn.type = 'button';
       addRecordBtn.className = 'btn-record-one';
-      addRecordBtn.textContent = selectedRecordDate>todayStr()?'해당 날짜부터 기록 가능':'1세트 저장';
+      addRecordBtn.textContent = selectedRecordDate>todayStr()?'해당 날짜부터 기록 가능':'1번째 세트 저장';
       addRecordBtn.disabled=selectedRecordDate>todayStr();
       addRecordBtn.setAttribute('aria-label', ex.n + (selectedRecordDate>todayStr()?' · 해당 날짜부터 기록 가능':' 운동 기록 추가'));
       addRecordBtn.addEventListener('click', function () { saveExerciseRecords(idx); });
@@ -1690,6 +1691,7 @@
         var badge = document.createElement('span');badge.textContent = text;goal.appendChild(badge);
       });
       li.appendChild(goal);
+      if(autoWeight){var autoNote=document.createElement('small');autoNote.className='weight-source-note routine-read-only';autoNote.textContent=weightSource.sameDay?'중량 제안 · 선택일 마지막 세트':'중량 제안 · 최근 기록';li.appendChild(autoNote);wIn.addEventListener('input',function(){autoNote.hidden=true;},{once:true});}
       li.appendChild(logRow);
       var more=document.createElement('details');more.className='record-more routine-read-only';
       var moreTitle=document.createElement('summary');moreTitle.textContent='최근 저장 기록 관리';more.appendChild(moreTitle);
@@ -1697,16 +1699,16 @@
       [-1,1].forEach(function(sign){var b=document.createElement('button');b.type='button';b.className='btn-reset';var step=weightStepFor(ex.n);b.textContent=sign<0?'−':'+';b.title=step+'kg씩 조절';b.setAttribute('aria-label',ex.n+' 중량 '+(sign<0?'줄이기':'늘리기'));b.onclick=function(){wIn.value=String(Math.min(500,cleanWeightNumber((parseFloat(wIn.value)||0)+sign*step)));wIn.dispatchEvent(new Event('input',{bubbles:true}));};if(sign<0)weightControl.insertBefore(b,weightControl.firstChild);else weightControl.appendChild(b);});
       var saved=[];logs.forEach(function(group){if(group.date===selectedRecordDate)(group.entries||[]).forEach(function(e){if(e.n===ex.n)saved.push(Object.assign({},e,{date:group.date}));});});
       if(selectedRecordDate<=todayStr()){
-        addRecordBtn.textContent=(saved.length+1)+'세트 저장';
+        addRecordBtn.textContent=(saved.length+1)+'번째 세트 저장';
         addRecordBtn.setAttribute('aria-label',ex.n+' '+(saved.length+1)+'세트 기록 추가');
       }
       var savedBox=document.createElement('div');savedBox.className='saved-set-summary routine-read-only';
       if(saved.length){
         var lastSaved=saved[saved.length-1];
-        var summary=document.createElement('div');summary.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' 기록 '+saved.length+'세트 · 최근 저장 '+(lastSaved.w==='-'?'무게 미입력':lastSaved.w+'kg')+' × '+(lastSaved.reps==='-'?'횟수 미입력':lastSaved.reps+'회');savedBox.appendChild(summary);
+        var summary=document.createElement('div');summary.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' '+saved.length+' / 계획 '+ex.s+'세트 · 마지막 저장 '+(lastSaved.w==='-'?'무게 미입력':lastSaved.w+'kg')+' × '+(lastSaved.reps==='-'?'횟수 미입력':lastSaved.reps+'회');savedBox.appendChild(summary);
         if(!prev){summary.className='history-tappable';summary.tabIndex=0;summary.setAttribute('role','button');summary.setAttribute('aria-label',ex.n+' 최근 기록 보기');summary.addEventListener('click',function(){openRecentHistoryModal(ex.n,selectedRecordDate,summary);});summary.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openRecentHistoryModal(ex.n,selectedRecordDate,summary);}});}
-        var edit=document.createElement('button');edit.type='button';edit.className='btn-reset';edit.textContent='최근 세트 수정';edit.onclick=function(){openRecordEditor(quick,lastSaved,edit);};quick.appendChild(edit);
-        var undo=document.createElement('button');undo.type='button';undo.className='btn-reset';undo.textContent='최근 저장 되돌리기';undo.onclick=function(){
+        var edit=document.createElement('button');edit.type='button';edit.className='btn-reset';edit.textContent='마지막 세트 수정';edit.onclick=function(){openRecordEditor(quick,lastSaved,edit,{card:li,title:moreTitle,number:saved.length});};quick.appendChild(edit);
+        var undo=document.createElement('button');undo.type='button';undo.className='btn-reset';undo.textContent='마지막 저장 취소';undo.onclick=function(){
           requireSecondClick(undo,'되돌리기 확인',function(){var next=logs.map(function(g){return Object.assign({},g,{entries:g.entries.filter(function(e){return e.id!==lastSaved.id;})});}).filter(function(g){return g.entries.length;});if(!writeJSON(LOG_KEY,next)){showToast('저장 취소 실패 · 기존 기록 유지','error');return;}clearRecordUndo();logs=next;renderPanel();renderRecords();showToast('선택한 1세트 저장을 되돌렸어요.');});
         };quick.appendChild(undo);
       }else savedBox.textContent='저장 0세트';
@@ -2193,7 +2195,7 @@
     repsLabel.appendChild(reps);values.appendChild(weightLabel);values.appendChild(repsLabel);form.appendChild(values);
 
     var prevHint=document.createElement('p');prevHint.className='prev-hint record-compare-hint direct-record-prev';prevHint.hidden=true;form.appendChild(prevHint);
-    var customNote=document.createElement('p');customNote.className='direct-record-custom-note';customNote.textContent='운동 관리에 없는 이름도 기록할 수 있어요. 직접 입력한 종목은 운동 관리에 자동 추가되지 않아요.';form.appendChild(customNote);
+    var customNote=document.createElement('p');customNote.className='direct-record-custom-note';customNote.hidden=true;customNote.textContent='새 이름으로 기록돼요. 운동 목록에는 자동 추가되지 않아요.';form.appendChild(customNote);
     var hint=document.createElement('p');hint.className='save-hint';hint.setAttribute('role','status');form.appendChild(hint);
     var actions=document.createElement('div');actions.className='direct-record-actions';
     var cancel=document.createElement('button');cancel.type='button';cancel.className='btn-reset';cancel.textContent='취소';
@@ -2223,6 +2225,7 @@
     }
     function refreshExercise(){
       var item=selectedCatalogItem();
+      customNote.hidden=!name.value.trim() || !!item;
       if(item && !muscle.value)muscle.value=item.muscle;directOptions();
       var trimmed=name.value.trim();
       if(!trimmed){previous=null;previousName='';prevHint.hidden=true;return;}
@@ -2300,10 +2303,11 @@
     target.entries.push(edited);next.sort(function(a,b){return a.date.localeCompare(b.date);});
     return next;
   }
-  function openRecordEditor(row,entry,trigger) {
+  function openRecordEditor(row,entry,trigger,workout) {
     clearConfirmation();
     document.querySelectorAll('.record-edit-form').forEach(function(form){if(form._close)form._close(false);else form.remove();});
     var form=document.createElement('form');form.className='record-edit-form';
+    if(workout){workout.card.classList.add('editing-last-set');workout.title.textContent=workout.number+'번째 세트 수정 중';form.classList.add('workout-record-editor');}
     var date=document.createElement('input');date.type='date';date.value=entry.date;date.max=todayStr();date.required=true;date.setAttribute('aria-label','기록 날짜 수정');
     var weight=document.createElement('input');weight.type='number';weight.min='0';weight.max='500';weight.step='any';weight.inputMode='decimal';weight.value=entry.w==='-'?'':entry.w;weight.setAttribute('aria-label','기록 무게 수정');
     var reps=document.createElement('input');reps.type='number';reps.min='0';reps.max='100';reps.step='1';reps.inputMode='numeric';reps.value=entry.reps==='-'?'':entry.reps;reps.setAttribute('aria-label','기록 횟수 수정');
@@ -2320,9 +2324,9 @@
         showToast(prToastMessage(saved.prUpdates,entry.n+' 1세트 추가 등록 완료'));
       } catch(error){hint.textContent=error.message;showToast(error.message,'error');}
     });
-    form.appendChild(commit);form.appendChild(addMore);form.appendChild(cancel);form.appendChild(hint);
+    if(workout){form.appendChild(cancel);form.appendChild(commit);}else{form.appendChild(commit);form.appendChild(addMore);form.appendChild(cancel);}form.appendChild(hint);
     row.classList.add('editing-record');
-    function close(restoreFocus){row.classList.remove('editing-record');form.remove();if(restoreFocus!==false && trigger.isConnected)trigger.focus();}
+    function close(restoreFocus){row.classList.remove('editing-record');if(workout){workout.card.classList.remove('editing-last-set');workout.title.textContent='최근 저장 기록 관리';}form.remove();if(restoreFocus!==false && trigger.isConnected)trigger.focus();}
     form._close=close;
     cancel.addEventListener('click',close);form.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();close();}});
     form.addEventListener('submit',function(e){
@@ -3191,6 +3195,37 @@
     });});
   }
 
+  document.getElementById('btnRecordDate').addEventListener('click',function(){openWorkoutDatePicker(this);});
+  function openWorkoutDatePicker(trigger){
+    if(document.querySelector('.workout-date-dialog'))return;
+    var selected=selectedRecordDate,month=selected.slice(0,7),limit=todayStr();
+    var dialog=document.createElement('dialog');dialog.className='workout-date-dialog';dialog.setAttribute('aria-labelledby','workoutDateTitle');
+    dialog.innerHTML='<div class="workout-date-head"><h2 id="workoutDateTitle">기록 날짜</h2><button type="button" data-close aria-label="닫기">×</button></div><div class="workout-date-nav"><button type="button" data-prev aria-label="이전 달">‹</button><strong aria-live="polite"></strong><button type="button" data-next aria-label="다음 달">›</button></div><div class="workout-date-week" aria-hidden="true"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div><div class="workout-date-grid" role="group" aria-label="날짜 선택"></div><div class="workout-date-actions"><button type="button" data-today>오늘</button><button type="button" data-apply>선택 날짜 적용</button></div>';
+    var grid=dialog.querySelector('.workout-date-grid');
+    function dateKey(date){return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');}
+    function draw(){
+      var parts=month.split('-').map(Number),year=parts[0],m=parts[1];
+      dialog.querySelector('strong').textContent=year+'년 '+m+'월';
+      dialog.querySelector('[data-next]').disabled=month>=limit.slice(0,7);
+      dialog.querySelector('[data-prev]').disabled=year<=1900 && m===1;
+      grid.replaceChildren();
+      var offset=(new Date(year,m-1,1).getDay()+6)%7,count=new Date(year,m,0).getDate();
+      for(var i=0;i<offset;i++)grid.appendChild(document.createElement('span'));
+      for(var day=1;day<=count;day++){
+        var key=dateKey(new Date(year,m-1,day)),button=document.createElement('button');button.type='button';button.textContent=day;button.dataset.date=key;button.disabled=key>limit;button.setAttribute('aria-label',year+'년 '+m+'월 '+day+'일');button.setAttribute('aria-pressed',String(key===selected));
+        if(key===limit)button.setAttribute('aria-current','date');
+        button.onclick=function(){selected=this.dataset.date;draw();grid.querySelector('[data-date="'+selected+'"]').focus();};grid.appendChild(button);
+      }
+    }
+    function close(){dialog.close();}
+    dialog.addEventListener('close',function(){dialog.remove();if(trigger.isConnected)trigger.focus();});
+    dialog.querySelector('[data-close]').onclick=close;
+    function move(delta){var p=month.split('-').map(Number);month=dateKey(new Date(p[0],p[1]-1+delta,1)).slice(0,7);draw();}
+    dialog.querySelector('[data-prev]').onclick=function(){move(-1);};dialog.querySelector('[data-next]').onclick=function(){move(1);};
+    dialog.querySelector('[data-today]').onclick=function(){selected=limit;month=limit.slice(0,7);draw();};
+    dialog.querySelector('[data-apply]').onclick=function(){var input=document.getElementById('recordDate');input.value=selected;input.dispatchEvent(new Event('change',{bubbles:true}));close();};
+    document.body.appendChild(dialog);draw();dialog.showModal();var initial=grid.querySelector('[aria-pressed="true"]');if(initial)initial.focus();
+  }
   var pendingActionDialog = false;
   // 먼 과거로 한 번에 이동하기 위한 기간 선택 다이얼로그.
   // 월을 먼저 고르고 그 달의 주차를 고르는 2단계 선택.
@@ -3303,7 +3338,8 @@
     var cur=list.querySelector('.is-current')||list.querySelector('button:not([disabled])');
     if(cur)cur.focus({preventScroll:true});
   }
-  function confirmDataAction(title,message,actionLabel,backupProfile) {
+  function confirmDataAction(title,message,actionLabel,backupProfile,options) {
+    options=options||{};
     if(pendingActionDialog)return Promise.resolve(false);
     clearConfirmation();pendingActionDialog=true;
     var owner=activeProfile;
@@ -3314,8 +3350,9 @@
       var body=document.createElement('p');body.id='dataConfirmMessage';body.className='data-confirm-message';body.textContent=message;
       var backup=document.createElement('p');backup.id='dataConfirmBackup';backup.className='data-confirm-backup';
       backup.textContent=(backupProfile && backupProfile!==owner?'먼저 취소한 뒤 '+backupProfile+' 플랜으로 전환하고, ':'필요한 데이터는 먼저 ')+"설정의 ‘플랜 백업’에서 JSON 파일로 저장하세요.";
+      if(options.hideBackup){backup.hidden=true;dialog.setAttribute('aria-describedby','dataConfirmMessage');}
       var actions=document.createElement('div');actions.className='data-confirm-actions';
-      var cancel=document.createElement('button');cancel.type='button';cancel.textContent='취소';
+      var cancel=document.createElement('button');cancel.type='button';cancel.textContent=options.cancelLabel||'취소';
       var confirm=document.createElement('button');confirm.type='button';confirm.className='confirm-destructive';confirm.textContent=actionLabel;
       actions.appendChild(cancel);actions.appendChild(confirm);dialog.appendChild(heading);dialog.appendChild(body);dialog.appendChild(backup);dialog.appendChild(actions);
       var done=false;
@@ -3572,9 +3609,9 @@
   document.getElementById('btnRevertNow').addEventListener('click', async function () {
     var isTemp = currentTemporaryDay().temporary;
     var ok = await confirmDataAction(
-      '변경 취소',
-      (isTemp ? '임시 루틴에서 ' : '') + '편집한 내용을 모두 버리고 마지막으로 저장한 상태로 되돌려요. 되돌린 내용은 복구할 수 없어요.',
-      '되돌리기'
+      '루틴 변경사항을 버릴까요?',
+      (isTemp ? '이번 주 임시 루틴 전체의 ' : '주간 루틴 전체의 ') + '저장하지 않은 변경사항을 버리고 마지막 저장 상태로 돌아가요. 운동기록은 유지돼요.',
+      '변경사항 버리기',null,{hideBackup:true,cancelLabel:'계속 편집'}
     );
     if (!ok) return;
     if (revertRoutineEdits()) {

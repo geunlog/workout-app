@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="55">
+<meta name="workout-app-version" content="56">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" sizes="192x192" href="/workout-app/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/workout-app/icon-192.png">
 <title>운동 루틴 · Light</title>
-<link rel="stylesheet" href="style.css?v=55">
+<link rel="stylesheet" href="style.css?v=56">
 
 
 </head>
@@ -200,7 +200,7 @@
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 55 · 2026-09-20</strong>
+      <strong>앱 버전 56 · 2026-09-21</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -230,7 +230,7 @@
       </details>
 
       <div class="record-date-row routine-read-only">
-        <label>기록 날짜 <input type="date" id="recordDate" aria-label="운동 기록 날짜"></label>
+        <span id="recordDateLabel">기록 날짜</span><input type="hidden" id="recordDate"><button type="button" class="btn-reset record-date-picker" id="btnRecordDate" aria-haspopup="dialog" aria-labelledby="recordDateLabel btnRecordDate">날짜 선택</button>
         <button class="btn-reset" id="btnRecordToday" type="button">오늘</button>
       </div>
       <div class="day-panel" id="dayPanel"></div>
@@ -284,7 +284,7 @@
 
 <nav class="tab-bar" id="modeToggle" role="tablist"></nav>
 
-<script src="app.js?v=55"></script>
+<script src="app.js?v=56"></script>
 
 
 
