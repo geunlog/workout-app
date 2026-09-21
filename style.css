@@ -2196,3 +2196,48 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .adjustment-json-option>summary{display:flex;align-items:center;min-height:44px;font-size:13px;cursor:pointer;}
 .bulk-app .temporary-import{background:white;border-color:var(--line-strong);color:var(--primary);}
 @media(max-width:360px){.bulk-app .records-disclosure-actions{grid-template-columns:minmax(0,1fr) 96px 68px;}.bulk-app .records-disclosure-actions button,.bulk-app .records-disclosure-actions select{font-size:13px;}.bulk-app .record-exercise-search{grid-template-columns:100px minmax(0,1fr);}.bulk-app #recordSearchMuscle{flex-basis:100px;width:100px;}.bulk-app .record-exercise-search .stats-search-icon{left:120px;}}
+.bulk-app #statsView{--stats-line:#e9edf4;}
+.bulk-app #statsView .stats-card{background:#fff;border:1px solid var(--stats-line);border-radius:16px;padding:18px;margin:16px 0;box-shadow:0 3px 14px rgba(30,45,80,.025);}
+.bulk-app #statsView details.stats-card:not([open]){padding:12px 18px;}
+.bulk-app #statsView h3{font-size:16px;letter-spacing:-.025em;}
+.bulk-app #statsView .stats-scope-heading{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.bulk-app #statsView .stats-scope-label{font-size:11px;color:var(--muted);margin:-4px 0 16px;}
+.bulk-app #statsView .stats-note{font-size:12px;line-height:1.65;}
+.bulk-app #statsView .stats-note:empty{display:none;}
+.bulk-app #statsView .stats-periods{display:flex;gap:4px;background:#f2f4f9;border-radius:12px;padding:4px;}
+.bulk-app #statsView .stats-periods button{flex:1;min-height:44px;padding:8px 4px;background:transparent;border:0;border-radius:9px;font-size:13px;color:var(--muted);}
+.bulk-app #statsView .stats-periods button[aria-pressed=true]{background:var(--primary);color:white;box-shadow:0 2px 5px rgba(49,85,220,.16);}
+.bulk-app #statsView .mc-controls{gap:8px;flex-wrap:wrap;margin:12px 0 18px;}
+.bulk-app #statsView .mc-scope{background:#f2f4f9;border-radius:10px;padding:3px;}
+.bulk-app #statsView .mc-scope button{min-height:40px;border-radius:8px;}
+.bulk-app #statsView .mc-row{border-color:var(--stats-line);}
+.bulk-app #statsView .mc-bar{height:6px;}
+.bulk-app #statsView .mc-empty{padding:18px 8px;text-align:center;background:#f8f9fc;border-radius:10px;}
+.bulk-app #statsView .big3-table span strong{font-size:17px;letter-spacing:-.03em;}
+.bulk-app #statsView .big3-table span small{font-size:10px;color:var(--muted);}
+.bulk-app #statsView .big3-total-value{font-size:19px;color:var(--primary);}
+.bulk-app #statsView .big3-divider-total{height:1px;}
+.bulk-app #statsView .stats-range-attendance{display:flex;align-items:center;justify-content:space-between;margin:12px 0 16px;padding-top:12px;border-top:1px solid var(--stats-line);font-size:12px;color:var(--muted);}
+.bulk-app #statsView .stats-range-attendance strong{font-size:28px;line-height:1;color:var(--primary);font-variant-numeric:tabular-nums;}
+.bulk-app #statsView .stats-range-attendance small{font-size:12px;margin-left:4px;font-weight:500;color:var(--muted);}
+.bulk-app #statsView .range-caption{font-size:12px;font-weight:400;color:var(--muted);}
+.bulk-app #statsView .stats-muscle-group{border-radius:16px;box-shadow:none;border-color:var(--stats-line);}
+.bulk-app #statsView .stats-muscle-group>summary{min-height:56px;padding:14px 18px;}
+.bulk-app #statsView .stats-muscle-group .rec-body{padding:0 16px 8px;}
+.bulk-app #statsView .stats-exercise{margin:0;border:0;border-top:1px solid var(--stats-line);border-radius:0;background:transparent;}
+.bulk-app #statsView .stats-exercise>summary{min-height:52px;padding:14px 2px;gap:8px;}
+.bulk-app #statsView .stats-exercise-title{font-size:14px;font-weight:600;}
+.bulk-app #statsView .stats-exercise .rec-count{font-size:11px;white-space:nowrap;}
+.bulk-app #statsView .stats-exercise-body{padding:8px 0 16px;}
+.bulk-app #statsView .stats-pr-box{background:#f8f9fc;border-radius:12px;}
+.bulk-app #statsView .muscle-search{display:grid;grid-template-columns:104px minmax(0,1fr);gap:8px;}
+.bulk-app #statsView .muscle-search select{width:100%;min-width:0;min-height:44px;appearance:none;padding:10px 28px 10px 12px;border:1px solid #c7d0df;border-radius:11px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235e6878' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 10px center/14px no-repeat;}
+.bulk-app #statsView .muscle-search input{min-height:44px;border:1px solid #c7d0df;border-radius:11px;background-color:#fff;padding:10px 12px;font-size:16px;}
+.bulk-app #statsView .stats-exercise-search input{padding-left:36px;}
+.bulk-app #statsView .stats-exercise-search .stats-search-icon{display:block;left:124px;right:auto;width:17px;height:17px;}
+.bulk-app #statsView .pin-search{grid-template-columns:88px minmax(0,1fr) 52px;}
+.bulk-app #statsView [data-pin-add]{background:var(--primary);color:white;border:0;border-radius:10px;}
+.bulk-app #statsView [data-pin-add]:disabled{background:#eef1f6;color:#8993a3;}
+.bulk-app #statsView summary{cursor:pointer;}
+.bulk-app #statsView button:focus-visible,.bulk-app #statsView summary:focus-visible,.bulk-app #statsView select:focus-visible{outline:2px solid var(--primary);outline-offset:3px;}
+@media(max-width:360px){.bulk-app #statsView .stats-card{padding:14px;}.bulk-app #statsView .pin-search{grid-template-columns:80px minmax(0,1fr);}.bulk-app #statsView .pin-search button{grid-column:1/-1;}.bulk-app #statsView .mc-row{grid-template-columns:28px minmax(12px,1fr) 34px 64px 45px;gap:4px;}}

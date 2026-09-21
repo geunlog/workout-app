@@ -3015,7 +3015,7 @@
   function pinnedStatsHtml(){
     var pins=pinnedExercises(),all=buildStats(statsSource(),catalog,'all',todayStr(),null);
     var choices=statsRecordedExerciseNames(pinMuscleQuery).map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');
-    return '<details class="stats-card stats-section" data-stats-panel="pins"><summary><span>관심 종목 <small>'+pins.length+'/5</small></span></summary><p class="stats-note">선택 플랜의 전체 기간 기준</p><div class="muscle-search pin-search">'+muscleSelectHtml('pinMuscleSelect',pinMuscleQuery)+'<input type="search" id="pinExerciseInput" list="pinExerciseChoices" placeholder="종목 검색" aria-label="고정할 종목" style="min-width:0;flex:1;width:100%;font-size:16px"><datalist id="pinExerciseChoices">'+choices+'</datalist><button type="button" class="btn-reset" data-pin-add>추가</button></div><p class="stats-note" id="pinSearchCount" role="status"></p>'+pins.map(function(n){var g=all.exercises.find(function(e){return e.name===n;});var recent=g?g.latest:null;return '<details class="stats-exercise" data-stats-key="pin:'+statsEscape(n)+'"><summary><span class="stats-exercise-title">'+statsEscape(n)+'<small>'+(recent?statsEscape(recent.date+' · '+recent.w+'kg × '+recent.reps+'회'):'기록 없음')+'</small></span></summary><div class="stats-exercise-body">'+(g?statsExerciseMetricsHtml(g):'')+'<div class="pin-remove-row"><button class="btn-reset" type="button" data-pin-remove="'+statsEscape(n)+'">고정 해제</button></div></div></details>';}).join('')+(!pins.length?'<p class="stats-note">자주 확인하는 종목을 추가해보세요.</p>':'')+'</details>';
+    return '<details class="stats-card stats-section" data-stats-panel="pins"><summary><span>관심 종목 · <small>'+pins.length+'/5</small></span></summary><p class="stats-note">전체 기간 기록</p><div class="muscle-search pin-search">'+muscleSelectHtml('pinMuscleSelect',pinMuscleQuery)+'<input type="search" id="pinExerciseInput" list="pinExerciseChoices" placeholder="종목 검색" aria-label="고정할 종목" style="min-width:0;flex:1;width:100%;font-size:16px"><datalist id="pinExerciseChoices">'+choices+'</datalist><button type="button" class="btn-reset" data-pin-add>추가</button></div><p class="stats-note" id="pinSearchCount" role="status"></p>'+pins.map(function(n){var g=all.exercises.find(function(e){return e.name===n;});var recent=g?g.latest:null;return '<details class="stats-exercise" data-stats-key="pin:'+statsEscape(n)+'"><summary><span class="stats-exercise-title">'+statsEscape(n)+'<small>'+(recent?statsEscape(recent.date+' · '+recent.w+'kg × '+recent.reps+'회'):'기록 없음')+'</small></span></summary><div class="stats-exercise-body">'+(g?statsExerciseMetricsHtml(g):'')+'<div class="pin-remove-row"><button class="btn-reset" type="button" data-pin-remove="'+statsEscape(n)+'">관심 해제</button></div></div></details>';}).join('')+(!pins.length?'<p class="stats-note">최대 5개까지 추가할 수 있어요.</p>':'')+'</details>';
   }
   function renderStats() {
     var panelKey=keyFor('bulk-workout-panels-v1',activeProfile),panelPrefs=readJSON(panelKey,{});
@@ -3066,13 +3066,13 @@
         '</div>'+
       '</div>'+
       (mc.total?'<div class="mc-table"><div class="mc-row mc-head"><span class="mc-head-label">부위</span><span class="mc-sets">세트<small>(직전)</small></span><span class="mc-vol">볼륨</span><span class="mc-delta">변화</span></div>'+mcRows+'</div>'
-       :'<p class="stats-note mc-empty">이 기간에는 기록이 없어요. 위 화살표로 다른 기간을 확인해보세요.</p>');
+       :'<p class="stats-note mc-empty">이 기간의 기록이 없어요.</p>');
     var groups=MUSCLES.concat(data.muscles['기타']?['기타']:[]).map(function(m){
       var muscleKey='muscle:'+m;
       var exercises=data.exercises.filter(function(g){return g.muscle===m;});if(!exercises.length)return '';
       var cards=exercises.map(function(g){
         var key='exercise:'+g.key;
-        return '<details class="stats-exercise" data-stats-key="'+statsEscape(key)+'" data-stats-exercise-name="'+statsEscape(g.name)+'"'+(opened.has(key)?' open':'')+'><summary><span class="stats-exercise-title">'+statsEscape(g.name)+'</span><span class="rec-count">'+g.count+'세트</span></summary><div class="stats-exercise-body">'+
+        return '<details class="stats-exercise" data-stats-key="'+statsEscape(key)+'" data-stats-exercise-name="'+statsEscape(g.name)+'"'+(opened.has(key)?' open':'')+'><summary><span class="stats-exercise-title">'+statsEscape(g.name)+'</span><span class="rec-count">기록 '+g.count+'세트</span></summary><div class="stats-exercise-body">'+
           statsExerciseMetricsHtml(g)+'</div></details>';
       }).join('');
       return '<details class="rec-group stats-muscle-group" data-stats-key="'+statsEscape(muscleKey)+'"'+(opened.has(muscleKey)?' open':'')+'><summary><span class="rec-title" style="color:'+(MUSCLE_COLOR[m] || 'var(--muted)')+'">'+m+'</span><span class="rec-count">'+(exercises.length?exercises.length+'개 종목':'기록 없음')+'</span><span class="rec-chev"></span></summary><div class="rec-body">'+
@@ -3080,7 +3080,7 @@
     }).join('');
     var recordedNames=statsRecordedExerciseNames(statsMuscleQuery);
     var searchList=recordedNames.map(function(name){return '<option value="'+statsEscape(name)+'"></option>';}).join('');
-    var searchHtml='<div class="stats-exercise-search muscle-search">'+muscleSelectHtml('statsMuscleSelect',statsMuscleQuery)+'<input type="search" data-stats-exercise-search list="statsExerciseSuggestions" autocomplete="off" placeholder="통계 종목 검색" aria-label="통계 종목 검색" value="'+statsEscape(statsExerciseQuery)+'"><svg class="stats-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><datalist id="statsExerciseSuggestions">'+searchList+'</datalist></div><p class="stats-note" data-stats-search-count role="status"></p><p class="stats-search-empty" data-stats-search-empty hidden>검색한 종목의 기록이 선택 기간에 없어요.</p>';
+    var searchHtml='<div class="stats-exercise-search muscle-search">'+muscleSelectHtml('statsMuscleSelect',statsMuscleQuery)+'<input type="search" data-stats-exercise-search list="statsExerciseSuggestions" autocomplete="off" placeholder="종목명 검색" aria-label="통계 종목 검색" value="'+statsEscape(statsExerciseQuery)+'"><svg class="stats-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><datalist id="statsExerciseSuggestions">'+searchList+'</datalist></div><p class="stats-note" data-stats-search-count role="status"></p><p class="stats-search-empty" data-stats-search-empty hidden>검색한 종목의 기록이 선택 기간에 없어요.</p>';
     var attendanceDisplay=statsAttendanceDisplay(data,asOf);
     var big3List=data.big3||[];
     var big3RowCells=[];
@@ -3103,7 +3103,7 @@
     function big3TotalNote(vals){
       return (vals.length && vals.length<big3List.length)?vals.length+'/'+big3List.length+'개 종목 합산':'';
     }
-    var big3Html='<section class="stats-card big3-card"><h3>3대 운동</h3>'+
+    var big3Html='<section class="stats-card big3-card"><h3>3대 운동</h3><p class="stats-scope-label">전체 기간 최고 기록</p>'+
       '<div class="big3-table">'+
         '<span class="big3-col1 big3-head-cell">종목</span><span class="big3-num big3-head-cell">실측 1RM</span><span class="big3-num big3-head-cell">추정 1RM</span>'+
         big3RowCells.join('')+
@@ -3113,38 +3113,32 @@
         '<span class="big3-num big3-total-value">'+(estSum!==null?statsFormatMetric(estSum,'e1rm'):'<span class="big3-empty">–</span>')+(big3TotalNote(estVals)?'<small>'+big3TotalNote(estVals)+'</small>':'')+'</span>'+
       '</div>'+
       (noBig3Records?'<p class="stats-note big3-onboard">아직 3대 운동 기록이 없어요. 운동 관리에서 <strong>‘3대운동’ 배지</strong>가 붙은 세 종목으로 기록하면 여기에 쌓여요.</p>':'')+
-      '<details class="big3-guide" data-stats-panel="big3guide"><summary>1RM 표시 기준</summary><div class="big3-guide-body">'+
-        '<h4>실측 1RM</h4>'+
-        '<p>위 세 종목을 <strong>횟수 1회</strong>로 저장하면 그 무게가 실측 1RM 후보가 돼요. 여러 번 기록하면 그중 <strong>가장 무거운 기록이 PR로 올라오고</strong>, 더 무거운 1회를 새로 저장하면 자동으로 갱신돼요. 옆에 적힌 날짜가 그 PR을 세운 날이에요.</p>'+
-        '<h4>추정 1RM</h4>'+
-        '<p><strong>2회 이상</strong>으로 저장한 기록만 Epley 공식으로 1회 환산해요. 1회 기록(실측 1RM)은 환산해도 그 무게 그대로라 의미가 없어서 추정 계산에서 제외해요. 계산 참고값이라 <strong>고반복 기록일수록 실제보다 높게</strong> 나와요.</p>'+
-        '<h4>합계</h4>'+
-        '<p>세 종목을 다 채우지 않아도 <strong>기록이 있는 종목만으로</strong> 합계를 내요. 일부만 있으면 합계 아래 몇 개를 더했는지 표시돼요.</p>'+
-        '<h4>집계 범위</h4>'+
-        '<p>모든 값은 <strong>조회 기간과 무관하게 전체 기간</strong> 기준이에요.</p>'+
-        '<p class="big3-guide-warn">운동 관리에서 이 세 종목의 이름을 바꾸거나 삭제하면 집계가 끊겨요. 이름 옆 <strong>‘3대운동’ 배지</strong>가 보이면 정상이에요.</p>'+
+      '<details class="big3-guide" data-stats-panel="big3guide"><summary>계산 기준</summary><div class="big3-guide-body">'+
+        '<h4>실측 1RM</h4><p>1회 수행 기록 중 가장 무거운 무게예요.</p>'+
+        '<h4>추정 1RM</h4><p>2회 이상 기록을 Epley 공식으로 환산해요. 고반복일수록 오차가 커질 수 있어요.</p>'+
+        '<h4>합계</h4><p>기록이 있는 종목만 합산해요.</p>'+
+        '<p class="big3-guide-warn">운동 관리의 ‘3대운동’ 종목을 집계해요. 이름 변경·삭제 시 집계가 달라질 수 있어요.</p>'+
       '</div></details></section>';
-    var scopeHtml='<h3 class="stats-scope-heading">통계에 포함할 기록</h3><div class="stats-periods" role="group" aria-label="통계 플랜 범위"><button type="button" data-stats-scope="current" aria-pressed="'+(statsScope==='current')+'">현재 플랜만</button><button type="button" data-stats-scope="all" aria-pressed="'+(statsScope==='all')+'">모든 플랜 합산</button></div><p class="stats-note scope-caption">'+statsEscape(statsScope==='all'?'모든 플랜의 기록 합산':'플랜: '+activeProfile)+'</p>';
+    var scopeHtml='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="통계 플랜 범위"><button type="button" data-stats-scope="current" aria-pressed="'+(statsScope==='current')+'">현재 플랜</button><button type="button" data-stats-scope="all" aria-pressed="'+(statsScope==='all')+'">모든 플랜</button></div><p class="stats-note scope-caption">'+statsEscape(statsScope==='all'?'모든 플랜의 기록 합산':'플랜: '+activeProfile)+'</p>';
     // 조회 기간은 기록한 날·관심 종목·종목별 변화에만 적용되므로 그 묶음 바로 위에 둔다.
-    var rangeHtml='<section class="stats-card stats-section"><h3>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></h3><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><button type="button" data-stats-reset'+(statsPeriod==='custom'?'':' hidden')+'>기간 초기화</button></div><details data-stats-panel="range"><summary>달력으로 기간 선택</summary>'+
+    var rangeHtml='<section class="stats-card stats-section stats-range-card"><h3>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></h3><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><button type="button" data-stats-reset'+(statsPeriod==='custom'?'':' hidden')+'>기간 초기화</button></div><details data-stats-panel="range"><summary>기간 직접 선택</summary>'+
       statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details></section>';
-    var attendanceHtml='<section class="stats-card"><div class="stats-attendance"><h3>기록한 날</h3><div class="stats-attendance-value"><span class="stats-attendance-context">'+statsEscape(attendanceDisplay.label)+'</span> <strong class="stats-attendance-actual">'+data.days+'</strong><span class="stats-attendance-total">일</span></div></div><p class="stats-note">선택 기간에 기록이 있는 날짜 수예요.</p></section>';
-    var muscleHtml='<section class="stats-card"><h3>부위별 기록 세트 · 볼륨</h3>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>볼륨 집계 기준</summary><p class="stats-note">이 카드는 <strong>아래 조회 기간과 무관하게</strong> 선택한 주·월과 그 직전 기간을 비교해요. 주는 월요일에 시작해요.<br>세트 칸의 <strong>괄호 안 숫자는 직전 기간 세트 수</strong>이고, 막대의 회색 부분도 직전 기간을 뜻해요. 볼륨은 무게×횟수의 합이라 무게나 횟수가 빠진 세트는 제외돼요. 부위마다 관여 근육량이 달라서 <strong>부위끼리 볼륨을 비교하는 건 의미가 없어요.</strong><br>비교 기간: '+mcRange.prevFrom+' ~ '+mcRange.prevTo+'</p></details></section>';
+    rangeHtml=rangeHtml.replace('</h3>', '</h3><div class="stats-range-attendance"><span>기록한 날</span><strong>'+data.days+'<small>일</small></strong></div>');
+    var muscleHtml='<section class="stats-card"><h3>부위별 운동량</h3><p class="stats-scope-label">선택한 주·월 기준 · 직전 기간과 비교</p>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>집계 기준</summary><p class="stats-note">괄호·회색 막대: 직전 기간 세트 수<br>볼륨: 무게 × 횟수의 합계 · 누락 세트 제외<br>같은 부위의 변화를 비교하세요. 주간은 월요일부터예요.<br>비교 기간: '+mcRange.prevFrom+' ~ '+mcRange.prevTo+'</p></details></section>';
     statsViewEl.innerHTML=scopeHtml+
       muscleHtml+
       big3Html+
       rangeHtml+
-      attendanceHtml+
       pinnedStatsHtml()+
-      (!data.count?'<p class="stats-note">이 기간에는 기록이 없어요. 운동 탭에서 기록을 추가하거나 조회 기간을 바꿔보세요.</p>':'')+
-      '<h3 class="stats-heading">종목별 기록 변화</h3><p class="stats-note">선택 기간의 기록 변화를 비교해보세요. 역대 PR은 전체 기간 기준이에요.</p>'+searchHtml+groups;
+      (!data.count?'<p class="stats-note">선택한 기간의 기록이 없어요.</p>':'')+
+      '<h3 class="stats-heading">종목별 변화</h3><p class="stats-note">조회 기간 기준 · 최고 기록은 전체 기간</p>'+searchHtml+groups;
     statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;writeJSON('bulk-workout-stats-scope-v1',statsScope);renderStats();};});
     statsViewEl.querySelectorAll('details[data-stats-key]').forEach(function(el){if(opened.has(el.dataset.statsKey))el.open=true;});
     statsViewEl.querySelectorAll('[data-stats-panel]').forEach(function(el){var name=el.dataset.statsPanel;el.dataset.owner=activeProfile;el.open=name==='range' && !!statsRangeAnchor ? true : typeof panelPrefs[name]==='boolean' ? panelPrefs[name] : name==='pins' && pinnedExercises().length>0;
       el.addEventListener('toggle',function(){if(!el.isConnected)return;panelPrefs[name]=el.open;writeJSON(panelKey,panelPrefs);});
     });
     statsViewEl.querySelector('[data-pin-add]').onclick=function(){var n=statsViewEl.querySelector('#pinExerciseInput').value.trim(),pins=pinnedExercises();if(!statsRecordedExerciseNames(pinMuscleQuery).includes(n)){showToast('기록이 있는 종목을 선택해주세요.','pending');return;}if(pins.includes(n))return;if(pins.length>=5){showToast('최대 5개까지 고정할 수 있어요.','pending');return;}if(writeJSON(keyFor('bulk-workout-pins-v1',activeProfile),pins.concat(n)))renderStats();else showToast('고정 저장 실패','error');};
-    statsViewEl.querySelectorAll('[data-pin-remove]').forEach(function(b){b.onclick=function(){if(writeJSON(keyFor('bulk-workout-pins-v1',activeProfile),pinnedExercises().filter(function(n){return n!==b.dataset.pinRemove;})))renderStats();else showToast('고정 해제 실패','error');};});
+    statsViewEl.querySelectorAll('[data-pin-remove]').forEach(function(b){b.onclick=function(){if(writeJSON(keyFor('bulk-workout-pins-v1',activeProfile),pinnedExercises().filter(function(n){return n!==b.dataset.pinRemove;})))renderStats();else showToast('관심 해제 실패','error');};});
     statsViewEl.querySelectorAll('[data-stats-period]').forEach(function(button){button.addEventListener('click',function(){
       chooseStatsPeriod(button.dataset.statsPeriod);renderStats();
       var active=statsViewEl.querySelector('[data-stats-period="'+statsPeriod+'"]');if(active)active.focus({preventScroll:true});
@@ -3186,7 +3180,7 @@
     });});
     document.getElementById('statsMuscleSelect').onchange=function(){statsMuscleQuery=this.value;var list=document.getElementById('statsExerciseSuggestions');list.innerHTML=statsRecordedExerciseNames(statsMuscleQuery).map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');applyStatsExerciseSearch(statsExerciseQuery);};
     document.getElementById('pinMuscleSelect').onchange=function(){pinMuscleQuery=this.value;document.getElementById('pinExerciseInput').value='';document.getElementById('pinExerciseChoices').innerHTML=statsRecordedExerciseNames(pinMuscleQuery).map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');updatePinSearchCount();};
-    function updatePinSearchCount(){var q=document.getElementById('pinExerciseInput').value.trim().toLocaleLowerCase('ko-KR');document.getElementById('pinSearchCount').textContent=statsRecordedExerciseNames(pinMuscleQuery).filter(function(n){return n.toLocaleLowerCase('ko-KR').includes(q);}).length+'개 종목';}
+    function updatePinSearchCount(){var value=document.getElementById('pinExerciseInput').value.trim(),q=value.toLocaleLowerCase('ko-KR'),names=statsRecordedExerciseNames(pinMuscleQuery);document.getElementById('pinSearchCount').textContent=q?names.filter(function(n){return n.toLocaleLowerCase('ko-KR').includes(q);}).length+'개 종목':'';statsViewEl.querySelector('[data-pin-add]').disabled=!names.includes(value)||pinnedExercises().includes(value)||pinnedExercises().length>=5;}
     document.getElementById('pinExerciseInput').addEventListener('input',updatePinSearchCount);updatePinSearchCount();
     var statsSearchInput=statsViewEl.querySelector('[data-stats-exercise-search]');
     if(statsSearchInput){
