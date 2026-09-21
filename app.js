@@ -3668,7 +3668,7 @@
   });
 
   document.getElementById('btnCatalogReset').addEventListener('click', async function () {
-    if(!await confirmDataAction('기본 종목으로 초기화','직접 추가하거나 수정한 종목 설정이 기본 종목으로 교체돼요. 저장된 운동기록과 요일별 루틴은 유지돼요.','초기화'))return;
+    if(!await confirmDataAction('기본 종목으로 초기화','종목 목록과 세트·횟수·RIR을 기본값으로 되돌려요.\n직접 추가한 종목은 목록에서 삭제돼요.\n운동 기록과 루틴은 유지돼요.','초기화'))return;
     {
       var next=defaultCatalog();
       if(!writeJSON(CATALOG_KEY,next)){showStorageError('catalogSaveHint');return;}
