@@ -1448,7 +1448,7 @@
     routineHint.textContent=hintPending?(hintDay.temporary?'임시 루틴 변경사항이 있어요. 위의 저장 버튼을 눌러 확정하세요.':'미저장 변경사항이 있어요. 위의 저장 버튼을 눌러 확정하세요.'):'';
     routineHint.className='save-hint';
     document.getElementById('recordDate').value=selectedRecordDate;document.getElementById('btnRecordToday').disabled=selectedRecordDate===todayStr();
-    document.getElementById('btnRecordDate').textContent=selectedRecordDate.replace(/-/g,'. ')+' ▾';
+    document.getElementById('btnRecordDate').textContent=selectedRecordDate.replace(/-/g,'. ');
     document.getElementById('recordDate').max=todayStr();
     var d = effectiveRoutineDay(selectedRecordDate,activeIndex);
     panelEl.innerHTML = '';
@@ -2310,9 +2310,9 @@
     if(workout){workout.card.classList.add('editing-last-set');workout.title.textContent=workout.number+'번째 세트 수정 중';form.classList.add('workout-record-editor');}
     var heading=document.createElement('strong');heading.className='record-edit-heading';heading.textContent=(entry._setNo||workout&&workout.number||1)+'번째 세트 수정 중';form.appendChild(heading);
     var date=document.createElement('input');date.type='hidden';date.value=entry.date;
-    var dateButton=document.createElement('button');dateButton.type='button';dateButton.className='btn-reset';dateButton.textContent=entry.date.replace(/-/g,'. ')+' ▾';dateButton.setAttribute('aria-label','기록 날짜 수정');dateButton.setAttribute('aria-haspopup','dialog');
+    var dateButton=document.createElement('button');dateButton.type='button';dateButton.className='btn-reset';dateButton.textContent=entry.date.replace(/-/g,'. ');dateButton.setAttribute('aria-label','기록 날짜 수정');dateButton.setAttribute('aria-haspopup','dialog');
     var dateNotice=document.createElement('p');dateNotice.className='save-hint';dateNotice.hidden=true;
-    dateButton.onclick=function(){openWorkoutDatePicker(dateButton,{value:date.value,title:'기록 날짜 수정',onApply:function(value){date.value=value;dateButton.textContent=value.replace(/-/g,'. ')+' ▾';dateNotice.hidden=value===entry.date;dateNotice.textContent='저장하면 이 세트가 '+value+' 기록으로 이동해요.';}});};
+    dateButton.onclick=function(){openWorkoutDatePicker(dateButton,{value:date.value,title:'기록 날짜 수정',onApply:function(value){date.value=value;dateButton.textContent=value.replace(/-/g,'. ');dateNotice.hidden=value===entry.date;dateNotice.textContent='저장하면 이 세트가 '+value+' 기록으로 이동해요.';}});};
     var weight=document.createElement('input');weight.type='number';weight.min='0';weight.max='500';weight.step='any';weight.inputMode='decimal';weight.value=entry.w==='-'?'':entry.w;weight.setAttribute('aria-label','기록 무게 수정');
     var reps=document.createElement('input');reps.type='number';reps.min='0';reps.max='100';reps.step='1';reps.inputMode='numeric';reps.value=entry.reps==='-'?'':entry.reps;reps.setAttribute('aria-label','기록 횟수 수정');
     var dateField=wrapField('날짜',dateButton);dateField.appendChild(date);dateField.classList.add('edit-date-field');form.appendChild(dateField);form.appendChild(dateNotice);form.appendChild(wrapField('kg',weight));form.appendChild(wrapField('회',reps));
@@ -3402,7 +3402,7 @@
   function refreshRecordMuscleOptions() {
     var select=document.getElementById('recordMuscleSelect'),previous=select.value;
     select.replaceChildren();
-    var placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='펼칠 부위';select.appendChild(placeholder);
+    var placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='부위 선택';select.appendChild(placeholder);
     recordDisclosureGroups().forEach(function(group){
       var muscle=group.dataset.recordKey.slice(7),option=document.createElement('option');option.value=muscle;option.textContent=muscle;select.appendChild(option);
     });
@@ -3643,8 +3643,8 @@
   function syncRecordFilterUI(){
     var from=document.getElementById('recFilterFrom'),to=document.getElementById('recFilterTo');
     from.value=recFilterFrom;to.value=recFilterTo;
-    document.getElementById('recFromPicker').textContent=recFilterFrom?recFilterFrom.replace(/-/g,'. ')+' ▾':'시작일 선택';
-    document.getElementById('recToPicker').textContent=recFilterTo?recFilterTo.replace(/-/g,'. ')+' ▾':'종료일 선택';
+    document.getElementById('recFromPicker').textContent=recFilterFrom?recFilterFrom.replace(/-/g,'. '):'시작일 선택';
+    document.getElementById('recToPicker').textContent=recFilterTo?recFilterTo.replace(/-/g,'. '):'종료일 선택';
     var preset=!recFilterFrom&&!recFilterTo?'all':recFilterTo===todayStr()&&recFilterFrom===adjustmentWeek(todayStr()).from?'week':recFilterTo===todayStr()&&recFilterFrom===todayStr().slice(0,7)+'-01'?'month':'';
     document.querySelectorAll('.rec-preset-btn').forEach(function(button){button.setAttribute('aria-pressed',String(button.dataset.preset===preset));});
     var all=document.getElementById('recordSearchMuscle').querySelector('option[value=""]');if(all)all.textContent='전체 부위';
