@@ -2160,4 +2160,27 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .record-edit-form .edit-date-field>button,.bulk-app .record-date-picker,.bulk-app #recFromPicker,.bulk-app #recToPicker{position:relative;padding-right:34px;}
 .bulk-app .record-edit-form .edit-date-field>button::after,.bulk-app .record-date-picker::after,.bulk-app #recFromPicker::after,.bulk-app #recToPicker::after{content:'';position:absolute;right:16px;top:50%;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);pointer-events:none;}
 .bulk-app #recordsList:has(.record-edit-form) .record-duplicate{display:none;}
+.bulk-app .records-management{margin:18px 0;padding:4px 14px;border-radius:14px;}
+.bulk-app .records-management>summary{display:flex;align-items:center;min-height:44px;padding:0;font-weight:600;}
+.bulk-app .records-disclosure-actions{margin-top:10px;padding-top:8px;}
+.bulk-app #btnRecordsExpand::before{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m7 8 5-5 5 5M7 16l5 5 5-5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");}
+.bulk-app #btnRecordsExpand[data-expanded=true]::before{mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m7 3 5 5 5-5M7 21l5-5 5 5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");}
+.bulk-app .rep-ex-list>li{border-left:0;padding-left:0;}
+.bulk-app .rep-ex-list>.rep-muscle-start:not(:first-child){margin-top:18px;padding-top:16px;}
+.bulk-app .rep-muscle-tag{display:flex;align-items:center;gap:7px;font-weight:600;}
+.bulk-app .rep-muscle-tag i{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:currentColor;}
+.bulk-app .rep-chip{font-weight:400;}.bulk-app .rep-chip-set{font-weight:700;}
+.bulk-app .bar-val{min-width:48px;font-size:13px;white-space:nowrap;}
+.bulk-app .temporary-status-compact{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;}
+.bulk-app .temporary-status-compact [data-temp-details]{flex:0 0 auto;width:auto;min-height:44px;border:0;padding:8px;background:transparent;}
+.bulk-app .future-preview-note{font-size:13px;line-height:1.6;color:var(--muted);}
+.bulk-app .future-preview .saved-set-summary,.bulk-app .future-preview .btn-record-one{display:none;}
+.bulk-app .future-preview .log-fields input:disabled,.bulk-app .future-preview .log-fields button:disabled{opacity:.55;}
+.temporary-empty-day{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;margin:10px 0;border-bottom:1px solid #e5dfef;font-size:14px;}
+.temporary-empty-day small{margin-left:auto;color:#6a6081;}
+.temporary-head-close{float:right;min-width:44px;min-height:44px;border:0;border-radius:10px;background:#f3f4f8;color:#576276;font-size:24px;cursor:pointer;}
+.temporary-details-dialog>h2,.data-confirm-dialog:has([data-preview])>h2{position:sticky;top:0;background:white;z-index:2;padding:12px 0;}
+.temporary-details-dialog>.data-confirm-actions,.data-confirm-dialog:has([data-preview])>.data-confirm-actions{position:sticky;bottom:0;background:white;padding:12px 0;margin-bottom:0;z-index:2;}
+.bulk-app .adjustment-json-option>summary{display:flex;align-items:center;min-height:44px;font-size:13px;cursor:pointer;}
+.bulk-app .temporary-import{background:white;border-color:var(--line-strong);color:var(--primary);}
 @media(max-width:360px){.bulk-app .records-disclosure-actions{grid-template-columns:minmax(0,1fr) 96px 68px;}.bulk-app .records-disclosure-actions button,.bulk-app .records-disclosure-actions select{font-size:13px;}.bulk-app .record-exercise-search{grid-template-columns:100px minmax(0,1fr);}.bulk-app #recordSearchMuscle{flex-basis:100px;width:100px;}.bulk-app .record-exercise-search .stats-search-icon{left:120px;}}

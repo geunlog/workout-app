@@ -667,15 +667,18 @@
   }
 
   function temporaryDaysHtml(temp,selectedDate) {
-    var preferred=temp.days.some(function(d){return d.date===selectedDate;})?selectedDate:temp.days[0].date;
-    return temp.days.map(function(day){return '<details class="temporary-detail-day"'+(day.date===preferred?' open':'')+'><summary><span>'+statsEscape(day.date.slice(5).replace('-','/'))+'</span><strong>'+statsEscape(day.title)+'</strong></summary>'+(day.rest?'<p>휴식일</p>':'<ul>'+day.exercises.map(function(e){return '<li><strong>'+statsEscape(e.name)+'</strong><div class="temporary-detail-spec"><span>'+e.sets+'세트</span><span>'+statsEscape(e.reps)+'회</span><span>RIR '+statsEscape(e.rir)+'</span></div></li>';}).join('')+'</ul>')+'</details>';}).join('');
+    var exerciseDays=temp.days.filter(function(d){return d.exercises.length;});
+    var first=exerciseDays.find(function(d){return d.date===selectedDate;})||exerciseDays.find(function(d){return d.date>=todayStr();})||exerciseDays[0];
+    var preferred=first&&first.date;
+    return temp.days.map(function(day){var label=statsEscape(day.date.slice(5).replace('-','/'))+' ('+['일','월','화','수','목','금','토'][new Date(day.date+'T00:00:00Z').getUTCDay()]+')';if(!day.exercises.length)return '<div class="temporary-empty-day"><span>'+label+'</span><strong>'+statsEscape(day.title)+'</strong><small>등록된 운동 없음</small></div>';return '<details class="temporary-detail-day"'+(day.date===preferred?' open':'')+'><summary><span>'+label+'</span><strong>'+statsEscape(day.title)+'</strong></summary><ul>'+day.exercises.map(function(e){return '<li><strong>'+statsEscape(e.name)+'</strong><div class="temporary-detail-spec"><span>'+e.sets+'세트</span><span>'+statsEscape(e.reps)+'회</span><span>RIR '+statsEscape(e.rir)+'</span></div></li>';}).join('')+'</ul></details>';}).join('');
   }
+  function addTemporaryClose(dialog){var close=document.createElement('button');close.type='button';close.className='temporary-head-close';close.textContent='×';close.setAttribute('aria-label','닫기');close.onclick=function(){dialog.close();};dialog.querySelector('h2').appendChild(close);}
   function openTemporaryDetails(trigger) {
     var temp=activeTemporary();if(!temp || document.getElementById('temporaryDetailsDialog'))return;
     var dialog=document.createElement('dialog');dialog.id='temporaryDetailsDialog';dialog.className='data-confirm-dialog temporary-details-dialog';dialog.setAttribute('aria-label','이번 주 임시 루틴 상세');
     dialog.innerHTML='<h2>이번 주 임시 루틴</h2><p>'+temp.weekStart+' ~ '+temp.weekEnd+'</p>'+temporaryDaysHtml(temp,selectedRecordDate)+'<div class="data-confirm-actions"><button type="button" data-temp-cancel>임시 적용 취소</button><button type="button" data-close>닫기</button></div>';
     dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.addEventListener('close',function(){dialog.remove();if(trigger && trigger.isConnected)trigger.focus({preventScroll:true});});dialog.querySelector('[data-close]').onclick=function(){dialog.close();};
-    document.body.appendChild(dialog);bindTemporaryCancel(dialog);dialog.showModal();dialog.querySelector('[data-close]').focus();
+    addTemporaryClose(dialog);document.body.appendChild(dialog);bindTemporaryCancel(dialog);dialog.showModal();dialog.querySelector('[data-close]').focus();
   }
   function updateMemoSaveState() {
     var dirty=memoEditingProfile===activeProfile && JSON.stringify(memoDraft)!==JSON.stringify(getMemos());
@@ -768,14 +771,14 @@
   }
     function temporaryStatusHtml() {
     var temp=activeTemporary();if(!temp)return '';
-    return '<div class="temporary-status temporary-status-compact"><strong>이번 주 임시 루틴 · '+temp.weekEnd.slice(5).replace('-','/')+'까지</strong><button type="button" class="btn-reset" data-temp-details>상세 보기</button></div>';
+    return '<div class="temporary-status temporary-status-compact"><strong>이번 주 임시 루틴 · '+temp.weekEnd.slice(5).replace('-','/')+'까지</strong><button type="button" class="btn-reset" data-temp-details>상세 보기 ›</button></div>';
   }
   function bindTemporaryCancel(root) {
     root.querySelectorAll('[data-temp-details]').forEach(function(button){button.onclick=function(){openTemporaryDetails(button);};});
     root.querySelectorAll('[data-temp-cancel]').forEach(function(button){button.onclick=function(){
       if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
       var parent=button.closest('dialog');if(parent)parent.close();
-      var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';dialog.setAttribute('aria-label','임시 적용 취소');dialog.innerHTML='<h2>임시 적용 취소</h2><p>기본 루틴으로 돌아가요. 저장한 운동 기록은 유지돼요.</p><div class="data-confirm-actions"><button type="button" data-no>닫기</button><button type="button" data-yes>적용 취소</button></div>';
+      var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';dialog.setAttribute('aria-label','임시 적용 취소');dialog.innerHTML='<h2>임시 적용 취소</h2><p>현재 플랜의 이번 주 임시 적용과 미저장 임시 편집을 취소하고 기본 루틴으로 돌아가요. 저장한 운동 기록은 유지돼요.</p><div class="data-confirm-actions"><button type="button" data-no>닫기</button><button type="button" data-yes>적용 취소</button></div>';
       var owner=activeProfile;document.body.appendChild(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.addEventListener('close',function(){dialog.remove();});dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
       dialog.querySelector('[data-yes]').onclick=function(){if(owner!==activeProfile){dialog.close();return;}if(!storageTransaction([{key:temporaryKey(),remove:true},{key:temporaryPendingKey(),remove:true}])){showToast('취소를 저장하지 못했어요.','error');return;}dialog.close();refreshTemporaryViews();showToast('기본 루틴으로 돌아왔어요.');};dialog.showModal();dialog.querySelector('[data-no]').focus();
     };});
@@ -803,9 +806,10 @@
     dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};document.body.appendChild(dialog);dialog.showModal();
   }
   function previewTemporaryFile(candidate,owner) {
-    var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';dialog.setAttribute('aria-label','임시 루틴 적용 확인');
-    dialog.innerHTML='<h2>임시 루틴 적용 확인</h2><p>현재 플랜: <strong data-owner></strong></p><p>오늘 이후의 임시 일정을 교체해요. 지난 날짜는 유지하고, 파일에 없는 남은 날짜는 기본 루틴을 사용해요.</p><div data-preview></div><p role="status" data-error></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>이번 주에 적용</button></div>';
+    var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';dialog.setAttribute('aria-label','임시 루틴 적용 미리보기');
+    dialog.innerHTML='<h2>임시 루틴 적용 미리보기</h2><p>현재 플랜: <strong data-owner></strong></p><p>오늘 이후의 임시 일정을 교체해요. 지난 날짜는 유지하고, 파일에 없는 남은 날짜는 기본 루틴을 사용해요.</p><div data-preview></div><p role="status" data-error></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>이번 주에 적용</button></div>';
     dialog.querySelector('[data-owner]').textContent=owner;dialog.querySelector('[data-preview]').innerHTML=temporaryDaysHtml(candidate,selectedRecordDate);
+    addTemporaryClose(dialog);
     dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.addEventListener('close',function(){dialog.remove();});dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
     dialog.querySelector('[data-yes]').onclick=function(){try{
       if(owner!==activeProfile)throw new Error('플랜이 바뀌었어요. 파일을 다시 가져와주세요.');
@@ -1453,6 +1457,8 @@
     var d = effectiveRoutineDay(selectedRecordDate,activeIndex);
     panelEl.innerHTML = '';
     panelEl.classList.toggle('temporary-panel',!!d.temporary);
+    panelEl.classList.toggle('future-preview',selectedRecordDate>todayStr());
+    if(selectedRecordDate>todayStr()){var preview=document.createElement('p');preview.className='future-preview-note';preview.textContent=selectedRecordDate.replace(/-/g,'. ')+' 루틴 미리보기 · 해당 날짜부터 기록할 수 있어요.';panelEl.appendChild(preview);}
     var editButton=document.getElementById('btnRoutineEdit');editButton.disabled=false;
     if(d.temporary){var banner=document.createElement('div');banner.innerHTML=temporaryStatusHtml();panelEl.appendChild(banner);bindTemporaryCancel(banner);}
 
@@ -1753,6 +1759,7 @@
 
     if(d.cardio)list.appendChild(createCardioCard());
     panelEl.appendChild(list);
+    if(selectedRecordDate>todayStr())list.querySelectorAll('.log-fields input,.log-fields button').forEach(function(el){el.disabled=true;});
 
     var actions = document.createElement('div');
     actions.className = 'panel-actions';
@@ -1928,7 +1935,7 @@
         '<span class="bar-range-line" style="left:' + rangeRight + '%"></span>' +
         '<span class="bar-fill" style="width:' + pct + '%;background:' + MUSCLE_COLOR[m] + '"></span>' +
         '</span>' +
-        '<span class="bar-val">' + v + '</span>' +
+        '<span class="bar-val">' + v + '세트</span>' +
         '</div>';
     }).join('');
   }
@@ -3393,6 +3400,7 @@
     var all=recordDisclosureTargets(),button=document.getElementById('btnRecordsExpand');
     button.disabled=!all.length;
     button.textContent=all.length && all.every(function(el){return el.open;})?'전체 접기':'전체 펼치기';
+    button.dataset.expanded=String(!!all.length&&all.every(function(el){return el.open;}));
     var muscle=document.getElementById('recordMuscleSelect').value;
     var selected=muscle?recordDisclosureTargets(muscle):[],toggle=document.getElementById('btnRecordMuscleToggle');
     toggle.disabled=!selected.length;
@@ -3477,7 +3485,7 @@
   }
   function adjustmentHtml() {
     var asOf=todayStr(),week=adjustmentWeek(asOf),state=adjustmentState(),labels=['월','화','수','목','금','토','일'];
-    return '<details class="adjustment-card" id="weekAdjustment"'+(state.open?' open':'')+'><summary>이번 주 루틴 조정</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+'</p>'+temporaryStatusHtml()+'<fieldset><legend>앞으로 운동할 날짜 <small>· 여러 날짜 선택</small></legend><div class="adjustment-days">'+week.dates.map(function(date,i){return '<button type="button" data-adjust-date="'+date+'" aria-pressed="'+state.dates.includes(date)+'" aria-label="'+date+' '+labels[i]+'요일"'+(date<asOf?' disabled':'')+'>'+labels[i]+'<small>'+date.slice(5).replace('-','/')+'</small></button>';}).join('')+'</div></fieldset><div class="adjustment-fields"><label>웨이트 가능 시간 (1회)<select id="adjustMinutes"><option value="">미정</option><option value="45">45분</option><option value="60">60분</option><option value="75">75분</option><option value="90">90분</option><option value="unlimited">제한 없음</option></select></label><label>이번 주 기록의 완전성<select id="adjustCoverage"><option value="unknown">일부 누락 가능</option><option value="all">모든 세트를 기록했어요</option><option value="some">일부 세트만 기록했어요</option></select></label></div><label class="adjustment-notes">꼭 반영할 조건 (선택)<textarea id="adjustNotes" rows="2" maxlength="1000" placeholder="예: 변경할 수 없는 PT 일정, 운동하지 못한 날">'+statsEscape(state.notes)+'</textarea></label><div class="adjustment-copy-actions"><button class="btn-reset adjustment-copy" id="btnAdjustmentCopy" type="button">상담 요청 복사</button><button class="btn-reset adjustment-copy" id="btnAdjustmentJson" type="button">JSON 요청 복사</button></div><button type="button" class="btn-reset temporary-import" id="btnTemporaryImport">임시 루틴 가져오기</button><input type="file" id="temporaryFile" accept=".json,application/json" hidden><p id="adjustmentStatus" class="adjustment-note" role="status"></p><button type="button" class="btn-reset" id="btnTemporaryRepair" hidden>오류 수정 요청 복사</button><textarea id="adjustmentFallback" rows="8" readonly hidden aria-label="복사할 루틴 조정 내용"></textarea></details>';
+    return '<details class="adjustment-card" id="weekAdjustment"'+(state.open?' open':'')+'><summary>이번 주 루틴 조정</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+'</p>'+temporaryStatusHtml()+'<fieldset><legend>앞으로 운동할 날짜 <small>· 여러 날짜 선택</small></legend><div class="adjustment-days">'+week.dates.map(function(date,i){return '<button type="button" data-adjust-date="'+date+'" aria-pressed="'+state.dates.includes(date)+'" aria-label="'+date+' '+labels[i]+'요일"'+(date<asOf?' disabled':'')+'>'+labels[i]+'<small>'+date.slice(5).replace('-','/')+'</small></button>';}).join('')+'</div><p class="adjustment-note">남은 운동 가능 날짜를 선택해주세요.</p></fieldset><div class="adjustment-fields"><label>웨이트 가능 시간 (1회)<select id="adjustMinutes"><option value="">미정</option><option value="45">45분</option><option value="60">60분</option><option value="75">75분</option><option value="90">90분</option><option value="unlimited">제한 없음</option></select></label><label>이번 주 운동을 빠짐없이 기록했나요?<select id="adjustCoverage"><option value="unknown">일부 누락 가능</option><option value="all">모든 세트를 기록했어요</option><option value="some">일부 세트만 기록했어요</option></select></label></div><label class="adjustment-notes">꼭 반영할 조건 (선택)<textarea id="adjustNotes" rows="2" maxlength="1000" placeholder="예: 변경할 수 없는 PT 일정, 운동하지 못한 날">'+statsEscape(state.notes)+'</textarea></label><div class="adjustment-copy-actions"><button class="btn-reset adjustment-copy" id="btnAdjustmentCopy" type="button">루틴 조정 요청 복사</button><details class="adjustment-json-option"><summary>JSON 요청 옵션</summary><button class="btn-reset adjustment-copy" id="btnAdjustmentJson" type="button">JSON 요청 복사</button></details></div><p class="adjustment-note">요청을 AI에 붙여넣고 받은 JSON 파일을 가져오세요.</p><button type="button" class="btn-reset temporary-import" id="btnTemporaryImport">임시 루틴 가져오기</button><input type="file" id="temporaryFile" accept=".json,application/json" hidden><p id="adjustmentStatus" class="adjustment-note" role="status"></p><button type="button" class="btn-reset" id="btnTemporaryRepair" hidden>오류 수정 요청 복사</button><textarea id="adjustmentFallback" rows="8" readonly hidden aria-label="복사할 루틴 조정 내용"></textarea></details>';
   }
   function bindAdjustment() {
     var root=document.getElementById('weekAdjustment'),state=adjustmentState(),renderedOn=todayStr();if(!root)return;
@@ -3552,8 +3560,9 @@
             var color = MUSCLE_COLOR[e.m] || 'transparent';
             // 부위가 바뀌는 첫 종목에만 부위명을 붙여 그룹 시작을 분명히 한다.
             var isNewMuscle = idx === 0 || d.ex[idx - 1].m !== e.m;
-            return '<li class="' + (isNewMuscle ? 'rep-muscle-start' : '') + '" style="border-left:4px solid ' + color + '">' +
-              (isNewMuscle ? '<span class="rep-muscle-tag" style="color:' + color + '">' + statsEscape(e.m) + '</span>' : '') +
+            var groupSets=0;if(isNewMuscle){for(var j=idx;j<d.ex.length&&d.ex[j].m===e.m;j++)groupSets+=Number(d.ex[j].s)||0;}
+            return '<li class="' + (isNewMuscle ? 'rep-muscle-start' : '') + '">' +
+              (isNewMuscle ? '<span class="rep-muscle-tag" style="color:' + color + '"><i aria-hidden="true"></i>' + statsEscape(e.m) + ' · '+groupSets+'세트</span>' : '') +
               '<span class="rep-ex-name">' + statsEscape(e.n) + '</span>' +
               '<span class="rep-ex-spec">' +
                 '<span class="rep-chip rep-chip-set">' + statsEscape(e.s) + '세트</span>' +
@@ -3563,7 +3572,7 @@
           }).join('') + '</ul>'
         : '<p class="empty-note">종목이 없어요.</p>';
       var noteHtml = d.note ? '<p class="rep-note">' + statsEscape(d.note) + '</p>' : '';
-      var cardioHtml = d.cardio ? '<div class="cardio-tag">+ 웨이트 후 저강도 유산소 15~20분</div>' : '';
+      var cardioHtml = d.cardio ? '<div class="cardio-tag">웨이트 후 저강도 유산소 15~20분+</div>' : '';
       return '<div class="rep-day'+(d.temporary?' temporary-status':'')+'">'+
         '<div class="rep-day-head">'+(d.temporary?'<span class="temporary-badge">임시</span>':'') +
           '<span class="rep-day-letter">' + statsEscape(d.letter) + '</span>' +
@@ -3578,15 +3587,13 @@
       ? week.map(dayCardHtml).join('')
       : dayCardHtml(week[reportSelectedDay]);
 
-    reportViewEl.innerHTML = temporaryStatusHtml()+adjustmentHtml()+
+    reportViewEl.innerHTML = temporaryStatusHtml()+dayTabsHtml+daysHtml+
       '<div class="rep-summary">' +
         '<h2>이번 주 계획 세트</h2><p class="stats-note">'+(activeTemporary()?'임시 루틴 반영 · ':'')+'월~일 계획 합계 · 실제 수행 기록과 별개</p>' +
-        '<p class="bar-legend">근비대 참고구간 · 가슴/등/어깨/하체 12–16 · 이두/삼두 6–10</p>' +
         '<div class="bars">' + barsHtml + '</div>' +
         '<p class="bar-legend">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +
       '</div>' +
-      dayTabsHtml +
-      daysHtml;
+      adjustmentHtml();
     bindAdjustment();bindTemporaryCancel(reportViewEl);
 
     reportViewEl.querySelectorAll('[data-report-day]').forEach(function (btn) {
