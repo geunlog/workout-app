@@ -2245,7 +2245,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #statsView .stats-selected-detail{margin:6px 0 0;font-size:12px;line-height:1.6;color:var(--muted);word-break:keep-all;overflow-wrap:anywhere;}
 .bulk-app #statsView .stats-selected-detail:empty{display:none;}
 .bulk-app #statsView .stats-pr-row{grid-template-columns:90px minmax(0,1fr);}
-.bulk-app #statsView .mc-delta .mc-up,.bulk-app #statsView .mc-delta .mc-down{color:var(--muted);font-weight:500;}
+.bulk-app #statsView .mc-delta .mc-up{color:var(--gain);font-weight:600;}
+.bulk-app #statsView .mc-delta .mc-down{color:var(--drop);font-weight:600;}
 .bulk-app #statsView .mc-head .mc-delta{font-size:10px;white-space:nowrap;}
 .bulk-app #statsView .stats-metric-summary>div{min-width:0;padding:10px 6px;}
 .bulk-app #statsView .stats-metric-summary span{font-size:11px;white-space:nowrap;}
@@ -2286,3 +2287,13 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #catalogView .cat-edit-icon{width:12px;height:12px;margin-left:6px;vertical-align:middle;color:var(--muted);}
 
 .data-confirm-dialog .data-confirm-message{white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;}
+.bulk-app #statsView .mc-record-link{width:100%;background:transparent;border:0;border-bottom:1px solid var(--stats-line);border-radius:0;text-align:left;color:inherit;font-family:inherit;cursor:pointer;}
+.bulk-app #statsView .mc-record-link:hover{background:var(--sunken);}
+.bulk-app .record-delete-footer{gap:8px;flex-wrap:wrap;}
+.bulk-app .record-delete-footer .record-collapse{flex:0 0 auto;min-width:64px;min-height:44px;font-size:13px;}
+.bulk-app .record-delete-footer .exercise-record-delete{flex:0 1 auto;min-width:0;}
+.bulk-app input:focus,.bulk-app select:focus,.bulk-app textarea:focus,
+.bulk-app #statsView input:focus,.bulk-app #statsView select:focus,
+.bulk-app #statsView button:focus-visible,.bulk-app #statsView summary:focus-visible{outline:2px solid var(--primary);outline-offset:-3px;box-shadow:none;}
+.bulk-app #statsView .pin-search{margin-top:10px;}
+.bulk-app #statsView .muscle-search>*{min-width:0;box-sizing:border-box;}

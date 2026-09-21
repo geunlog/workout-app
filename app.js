@@ -2481,7 +2481,10 @@
         duplicate.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}var last=dayEntries[dayEntries.length-1];requireSecondClick(duplicate,'1세트 추가 확인',function(){try{saveDirectRecord(last.n,entryMuscle(last),last.date,last.w==='-'?'':last.w,last.reps==='-'?'':last.reps);renderRecords();renderPanel();showToast('같은 내용으로 1세트 추가했어요.');}catch(error){showToast(error.message,'error');}});};dayGroup.appendChild(duplicate);
         card.appendChild(dayGroup);
       });
-      var footer=document.createElement('div');footer.className='record-delete-footer';footer.appendChild(del);card.appendChild(footer);
+      var footer=document.createElement('div');footer.className='record-delete-footer';footer.appendChild(del);
+      var collapse=document.createElement('button');collapse.type='button';collapse.className='btn-reset record-collapse';collapse.textContent='접기';collapse.setAttribute('aria-label',name+' 기록 접기');
+      collapse.onclick=function(){if(card.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}card.open=false;head.focus({preventScroll:true});head.scrollIntoView({block:'center',behavior:'smooth'});};
+      footer.appendChild(collapse);card.appendChild(footer);
       (sections.get(muscle) || sections.get('기타')).body.appendChild(card);
     });
     sections.forEach(function(group,muscle){
@@ -3066,13 +3069,13 @@
     var mcRows=mc.rows.map(function(r){
       var pct=Math.min(100,r.sets/mc.max*100);
       var prevPct=Math.min(100,r.prevSets/mc.max*100);
-      return '<div class="mc-row">'+
+      return '<button type="button" class="mc-row mc-record-link" data-record-muscle="'+statsEscape(r.muscle)+'" aria-label="'+statsEscape(r.muscle)+' 기록 보기">'+
         '<span class="mc-name">'+r.muscle+'</span>'+
         '<span class="mc-bar" aria-hidden="true"><span class="mc-bar-prev" style="width:'+prevPct+'%"></span><span class="mc-bar-now" style="width:'+pct+'%;background:'+(MUSCLE_COLOR[r.muscle]||'var(--muted)')+'"></span></span>'+
         '<span class="mc-sets">'+r.sets+'<small>'+(r.prevSets?'('+r.prevSets+')':'(–)')+'</small></span>'+
         '<span class="mc-vol">'+mcKg(r.volume)+(r.skipped?'<small>'+r.skipped+'세트 제외</small>':'')+'</span>'+
         '<span class="mc-delta">'+mcDelta(r.volume,r.prevVolume)+'</span>'+
-        '</div>';
+        '</button>';
     }).join('');
     var mcHasPrev=!mc.earliest || mcRange.prevFrom>=mc.earliest || mcRange.from>mc.earliest;
     var mcHasNext=mcRange.nextAnchor<=asOf;
@@ -3143,7 +3146,7 @@
         '<p class="big3-guide-warn">‘3대운동’ 지정 종목 기준이에요.<br>이름 변경·삭제 시 집계가 달라질 수 있어요.</p>'+
       '</div></details></section>';
     var scopeHtml='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="통계 플랜 범위"><button type="button" data-stats-scope="current" aria-pressed="'+(statsScope==='current')+'">현재 플랜</button><button type="button" data-stats-scope="all" aria-pressed="'+(statsScope==='all')+'">모든 플랜</button></div><p class="stats-note scope-caption">'+statsEscape(statsScope==='all'?'모든 플랜의 기록 합산':'플랜: '+activeProfile)+'</p>';
-    // 조회 기간은 기록한 날·관심 종목·종목별 변화에만 적용되므로 그 묶음 바로 위에 둔다.
+    // 관심 종목은 전체 기간 기준이며 조회 기간은 기록한 날·종목별 변화에 적용한다.
     var rangeHtml='<section class="stats-card stats-section stats-range-card"><h3>조회 기간 · '+(labels[statsPeriod] || '직접 선택')+'<small class="range-caption">'+data.from+' ~ '+data.to+'</small></h3><div class="stats-periods" role="group" aria-label="통계 조회 기간">'+periods+'</div><div class="stats-range-status"><button type="button" data-stats-reset'+(statsPeriod==='custom'?'':' hidden')+'>기간 초기화</button></div><details data-stats-panel="range"><summary>기간 직접 선택</summary>'+
       statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details></section>';
     rangeHtml=rangeHtml.replace('</h3>', '</h3><div class="stats-range-attendance"><span>기록한 날</span><strong>'+data.days+'<small>일</small></strong></div>');
@@ -3151,9 +3154,18 @@
     statsViewEl.innerHTML=scopeHtml+
       muscleHtml+
       big3Html+
-      rangeHtml+
       pinnedStatsHtml()+
+      rangeHtml+
       '<h3 class="stats-heading">종목별 변화</h3><p class="stats-note">선택 기간의 변화</p>'+searchHtml+groups;
+    statsViewEl.querySelectorAll('[data-record-muscle]').forEach(function(button){button.onclick=function(){
+      recFilterFrom=mcRange.from;recFilterTo=mcRange.to;recordExerciseQuery='';recordMuscleQuery=button.dataset.recordMuscle;
+      document.getElementById('recordSearchMuscle').value=recordMuscleQuery;
+      mode='records';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();renderRecords();
+      var target=Array.from(recordsListEl.querySelectorAll('.record-muscle-group')).find(function(el){return el.dataset.recordKey==='muscle:'+recordMuscleQuery;});
+      if(target){target.open=true;target.querySelectorAll('details').forEach(function(el){el.open=true;});requestAnimationFrame(function(){var summary=target.querySelector('summary');summary.focus({preventScroll:true});summary.scrollIntoView({block:'start',behavior:'smooth'});});}
+      else recordsViewEl.scrollIntoView({block:'start'});
+      if(statsScope==='all')showToast('기록 탭은 현재 플랜 기준이에요. 다른 플랜은 설정에서 전환해주세요.','pending');
+    };});
     statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;writeJSON('bulk-workout-stats-scope-v1',statsScope);renderStats();};});
     statsViewEl.querySelectorAll('details[data-stats-key]').forEach(function(el){if(opened.has(el.dataset.statsKey))el.open=true;});
     statsViewEl.querySelectorAll('[data-stats-panel]').forEach(function(el){var name=el.dataset.statsPanel;el.dataset.owner=activeProfile;el.open=name==='range' && !!statsRangeAnchor ? true : typeof panelPrefs[name]==='boolean' ? panelPrefs[name] : name==='pins' && pinnedExercises().length>0;
