@@ -2539,7 +2539,7 @@
         var confirming = catPendingDel === token;
         return '<details class="cat-item">' +
           '<summary class="cat-item-top">' +
-            '<span class="cat-name">' + statsEscape(c.n) + (big3Of(c.n)?'<span class="big3-badge">3대운동<span class="sr-only"> 종목</span></span>':'') + '</span><small class="cat-summary-spec">'+statsEscape(c.s)+'세트 · '+statsEscape(c.r)+'회 · RIR '+statsEscape(c.rir)+'</small>' +
+            '<span class="cat-name">' + statsEscape(c.n) + '<svg class="cat-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/></svg>' + (big3Of(c.n)?'<span class="big3-badge">3대운동<span class="sr-only"> 종목</span></span>':'') + '</span><small class="cat-summary-spec">'+statsEscape(c.s)+'세트 · '+statsEscape(c.r)+'회 · RIR '+statsEscape(c.rir)+'</small>' +
             '<button class="btn-hist-del' + (confirming ? ' confirming' : '') + '" type="button" data-muscle="' + m +
               '" data-name="' + statsEscape(c.n) + '" aria-label="삭제">' + (confirming ? '확인' : deleteIcon()) + '</button>' +
           '</summary>' +
@@ -2565,9 +2565,9 @@
           '<details class="cat-add-panel"><summary>+ 종목 추가</summary><div class="cat-add-row">' +
             '<input type="text" class="cat-add-name" data-muscle="' + m + '" placeholder="새 종목 이름" aria-label="' + m + ' 새 종목 이름">' +
             '<div class="cat-add-specs">' +
-              '<label class="cat-add-field"><span>세트</span><input type="number" class="in-sets cat-add-sets" min="1" max="20" step="1" data-muscle="' + m + '" placeholder="세트" aria-label="세트"></label>' +
-              '<label class="cat-add-field"><span>횟수</span><input type="text" class="in-reps cat-add-reps" data-muscle="' + m + '" placeholder="회" aria-label="반복수"></label>' +
-              '<label class="cat-add-field"><span>RIR</span><input type="text" class="in-rir cat-add-rir" data-muscle="' + m + '" placeholder="RIR" aria-label="RIR"></label>' +
+              '<label class="cat-add-field"><input type="number" class="in-sets cat-add-sets" min="1" max="20" step="1" data-muscle="' + m + '" placeholder="1" aria-label="세트"><span>세트</span></label>' +
+              '<label class="cat-add-field"><input type="text" class="in-reps cat-add-reps" data-muscle="' + m + '" placeholder="8~12" aria-label="반복수"><span>회</span></label>' +
+              '<label class="cat-add-field"><input type="text" class="in-rir cat-add-rir" data-muscle="' + m + '" placeholder="1~2" aria-label="RIR"><span>RIR</span></label>' +
               '<button class="cat-add-btn" type="button" data-muscle="' + m + '">추가</button>' +
             '</div>' +
           '</div></details>' + itemsHtml +
