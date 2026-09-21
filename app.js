@@ -2522,7 +2522,7 @@
     });
     document.getElementById('catalogSearchCount').textContent=total+'개 종목';
     var catalogInput=document.getElementById('catalogSearchName');
-    if(catalogInput)catalogInput.placeholder='종목 검색 ('+total+'개 종목)';
+    if(catalogInput)catalogInput.placeholder='종목명 검색';
   }
   document.getElementById('catalogSearchMuscle').innerHTML=makeMuscleSelect().innerHTML;
   document.getElementById('catalogSearchMuscle').onchange=applyCatalogSearch;
@@ -2562,16 +2562,15 @@
           '<span class="rec-chev"></span>' +
         '</summary>' +
         '<div class="rec-body">' +
-          itemsHtml +
-          '<div class="cat-add-row">' +
+          '<details class="cat-add-panel"><summary>+ 종목 추가</summary><div class="cat-add-row">' +
             '<input type="text" class="cat-add-name" data-muscle="' + m + '" placeholder="새 종목 이름" aria-label="' + m + ' 새 종목 이름">' +
             '<div class="cat-add-specs">' +
-              '<input type="number" class="in-sets cat-add-sets" min="1" max="20" step="1" data-muscle="' + m + '" placeholder="세트" aria-label="세트">' +
-              '<input type="text" class="in-reps cat-add-reps" data-muscle="' + m + '" placeholder="회" aria-label="반복수">' +
-              '<input type="text" class="in-rir cat-add-rir" data-muscle="' + m + '" placeholder="RIR" aria-label="RIR">' +
+              '<label class="cat-add-field"><span>세트</span><input type="number" class="in-sets cat-add-sets" min="1" max="20" step="1" data-muscle="' + m + '" placeholder="세트" aria-label="세트"></label>' +
+              '<label class="cat-add-field"><span>횟수</span><input type="text" class="in-reps cat-add-reps" data-muscle="' + m + '" placeholder="회" aria-label="반복수"></label>' +
+              '<label class="cat-add-field"><span>RIR</span><input type="text" class="in-rir cat-add-rir" data-muscle="' + m + '" placeholder="RIR" aria-label="RIR"></label>' +
               '<button class="cat-add-btn" type="button" data-muscle="' + m + '">추가</button>' +
             '</div>' +
-          '</div>' +
+          '</div></details>' + itemsHtml +
         '</div>' +
       '</details>';
     });
@@ -2873,8 +2872,8 @@
   }
   function checkImportKind(data,expected){
     var format=data && data.format;
-    if(expected==='backup' && format==='workout-temporary-routine')throw new Error('임시 루틴 파일이에요. 루틴 탭의 ‘임시 루틴 가져오기’에서 선택해주세요.');
-    if(expected==='temporary' && format==='workout-routine-transfer')throw new Error('플랜 백업 파일이에요. 설정의 ‘플랜 백업’에서 가져와주세요.');
+    if(expected==='backup' && format==='workout-temporary-routine')throw new Error('임시 루틴 파일이에요.\n루틴 탭 → 임시 루틴 가져오기를 이용해주세요.');
+    if(expected==='temporary' && format==='workout-routine-transfer')throw new Error('플랜 백업 파일이에요.\n설정 → 플랜 백업에서 가져와주세요.');
     if(format!==(expected==='backup'?'workout-routine-transfer':'workout-temporary-routine'))throw new Error('지원하지 않는 파일이에요. '+(expected==='backup'?'플랜 백업':'임시 루틴')+' JSON 파일을 선택해주세요.');
   }
   function showAppNotice(message){

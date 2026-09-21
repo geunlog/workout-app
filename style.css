@@ -2258,3 +2258,25 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .app-notice-dialog [data-notice-message]{white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;font-size:15px;line-height:1.7;margin:12px 0 22px;}
 .app-notice-dialog .data-confirm-actions{display:flex;justify-content:flex-end;}
 .app-notice-dialog [data-notice-close]{flex:0 0 auto;min-width:88px;min-height:44px;}
+.bulk-app #catalogView .cat-toolbar-row{min-height:0;}
+.bulk-app #catalogView .cat-toolbar{margin:0;}
+.bulk-app #catalogView .save-hint:empty{display:none;}
+.bulk-app #catalogView .cat-item-top{display:grid;grid-template-columns:minmax(0,1fr) 44px;grid-template-rows:auto auto;gap:5px 12px;padding:14px 0;min-height:0;}
+.bulk-app #catalogView .cat-name{grid-column:1;grid-row:1;font-size:15px;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere;min-width:0;}
+.bulk-app #catalogView .cat-summary-spec{grid-column:1;grid-row:2;font-size:12px;line-height:1.5;white-space:normal;}
+.bulk-app #catalogView .cat-item-top .btn-hist-del{grid-column:2;grid-row:1 / 3;align-self:center;width:44px;height:44px;min-width:44px;}
+.bulk-app #catalogView .cat-item{padding:0;border-top:1px solid var(--line);margin:0;}
+.bulk-app #catalogView .rec-group{border-radius:18px;box-shadow:none;}
+.bulk-app #catalogView .catalog-maintenance{margin:20px 0;padding:8px 14px;border:1px solid var(--line);border-radius:14px;}
+.bulk-app #catalogView .catalog-maintenance>summary{display:flex;align-items:center;min-height:44px;font-size:14px;}
+.bulk-app #catalogView .catalog-maintenance>button{margin:8px 0;}
+.bulk-app #catalogView .muscle-search{display:grid;grid-template-columns:100px minmax(0,1fr);gap:8px;}
+.bulk-app #catalogView .muscle-search select{appearance:none;min-width:0;width:100%;padding:10px 26px 10px 12px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235e6878' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 8px center/14px no-repeat;border:1px solid var(--line-strong);border-radius:12px;}
+.bulk-app #catalogView #catalogSearchName{min-width:0;min-height:44px;padding:10px 12px 10px 36px;border:1px solid var(--line-strong);border-radius:12px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235e6878' stroke-width='2'%3E%3Ccircle cx='10' cy='10' r='7'/%3E%3Cpath d='m15 15 6 6'/%3E%3C/svg%3E") 12px center/16px no-repeat;font-size:16px;}
+.bulk-app #catalogView .cat-add-panel{margin:0 0 12px;}
+.bulk-app #catalogView .cat-add-panel>summary{display:flex;align-items:center;min-height:44px;color:var(--primary);font-size:14px;font-weight:600;cursor:pointer;}
+.bulk-app #catalogView .cat-add-row{margin:0;padding:12px;background:var(--sunken);border:0;border-radius:12px;}
+.bulk-app #catalogView .cat-add-specs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.bulk-app #catalogView .cat-add-field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted);min-width:0;}
+.bulk-app #catalogView .cat-add-field input{width:100%;min-width:0;box-sizing:border-box;min-height:44px;}
+.bulk-app #catalogView .cat-add-btn{grid-column:1/-1;min-height:44px;background:var(--primary);color:white;}

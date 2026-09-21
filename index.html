@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="64">
+<meta name="workout-app-version" content="65">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" sizes="192x192" href="/workout-app/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/workout-app/icon-192.png">
 <title>운동 루틴 · Light</title>
-<link rel="stylesheet" href="style.css?v=64">
+<link rel="stylesheet" href="style.css?v=65">
 
 
 </head>
@@ -180,7 +180,7 @@
           <h4>‘3대운동’ 배지</h4>
           <p>3대 운동에 해당하는 세 종목에는 배지가 붙어 있어요. 이 종목들의 이름을 바꾸면 통계의 3대 운동 집계가 끊기니 그대로 두는 게 좋아요.</p>
           <h4>기본 종목으로 되돌리기</h4>
-          <p>오른쪽 위 <strong>종목 관리 옵션</strong>을 펼치면 빨간 <strong>기본 종목으로 초기화</strong> 버튼이 나와요. 직접 추가·수정한 종목만 사라지고, 저장된 운동 기록과 루틴은 그대로 남아요.</p>
+          <p>화면 하단 <strong>종목 관리 옵션</strong>을 펼치면 빨간 <strong>기본 종목으로 초기화</strong> 버튼이 나와요. 직접 추가·수정한 종목만 사라지고, 저장된 운동 기록과 루틴은 그대로 남아요.</p>
         </div>
       </details>
 
@@ -200,7 +200,7 @@
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 64 · 2026-09-21</strong>
+      <strong>앱 버전 65 · 2026-09-21</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -244,11 +244,12 @@
       <div class="cat-toolbar">
         <div class="cat-toolbar-row">
           <span id="btnCatalogSave" class="sr-only" role="status">자동 저장</span>
-          <details class="catalog-maintenance"><summary>종목 관리 옵션</summary><button class="btn-reset" id="btnCatalogReset" type="button">기본 종목으로 초기화</button></details>
+
         </div>
         <p class="save-hint" id="catalogSaveHint" role="status"></p>
       </div>
-      <div class="muscle-search"><select id="catalogSearchMuscle" aria-label="검색할 부위"></select><input type="search" id="catalogSearchName" placeholder="종목 검색" aria-label="운동 관리 종목 검색"></div><p id="catalogSearchCount" class="sr-only" role="status"></p><div id="catalogList"></div>
+      <div class="muscle-search"><select id="catalogSearchMuscle" aria-label="검색할 부위"></select><input type="search" id="catalogSearchName" placeholder="종목명 검색" aria-label="운동 관리 종목 검색"></div><p id="catalogSearchCount" class="sr-only" role="status"></p><div id="catalogList"></div>
+          <details class="catalog-maintenance"><summary>종목 관리 옵션</summary><button class="btn-reset" id="btnCatalogReset" type="button">기본 종목으로 초기화</button></details>
     </div>
     <div id="recordsView" hidden>
       <p class="save-hint" id="recordsActionHint" role="status" aria-live="polite"></p>
@@ -284,7 +285,7 @@
 
 <nav class="tab-bar" id="modeToggle" role="tablist"></nav>
 
-<script src="app.js?v=64"></script>
+<script src="app.js?v=65"></script>
 
 
 
