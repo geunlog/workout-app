@@ -672,7 +672,16 @@
     var preferred=first&&first.date;
     return temp.days.map(function(day){var label=statsEscape(day.date.slice(5).replace('-','/'))+' ('+['일','월','화','수','목','금','토'][new Date(day.date+'T00:00:00Z').getUTCDay()]+')';if(!day.exercises.length)return '<div class="temporary-empty-day"><span>'+label+'</span><strong>'+statsEscape(day.title)+'</strong><small>등록된 운동 없음</small></div>';return '<details class="temporary-detail-day"'+(day.date===preferred?' open':'')+'><summary><span>'+label+'</span><strong>'+statsEscape(day.title)+'</strong></summary><ul>'+day.exercises.map(function(e){return '<li><strong>'+statsEscape(e.name)+'</strong><div class="temporary-detail-spec"><span>'+e.sets+'세트</span><span>'+statsEscape(e.reps)+'회</span><span>RIR '+statsEscape(e.rir)+'</span></div></li>';}).join('')+'</ul></details>';}).join('');
   }
-  function addTemporaryClose(dialog){var close=document.createElement('button');close.type='button';close.className='temporary-head-close';close.textContent='×';close.setAttribute('aria-label','닫기');close.onclick=function(){dialog.close();};dialog.querySelector('h2').appendChild(close);}
+  function addTemporaryClose(dialog){
+    var title=dialog.querySelector('h2'),actions=dialog.querySelector('.data-confirm-actions');
+    var header=document.createElement('header'),body=document.createElement('div');
+    header.className='temporary-dialog-header';body.className='temporary-dialog-body';
+    header.appendChild(title);
+    Array.from(dialog.childNodes).forEach(function(node){if(node!==actions)body.appendChild(node);});
+    dialog.appendChild(header);dialog.appendChild(body);dialog.appendChild(actions);
+    dialog.classList.add('temporary-dialog-layout');
+    var close=document.createElement('button');close.type='button';close.className='temporary-head-close';close.textContent='×';close.setAttribute('aria-label','닫기');close.onclick=function(){dialog.close();};header.appendChild(close);
+  }
   function openTemporaryDetails(trigger) {
     var temp=activeTemporary();if(!temp || document.getElementById('temporaryDetailsDialog'))return;
     var dialog=document.createElement('dialog');dialog.id='temporaryDetailsDialog';dialog.className='data-confirm-dialog temporary-details-dialog';dialog.setAttribute('aria-label','이번 주 임시 루틴 상세');
@@ -3561,8 +3570,9 @@
             // 부위가 바뀌는 첫 종목에만 부위명을 붙여 그룹 시작을 분명히 한다.
             var isNewMuscle = idx === 0 || d.ex[idx - 1].m !== e.m;
             var groupSets=0;if(isNewMuscle){for(var j=idx;j<d.ex.length&&d.ex[j].m===e.m;j++)groupSets+=Number(d.ex[j].s)||0;}
-            return '<li class="' + (isNewMuscle ? 'rep-muscle-start' : '') + '">' +
-              (isNewMuscle ? '<span class="rep-muscle-tag" style="color:' + color + '"><i aria-hidden="true"></i>' + statsEscape(e.m) + ' · '+groupSets+'세트</span>' : '') +
+            var isLastMuscle = idx === d.ex.length - 1 || d.ex[idx + 1].m !== e.m;
+            return '<li style="--muscle-color:' + color + '" class="' + (isNewMuscle ? 'rep-muscle-start ' : '') + (isLastMuscle ? 'rep-muscle-end' : '') + '">' +
+              (isNewMuscle ? '<span class="rep-muscle-tag" style="color:' + color + '">' + statsEscape(e.m) + ' · '+groupSets+'세트</span>' : '') +
               '<span class="rep-ex-name">' + statsEscape(e.n) + '</span>' +
               '<span class="rep-ex-spec">' +
                 '<span class="rep-chip rep-chip-set">' + statsEscape(e.s) + '세트</span>' +
