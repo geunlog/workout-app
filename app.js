@@ -2009,7 +2009,10 @@
     var stored = readJSON(memoKey(), null);
     return Array.isArray(stored) ? stored.filter(function (m) {
       return m && typeof m.title === 'string' && typeof m.body === 'string';
-    }).map(refreshDefaultMemo) : defaultMemos();
+    }).filter(function(m){
+      var normalized=refreshDefaultMemo(m);
+      return !defaultMemos().some(function(d){return d.id===normalized.id && d.title===normalized.title && d.body===normalized.body;});
+    }).map(function(m){return Object.assign({},m);}) : [];
   }
   function renderPrinciples() {
     var root = document.getElementById('principles'), opened = {};
@@ -2026,18 +2029,18 @@
   }
   function renderMemoEditor() {
     var root = document.getElementById('memoEditor');var opened=Array.from(root.querySelectorAll('details[open]')).map(function(e){return e.dataset.memoId;});root.replaceChildren();
-    document.getElementById('memoSettingsTitle').textContent='운동 메모 관리 · '+memoDraft.length+'개';
+    document.getElementById('memoSettingsTitle').textContent='운동 메모'+(memoDraft.length?' · '+memoDraft.length+'개':'');
     if (!memoDraft.length) {
-      var empty = document.createElement('p');empty.className = 'record-export-note';empty.textContent = '등록된 메모가 없어요. 항목을 추가해보세요.';root.appendChild(empty);
+      var empty = document.createElement('p');empty.className = 'record-export-note';empty.textContent = '메모가 없으면 운동 탭에 표시되지 않아요.';root.appendChild(empty);
     }
     memoDraft.forEach(function (memo, i) {
       var card = document.createElement('details');card.className = 'memo-editor-card';card.dataset.memoId=memo.id;card.open=opened.includes(memo.id)||!memo.title;
       var summary=document.createElement('summary');summary.textContent=memo.title || '새 메모';card.appendChild(summary);
       function dirty(){var changed=updateMemoSaveState();document.getElementById('memoSaveHint').textContent=changed?'변경사항 있음 · 메모 저장을 눌러주세요.':'저장된 내용과 같아요.';}
-      function resize(){body.style.height='auto';body.style.height=Math.max(100,body.scrollHeight)+'px';}
+      function resize(){body.style.height='auto';body.style.height=Math.min(280,Math.max(100,body.scrollHeight))+'px';}
       var titleLabel = document.createElement('label');titleLabel.textContent = '제목';
       var title = document.createElement('input');title.type = 'text';title.value = memo.title;title.placeholder = '메모 제목';
-      title.addEventListener('input', function () { memo.title = title.value;summary.textContent=card.open?'메모 편집':title.value || '새 메모';dirty(); });titleLabel.appendChild(title);
+      title.addEventListener('input', function () { memo.title = title.value;summary.textContent=title.value || '새 메모';dirty(); });titleLabel.appendChild(title);
       var bodyLabel = document.createElement('label');bodyLabel.textContent = '내용';
       var body = document.createElement('textarea');body.rows = 5;body.value = memo.body;body.placeholder = '안내 또는 메모를 입력하세요';
       body.addEventListener('input', function () { memo.body = body.value;resize();dirty(); });bodyLabel.appendChild(body);
@@ -2051,8 +2054,7 @@
         });
       });
       card.appendChild(titleLabel);card.appendChild(bodyLabel);card.appendChild(del);root.appendChild(card);
-      card.addEventListener('toggle',function(){summary.textContent=card.open?'메모 편집':memo.title || '새 메모';if(card.open){root.querySelectorAll('details').forEach(function(other){if(other!==card)other.open=false;});body.scrollTop=0;resize();}});
-      if(card.open)summary.textContent='메모 편집';
+      card.addEventListener('toggle',function(){summary.textContent=memo.title || '새 메모';if(card.open){root.querySelectorAll('details').forEach(function(other){if(other!==card)other.open=false;});body.scrollTop=0;resize();}});
     });
     updateMemoSaveState();
   }
@@ -3063,8 +3065,8 @@
       if(!prev)return cur?'<span class="mc-new">신규</span>':'<span class="mc-flat">–</span>';
       if(!cur)return '<span class="mc-flat">–</span>';
       var d=(cur-prev)/prev*100;
-      if(Math.abs(d)<0.5)return '<span class="mc-flat">= 유지</span>';
-      return '<span class="'+(d>0?'mc-up">▲ +':'mc-down">▼ ')+d.toFixed(0)+'%</span>';
+      if(Math.abs(d)<0.5)return '<span class="mc-flat">유지</span>';
+      return '<span class="'+(d>0?'mc-up">▲ ':'mc-down">▼ ')+Math.abs(d).toFixed(0)+'%</span>';
     }
     var mcRows=mc.rows.map(function(r){
       var pct=Math.min(100,r.sets/mc.max*100);
@@ -3162,7 +3164,7 @@
       document.getElementById('recordSearchMuscle').value=recordMuscleQuery;
       mode='records';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();renderRecords();
       var target=Array.from(recordsListEl.querySelectorAll('.record-muscle-group')).find(function(el){return el.dataset.recordKey==='muscle:'+recordMuscleQuery;});
-      if(target){target.open=true;target.querySelectorAll('details').forEach(function(el){el.open=true;});requestAnimationFrame(function(){var summary=target.querySelector('summary');summary.focus({preventScroll:true});summary.scrollIntoView({block:'start',behavior:'smooth'});});}
+      if(target){target.open=true;target.querySelectorAll('details').forEach(function(el){el.open=false;});requestAnimationFrame(function(){var summary=target.querySelector('summary');summary.focus({preventScroll:true});summary.scrollIntoView({block:'start',behavior:'smooth'});});}
       else recordsViewEl.scrollIntoView({block:'start'});
       if(statsScope==='all')showToast('기록 탭은 현재 플랜 기준이에요. 다른 플랜은 설정에서 전환해주세요.','pending');
     };});
@@ -4245,7 +4247,7 @@
       return '<div class="profile-row">' +
         '<button class="profile-select" type="button" data-name="' + statsEscape(name) +
           '" aria-pressed="' + isActive + '">' + statsEscape(name) +
-          (isActive ? '<span class="current-tag">적용 중</span>' : '') +
+          (isActive ? '<span class="current-tag">✓ 사용 중</span>' : '') +
         '</button>' +
         delBtn +
       '</div>';
@@ -4553,7 +4555,7 @@
       var note=document.createElement('span');note.className='backup-status-detail';note.textContent=detail;
       el.replaceChildren(heading,note);
     }
-    if(!state){display('현재 플랜 · 백업 필요','아직 백업한 적이 없어요. JSON 파일로 저장해주세요.');el.classList.add('backup-stale');return;}
+    if(!state){display('현재 플랜 · 백업 필요','백업한 적이 없어요.');el.classList.add('backup-stale');return;}
     var changed=state.fingerprint!==backupFingerprint(transferSnapshot().profile);
     var days=Math.floor((Date.now()-new Date(state.at).getTime())/86400000);
     var ago=days<=0?'오늘':days===1?'어제':days+'일 전';

@@ -2297,3 +2297,22 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #statsView button:focus-visible,.bulk-app #statsView summary:focus-visible{outline:2px solid var(--primary);outline-offset:-3px;box-shadow:none;}
 .bulk-app #statsView .pin-search{margin-top:10px;}
 .bulk-app #statsView .muscle-search>*{min-width:0;box-sizing:border-box;}
+
+/* v69: concise settings and task-based help */
+.bulk-app .settings-view .record-export-note{word-break:keep-all;overflow-wrap:anywhere;line-height:1.6;}
+.bulk-app .settings-subnote{color:var(--muted);font-size:13px;}
+.bulk-app .profile-select[aria-pressed=true]{background:var(--primary-soft,#edf0ff);border-radius:12px;padding:12px;color:var(--primary);}
+.bulk-app .profile-action-row{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;}
+.bulk-app .profile-action-row button{min-width:0;padding:12px 8px;font-size:13px;word-break:keep-all;}
+.bulk-app .settings-export-section{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);}
+.bulk-app .settings-export-section .record-export-open{width:100%;}
+.bulk-app .memo-editor-card textarea{max-height:280px;overflow-y:auto;resize:vertical;}
+.bulk-app .guide-main-title{font-weight:700;font-size:16px;cursor:pointer;}
+.bulk-app .app-guide>.app-guide-lead{margin:8px 0 12px;}
+.bulk-app .app-guide-body.guide-tiles{display:grid;gap:8px;margin:0;padding:0 0 14px;border:0;}
+.bulk-app .guide-tile{padding:14px;border-radius:12px;background:var(--sunken,#f6f7fb);min-width:0;}
+.bulk-app .guide-tile h4,.bulk-app .guide-tile h4:first-child{margin:0 0 8px;font-size:14px;}
+.bulk-app .guide-tile p{line-height:1.65;margin:0;overflow-wrap:anywhere;}
+.bulk-app .guide-tile .guide-action{color:var(--ink);font-weight:600;margin-bottom:6px;}
+.bulk-app .settings-view .backup-options summary{min-height:44px;}
+.bulk-app .settings-view .transfer-actions>.btn-reset{white-space:nowrap;min-width:0;}
