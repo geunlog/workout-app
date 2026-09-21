@@ -2241,3 +2241,14 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #statsView summary{cursor:pointer;}
 .bulk-app #statsView button:focus-visible,.bulk-app #statsView summary:focus-visible,.bulk-app #statsView select:focus-visible{outline:2px solid var(--primary);outline-offset:3px;}
 @media(max-width:360px){.bulk-app #statsView .stats-card{padding:14px;}.bulk-app #statsView .pin-search{grid-template-columns:80px minmax(0,1fr);}.bulk-app #statsView .pin-search button{grid-column:1/-1;}.bulk-app #statsView .mc-row{grid-template-columns:28px minmax(12px,1fr) 34px 64px 45px;gap:4px;}}
+.bulk-app #statsView .pin-remove-row button{width:auto;min-height:44px;padding:8px 14px;background:transparent;border-color:var(--stats-line);}
+.bulk-app #statsView .mc-delta .mc-up,.bulk-app #statsView .mc-delta .mc-down{color:var(--muted);font-weight:500;}
+.bulk-app #statsView .mc-head .mc-delta{font-size:10px;white-space:nowrap;}
+.bulk-app #statsView .stats-metric-summary>div{min-width:0;padding:10px 6px;}
+.bulk-app #statsView .stats-metric-summary span{font-size:11px;white-space:nowrap;}
+.bulk-app #statsView .stats-pr-row{display:grid;grid-template-columns:72px minmax(0,1fr);gap:6px;align-items:start;padding:5px 0;}
+.bulk-app #statsView .stats-pr-row>span{white-space:nowrap;}
+.bulk-app #statsView .stats-pr-date{display:block;margin:3px 0 0;font-size:10px;}
+.bulk-app #statsView .stats-note,.bulk-app #statsView .big3-guide-body p{word-break:keep-all;overflow-wrap:break-word;text-wrap:pretty;}
+.bulk-app #statsView .stats-exercise-title{word-break:keep-all;overflow-wrap:anywhere;}
+.bulk-app #statsView .weight-point.is-selected{stroke:#fff;stroke-width:2;}
