@@ -1075,7 +1075,7 @@
     prBox.innerHTML=
       '<div class="stats-pr-title">최고 기록 · 전체 기간</div>'+
       '<div class="stats-pr-row"><span>최고 무게</span><strong>'+bestWeightText+(pr.weight?'<small class="stats-pr-date">'+statsEscape(pr.weight.date)+'</small>':'')+'</strong></div>'+
-      '<div class="stats-pr-row"><span>세트 볼륨</span><strong>'+bestSetVolumeText+(pr.setVolume?'<small class="stats-pr-date">'+statsEscape(pr.setVolume.date)+'</small>':'')+'</strong></div>'+
+      '<div class="stats-pr-row"><span>최고 세트 볼륨</span><strong>'+bestSetVolumeText+(pr.setVolume?'<small class="stats-pr-date">'+statsEscape(pr.setVolume.date)+'</small>':'')+'</strong></div>'+
       '<div class="stats-pr-row"><span>추정 1RM</span><strong>'+(pr.e1rm?statsFormatMetric(pr.e1rm.value,'e1rm')+'<small class="stats-pr-date">'+statsEscape(pr.e1rm.date)+'</small>':'-')+'</strong></div>';
     var prDetails=document.createElement('div');prDetails.className='secondary-pr';prDetails.appendChild(prBox);
     var recentLabel=document.createElement('p');recentLabel.className='stats-note';recentLabel.textContent='최근 '+recent.length+'세트 · '+date+'까지 (선택일 포함)';modal.appendChild(recentLabel);
@@ -2862,7 +2862,7 @@
   }
   function statsMetricMeta(metric) {
     if(metric==='weight')return {label:'최고 무게',unit:'kg',decimals:1,aria:'날짜별 최고 입력 무게'};
-    if(metric==='volume')return {label:'기록 볼륨',unit:'kg',decimals:0,aria:'날짜별 기록한 세트 기준 볼륨'};
+    if(metric==='volume')return {label:'일별 볼륨',unit:'kg',decimals:0,aria:'날짜별 기록한 세트 기준 볼륨'};
     return {label:'추정 1RM',unit:'kg',decimals:1,aria:'날짜별 추정 1RM'};
   }
   function statsFormatMetric(value,metric) {
@@ -2870,6 +2870,17 @@
     if(metric==='volume')return Math.round(value).toLocaleString('ko-KR')+'kg';
     var rounded=Math.round(value*10)/10;
     return (Number.isInteger(rounded)?rounded:rounded.toFixed(1))+'kg';
+  }
+  function checkImportKind(data,expected){
+    var format=data && data.format;
+    if(expected==='backup' && format==='workout-temporary-routine')throw new Error('임시 루틴 파일이에요. 루틴 탭의 ‘임시 루틴 가져오기’에서 선택해주세요.');
+    if(expected==='temporary' && format==='workout-routine-transfer')throw new Error('플랜 백업 파일이에요. 설정의 ‘플랜 백업’에서 가져와주세요.');
+    if(format!==(expected==='backup'?'workout-routine-transfer':'workout-temporary-routine'))throw new Error('지원하지 않는 파일이에요. '+(expected==='backup'?'플랜 백업':'임시 루틴')+' JSON 파일을 선택해주세요.');
+  }
+  function notifyImportError(error){
+    var message=error instanceof SyntaxError?'JSON 파일을 읽을 수 없어요. 파일 내용을 확인해주세요.':error.message||'파일을 가져오지 못했어요.';
+    window.alert(message);
+    return message;
   }
   function statsMetricDetail(point,metric) {
     if(!point)return '';
@@ -2914,7 +2925,7 @@
     }).join('');
     function tick(p,anchor){return '<text x="'+p.x+'" y="168" text-anchor="'+anchor+'">'+p.date.slice(2).replace(/-/g,'/')+'</text>';}
     var ticks=start===end?tick(plotted[0],'middle'):tick(plotted[0],'start')+tick(plotted[plotted.length-1],'end');
-    var options=points.map(function(p,i){return '<option value="'+i+'"'+(i===points.length-1?' selected':'')+'>'+p.date+' · '+statsFormatMetric(p.value,metric)+statsMetricDetail(p,metric)+'</option>';}).join('');
+    var options=points.map(function(p,i){return '<option value="'+i+'" data-detail="'+statsEscape(statsMetricDetail(p,metric))+'"'+(i===points.length-1?' selected':'')+'>'+p.date+' · '+statsFormatMetric(p.value,metric)+'</option>';}).join('');
     var bestPoint=points.reduce(function(x,y){return y.value>x.value?y:x;});
     var last=points[points.length-1];
     var summary=metricData.summary;
@@ -2927,7 +2938,7 @@
       '<figure class="stats-weight-figure" data-metric-figure="'+metric+'"><svg class="stats-weight-graph" viewBox="0 0 320 184" role="img" aria-label="'+statsEscape(exercise.name)+' '+meta.aria+' 그래프">'+
       '<title>'+statsEscape(exercise.name)+' · '+points[0].date+' ~ '+last.date+' · '+meta.label+' '+statsFormatMetric(summary.best,metric)+'</title><text x="37" y="20" text-anchor="end">'+meta.unit+'</text>'+grid+line+dots+ticks+'</svg>'+
       '<label class="stats-chart-select"><span>날짜</span><select data-metric-date aria-label="'+statsEscape(exercise.name)+' '+meta.label+' 기록 날짜 선택">'+options+'</select></label>'+
-      '<span class="sr-only" data-metric-value role="status">'+last.date+' · '+statsFormatMetric(last.value,metric)+statsMetricDetail(last,metric)+'</span>'+
+      '<p class="stats-selected-detail" data-metric-detail>'+statsEscape(statsMetricDetail(last,metric))+'</p><span class="sr-only" data-metric-value role="status">'+last.date+' · '+statsFormatMetric(last.value,metric)+statsMetricDetail(last,metric)+'</span>'+
       '</figure>';
   }
   function statsExerciseMetricsHtml(exercise,allTime) {
@@ -2941,7 +2952,7 @@
       : '-';
     var prHtml='<div class="stats-pr-box"><div class="stats-pr-title">최고 기록 · 전체 기간</div>'+ 
       '<div class="stats-pr-row"><span>최고 무게</span><strong>'+bestWeightText+(pr.weight?'<small class="stats-pr-date">'+statsEscape(pr.weight.date)+'</small>':'')+'</strong></div>'+ 
-      '<div class="stats-pr-row"><span>세트 볼륨</span><strong>'+bestSetVolumeText+(pr.setVolume?'<small class="stats-pr-date">'+statsEscape(pr.setVolume.date)+'</small>':'')+'</strong></div>'+ 
+      '<div class="stats-pr-row"><span>최고 세트 볼륨</span><strong>'+bestSetVolumeText+(pr.setVolume?'<small class="stats-pr-date">'+statsEscape(pr.setVolume.date)+'</small>':'')+'</strong></div>'+ 
       '<div class="stats-pr-row"><span>추정 1RM</span><strong>'+(pr.e1rm?statsFormatMetric(pr.e1rm.value,'e1rm')+'<small class="stats-pr-date">'+statsEscape(pr.e1rm.date)+'</small>':'-')+'</strong></div>'+ 
       '</div>';
     var buttons=metrics.map(function(metric){
@@ -3198,7 +3209,9 @@
       var figure=select.closest('figure');
       figure.querySelectorAll('[data-metric-point]').forEach(function(point){point.setAttribute('r',point.dataset.metricPoint===select.value?'4.5':point.dataset.weightRadius);point.classList.toggle('is-selected',point.dataset.metricPoint===select.value);});
       var value=figure.querySelector('[data-metric-value]');
-      if(value)value.textContent=select.options[select.selectedIndex].textContent;
+      var option=select.options[select.selectedIndex],detail=figure.querySelector('[data-metric-detail]');
+      if(detail)detail.textContent=option.dataset.detail||'';
+      if(value)value.textContent=option.textContent+(option.dataset.detail||'');
     });});
   }
 
@@ -3510,10 +3523,11 @@
         raw=await file.text();if(owner!==activeProfile || !root.isConnected)return;
         var candidate;
         try{candidate=JSON.parse(raw.replace(/^\uFEFF/,''));}catch(e){throw new Error('JSON 문법 오류 · '+e.message);}
+        checkImportKind(candidate,'temporary');
         candidate=validateTemporary(candidate,todayStr(),false);
         document.getElementById('adjustmentStatus').textContent='형식을 확인했어요. 미리보기에서 적용 내용을 확인해주세요.';
         matchTemporaryExercises(candidate,owner);
-      }catch(e){if(owner!==activeProfile || !root.isConnected)return;state.importFailure={raw:raw,message:e.message};updateImportFailure();}
+      }catch(e){if(owner!==activeProfile || !root.isConnected)return;state.importFailure={raw:raw,message:e.message};updateImportFailure();notifyImportError(e);}
     };
     document.getElementById('btnTemporaryRepair').onclick=async function(){
       if(!state.importFailure || typeof state.importFailure.raw!=='string')return;
@@ -5130,13 +5144,14 @@
     var hint=document.getElementById('dataTransferHint');
     try{
       if(file.size>5*1024*1024)throw new Error('5MB 이하의 데이터 파일을 선택해주세요.');
-      var data=JSON.parse(await file.text(),function(key,value){if(['__proto__','constructor','prototype'].includes(key))throw new Error('허용되지 않는 파일 형식입니다.');return value;});
+      var data=JSON.parse((await file.text()).replace(/^\uFEFF/,''),function(key,value){if(['__proto__','constructor','prototype'].includes(key))throw new Error('허용되지 않는 파일 형식입니다.');return value;});
+      checkImportKind(data,'backup');
       importCandidate=validateTransfer(data);
       var mergeInfo=analyzeCurrentRecordMerge(importCandidate);
       document.getElementById('dataImportPreview').hidden=true;
       hint.textContent='';
       openImportChoiceDialog(importCandidate, mergeInfo);
-    }catch(e){hint.textContent=e.message;}
+    }catch(e){hint.textContent=notifyImportError(e);}
   });
   document.getElementById('btnImportCancel').addEventListener('click',function(){importCandidate=null;document.getElementById('dataImportPreview').hidden=true;});
   document.getElementById('btnImportMergeCurrent').addEventListener('click',async function(){
