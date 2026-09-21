@@ -2122,3 +2122,25 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .match-row>select{width:100%;margin-top:8px;}
 .exercise-match-dialog{max-height:85vh;overflow:auto;}
 @media(max-width:480px){.bulk-app .stats-pr-row{flex-wrap:wrap;}.bulk-app .settings-card{padding:16px;}}
+
+/* v57: records filters and focused editing */
+.bulk-app .rec-filter-row label{min-width:0;flex:1;}
+.bulk-app .rec-filter-row label>button{display:block;width:100%;margin-top:6px;font-size:15px;min-height:46px;}
+.bulk-app .rec-preset-btn[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:var(--on-primary);font-weight:700;}
+.bulk-app .records-disclosure-actions[hidden],.bulk-app .record-edit-form [hidden]{display:none!important;}
+.bulk-app #recordSearchEmpty>.btn-reset{display:block;margin:12px auto 0;}
+.bulk-app #recordsList>.record-muscle-group{margin-bottom:12px;}
+.bulk-app #recordsList>.record-muscle-group>summary{min-height:60px;padding:16px 18px;}
+.bulk-app .record-day-group{border-top:1px solid var(--line-strong);}
+.bulk-app .record-day-group .rec-item{border-bottom:1px solid var(--line);}
+.bulk-app .record-edit-form{border:1px solid var(--line-strong);border-radius:14px;padding:12px;margin:4px 0 12px;background:var(--panel,#fff);}
+.bulk-app .record-edit-heading{grid-column:1/-1;font-size:14px;color:var(--primary);}
+.bulk-app .record-edit-form>.record-edit-primary{grid-column:auto;}
+.bulk-app .record-edit-form .edit-date-field>button{width:100%;text-align:left;min-height:46px;}
+.bulk-app .record-edit-form>.save-hint:empty{display:none;}
+.bulk-app .rec-item.editing-record{padding-bottom:4px;}
+.bulk-app .record-duplicate{margin:8px 0 12px;font-size:13px;width:100%;}
+.bulk-app .records-management{margin:24px 0;border:1px solid var(--line);border-radius:16px;padding:14px;}
+.bulk-app .records-management>summary{min-height:44px;cursor:pointer;font-weight:700;}
+.bulk-app .records-management>p{font-size:13px;color:var(--muted);line-height:1.6;}
+.workout-date-grid button.in-range:not([aria-pressed=true]){background:#eaf0ff;color:#284aa0;}

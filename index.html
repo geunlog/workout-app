@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="56">
+<meta name="workout-app-version" content="57">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" sizes="192x192" href="/workout-app/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/workout-app/icon-192.png">
 <title>운동 루틴 · Light</title>
-<link rel="stylesheet" href="style.css?v=56">
+<link rel="stylesheet" href="style.css?v=57">
 
 
 </head>
@@ -200,7 +200,7 @@
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 56 · 2026-09-21</strong>
+      <strong>앱 버전 57 · 2026-09-21</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -255,9 +255,9 @@
       <p class="record-export-note">기록을 누르면 수정할 수 있어요.</p>
       <div class="rec-filter">
         <div class="rec-filter-row">
-          <label>시작일<input type="date" id="recFilterFrom" aria-label="조회 시작일"></label>
+          <label>시작일<input type="hidden" id="recFilterFrom"><button type="button" class="btn-reset" id="recFromPicker" aria-haspopup="dialog">시작일 선택</button></label>
           <span class="rec-filter-sep">~</span>
-          <label>종료일<input type="date" id="recFilterTo" aria-label="조회 종료일"></label>
+          <label>종료일<input type="hidden" id="recFilterTo"><button type="button" class="btn-reset" id="recToPicker" aria-haspopup="dialog">종료일 선택</button></label>
         </div>
         <div class="rec-filter-presets">
           <button type="button" class="rec-preset-btn" data-preset="all">전체 기간</button>
@@ -273,9 +273,9 @@
       <p class="stats-search-empty" id="recordSearchEmpty" hidden>검색한 종목의 기록이 현재 조회 기간에 없어요.</p>
       <div class="records-disclosure-actions"><button type="button" class="btn-reset" id="btnRecordsExpand" aria-controls="recordsList">전체 펼치기</button><select id="recordMuscleSelect" aria-label="펼치거나 접을 부위 선택"><option value="">펼칠 부위</option></select><button type="button" class="btn-reset" id="btnRecordMuscleToggle" aria-controls="recordsList" disabled>펼치기</button></div>
       <div id="recordsList"></div>
-      <div class="reset-row">
+      <details class="records-management"><summary>기록 관리</summary><p>조회 조건과 관계없이 현재 플랜의 모든 운동기록을 삭제해요.</p><div class="reset-row">
         <button class="btn-reset" id="btnRecordsDeleteAll" type="button">현재 플랜의 운동 기록 전체 삭제</button>
-      </div>
+      </div></details>
     </div>
     <div id="reportView" hidden></div>
     <div id="statsView" hidden></div>
@@ -284,7 +284,7 @@
 
 <nav class="tab-bar" id="modeToggle" role="tablist"></nav>
 
-<script src="app.js?v=56"></script>
+<script src="app.js?v=57"></script>
 
 
 
