@@ -2255,3 +2255,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #statsView .stats-note,.bulk-app #statsView .big3-guide-body p{word-break:keep-all;overflow-wrap:break-word;text-wrap:pretty;}
 .bulk-app #statsView .stats-exercise-title{word-break:keep-all;overflow-wrap:anywhere;}
 .bulk-app #statsView .weight-point.is-selected{stroke:#fff;stroke-width:2;}
+.app-notice-dialog [data-notice-message]{white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;font-size:15px;line-height:1.7;margin:12px 0 22px;}
+.app-notice-dialog .data-confirm-actions{display:flex;justify-content:flex-end;}
+.app-notice-dialog [data-notice-close]{flex:0 0 auto;min-width:88px;min-height:44px;}

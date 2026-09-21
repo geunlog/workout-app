@@ -2877,9 +2877,22 @@
     if(expected==='temporary' && format==='workout-routine-transfer')throw new Error('플랜 백업 파일이에요. 설정의 ‘플랜 백업’에서 가져와주세요.');
     if(format!==(expected==='backup'?'workout-routine-transfer':'workout-temporary-routine'))throw new Error('지원하지 않는 파일이에요. '+(expected==='backup'?'플랜 백업':'임시 루틴')+' JSON 파일을 선택해주세요.');
   }
+  function showAppNotice(message){
+    var existing=document.getElementById('appNoticeDialog');
+    if(existing){existing.querySelector('[data-notice-message]').textContent=message;return;}
+    var trigger=document.activeElement,dialog=document.createElement('dialog');
+    dialog.id='appNoticeDialog';dialog.className='data-confirm-dialog app-notice-dialog';
+    dialog.setAttribute('aria-labelledby','appNoticeTitle');dialog.setAttribute('aria-describedby','appNoticeMessage');
+    dialog.innerHTML='<h2 id="appNoticeTitle">안내</h2><p id="appNoticeMessage" data-notice-message></p><div class="data-confirm-actions"><button type="button" class="btn-save-now" data-notice-close>확인</button></div>';
+    dialog.querySelector('[data-notice-message]').textContent=String(message);
+    dialog.querySelector('[data-notice-close]').onclick=function(){dialog.close();};
+    dialog.addEventListener('keydown',function(e){e.stopPropagation();});
+    dialog.addEventListener('close',function(){dialog.remove();if(trigger && trigger.isConnected)trigger.focus({preventScroll:true});});
+    document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-notice-close]').focus();
+  }
   function notifyImportError(error){
     var message=error instanceof SyntaxError?'JSON 파일을 읽을 수 없어요. 파일 내용을 확인해주세요.':error.message||'파일을 가져오지 못했어요.';
-    window.alert(message);
+    showAppNotice(message);
     return message;
   }
   function statsMetricDetail(point,metric) {
@@ -4784,7 +4797,7 @@
       (analysis.duplicateRecordCount ? ' · 중복 ' + analysis.duplicateRecordCount + '세트 제외' : '');
     document.getElementById('dataTransferHint').textContent =
       resultMsg.replace(/\n+/g, ' · ').replace(/^ · | · $/g, '');
-    window.alert(resultMsg);
+    showAppNotice(resultMsg);
     return {
       ok:true,
       added:analysis.addRecordCount,
