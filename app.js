@@ -2655,14 +2655,15 @@
       var m = b.getAttribute('data-muscle');
       var name = b.getAttribute('data-name');
       var token = m + '|' + name;
-      b.addEventListener('click', function (ev) {
+      b.addEventListener('click', async function (ev) {
         ev.preventDefault();
-        requireSecondClick(b,'확인',function(){
+        if(!await confirmDataAction('공통 종목 삭제',name+'을 모든 플랜의 운동 관리 목록에서 삭제할까요?\n저장된 운동 기록과 루틴은 유지돼요.\n백업 파일에 있는 종목은 가져오기 시 다시 추가될 수 있어요.','종목 삭제'))return;
+        {
           var next=JSON.parse(JSON.stringify(catalog));
           next[m]=next[m].filter(function(entry){return entry.n!==name;});
           if(!writeJSON(CATALOG_KEY,next)){showStorageError('catalogSaveHint');return;}
-          catalog=next;renderCatalog();showToast('운동 종목 삭제 완료');
-        });
+          catalog=next;renderCatalog();showToast('공통 종목 삭제 완료');
+        }
       });
     });
   }
@@ -3710,7 +3711,7 @@
   });
 
   document.getElementById('btnCatalogReset').addEventListener('click', async function () {
-    if(!await confirmDataAction('기본 종목으로 초기화','종목 목록과 세트·횟수·RIR을 기본값으로 되돌려요.\n직접 추가한 종목은 목록에서 삭제돼요.\n운동 기록과 루틴은 유지돼요.','초기화'))return;
+    if(!await confirmDataAction('기본 종목으로 초기화','모든 플랜의 공통 종목 목록과 목표값을 기본값으로 되돌려요.\n직접 추가한 종목은 목록에서 삭제돼요.\n운동 기록과 루틴은 유지돼요. 변경 전 전체 백업을 권장해요.','초기화'))return;
     {
       var next=defaultCatalog();
       if(!writeJSON(CATALOG_KEY,next)){showStorageError('catalogSaveHint');return;}
@@ -4294,7 +4295,7 @@
       b.addEventListener('click', async function (ev) {
         ev.preventDefault();
         if(name===activeProfile || profiles.length<=1)return;
-        if(!await confirmDataAction('플랜 삭제',name+' 플랜과 해당 운동기록·루틴·종목·메모·임시 입력값을 삭제할까요? 되돌릴 수 없어요. 다른 플랜은 유지돼요.','플랜 삭제',name))return;
+        if(!await confirmDataAction('플랜 삭제',name+' 플랜과 해당 운동기록·루틴·메모·임시 입력값을 삭제할까요? 되돌릴 수 없어요. 공통 종목과 다른 플랜은 유지돼요.','플랜 삭제',name))return;
         {
           if(name===activeProfile || profiles.length<=1)return;
           var next=profiles.filter(function(p){return p!==name;});
@@ -4701,28 +4702,12 @@
     var imported = data && data.profile ? data.profile : null;
 
     // 현재 운동 관리 데이터에 JSON에만 있는 운동종류를 추가할 목록 계산
-    var currentCatalog = catalog;
-    var nextCatalog = JSON.parse(JSON.stringify(currentCatalog));
+    var currentCatalog = readJSON(CATALOG_KEY,catalog);
+    var nextCatalog = mergeSharedCatalog(currentCatalog,imported && imported.catalog);
     var catalogAdds = [];
-
-    MUSCLES.forEach(function(muscle) {
-      if (!Array.isArray(nextCatalog[muscle])) nextCatalog[muscle] = [];
-      var existingNames = {};
-      nextCatalog[muscle].forEach(function(item) {
-        existingNames[String(item && item.n || '')] = true;
-      });
-
-      var importedList = imported && imported.catalog && Array.isArray(imported.catalog[muscle])
-        ? imported.catalog[muscle] : [];
-
-      importedList.forEach(function(item) {
-        var name = String(item && item.n || '');
-        if (!name || existingNames[name]) return;
-        var copy = JSON.parse(JSON.stringify(item));
-        nextCatalog[muscle].push(copy);
-        existingNames[name] = true;
-        catalogAdds.push({muscle:muscle, item:copy});
-      });
+    MUSCLES.forEach(function(muscle){
+      var names=new Set((currentCatalog[muscle] || []).map(function(item){return item.n.trim();}));
+      nextCatalog[muscle].forEach(function(item){if(!names.has(item.n))catalogAdds.push({muscle:muscle,item:item});});
     });
 
     var addRoutineText = analysis.routineAdds.length
@@ -4850,7 +4835,6 @@
   function profileImportOperations(p,name){
     return [
       {key:keyFor('bulk-routine-v9',name),value:normalizeRoutine(p.routine)},
-      {key:keyFor('bulk-routine-catalog-v3',name),value:p.catalog},
       {key:keyFor('bulk-routine-log-v1',name),value:p.logs},
       {key:keyFor('bulk-routine-memos-v1',name),value:p.memos},
       {key:keyFor('bulk-routine-draft-v2',name),value:p.draft},
@@ -4883,7 +4867,6 @@
     while(profiles.includes(name)){name=p.name+' (가져옴 '+suffix+')';suffix++;}
     var operations=[
       {key:keyFor('bulk-routine-v9',name),value:normalizeRoutine(p.routine)},
-      {key:keyFor('bulk-routine-catalog-v3',name),value:p.catalog},
       {key:keyFor('bulk-routine-log-v1',name),value:p.logs},
       {key:keyFor('bulk-routine-memos-v1',name),value:p.memos},
       {key:keyFor('bulk-routine-draft-v2',name),value:p.draft},
@@ -4924,6 +4907,7 @@
         (mergeInfo.duplicateRecordCount ? ' · 중복 ' + mergeInfo.duplicateRecordCount + '세트' : '')) +
       '</p>' +
       '<p class="import-choice-question">' + (isAll ? '담긴 플랜을 모두 새 플랜으로 추가합니다.' : '이 파일을 어떻게 가져올까요?') + '</p>' +
+      '<p class="import-choice-summary">공통 종목은 없는 항목만 추가해요. 같은 부위·이름의 기존 목표값은 유지돼요. 추가 종목은 모든 플랜에서 사용할 수 있어요.</p>' +
       '<div class="import-choice-actions">' +
         (isAll ? '' : '<button type="button" class="import-choice-overwrite">' +
           '<strong>현재 플랜에 덮어쓰기</strong>' +
