@@ -123,7 +123,7 @@
   var STORAGE_KEY, CATALOG_KEY, LOG_KEY, DRAFT_KEY;
   function applyProfileKeys() {
     STORAGE_KEY = keyFor('bulk-routine-v9', activeProfile);
-    CATALOG_KEY = keyFor('bulk-routine-catalog-v3', activeProfile);
+    CATALOG_KEY = 'bulk-routine-catalog-shared-v1';
     LOG_KEY = keyFor('bulk-routine-log-v1', activeProfile);
     DRAFT_KEY = keyFor('bulk-routine-draft-v2', activeProfile);
   }
@@ -478,12 +478,32 @@
     return {type:type,text:basis+'\n'+text,reason:text,records:recent};
   }
 
+  function mergeSharedCatalog(base, incoming) {
+    var result={};
+    MUSCLES.forEach(function(m){
+      var seen=new Set();result[m]=[];
+      [base,incoming].forEach(function(source){
+        (source && Array.isArray(source[m])?source[m]:[]).forEach(function(item){
+          var name=typeof item==='string'?item:item && item.n;
+          if(typeof name!=='string' || !name.trim() || seen.has(name.trim()))return;
+          seen.add(name.trim());result[m].push(typeof item==='string'?name.trim():Object.assign({},item,{n:name.trim()}));
+        });
+      });
+    });
+    return result;
+  }
   function loadCatalog() {
     var cat = readJSON(CATALOG_KEY, null);
     if (!cat) {
-      cat = defaultCatalog();
-      writeJSON(CATALOG_KEY, cat);
-    } else {
+      cat = null;
+      [activeProfile].concat(profiles.filter(function(p){return p!==activeProfile;})).forEach(function(p){
+        var old=readJSON(keyFor('bulk-routine-catalog-v3',p),readJSON(keyFor('bulk-routine-catalog-v2',p),null));
+        if(old)cat=mergeSharedCatalog(cat,old);
+      });
+      cat=cat || defaultCatalog();
+      if(!writeJSON(CATALOG_KEY,cat))showToast('공통 종목을 저장하지 못했어요. 저장 공간을 확인해주세요.');
+    }
+    {
       // 이전 버전(이름 문자열 배열)으로 저장된 데이터를 {n,s,r,rir} 객체 구조로 변환
       var seedDefaults = catalogPreset();
       var migrated = false;
@@ -517,6 +537,7 @@
   applyHypertrophyDefaults();
   ensureCatalogAdditions();
   function applyHypertrophyDefaults() {
+    if(CATALOG_KEY==='bulk-routine-catalog-shared-v1')return;
     var marker = keyFor('bulk-catalog-hypertrophy-v1', activeProfile);
     if (readJSON(marker, false)) return;
     var seed = catalogPreset();
@@ -529,6 +550,7 @@
     if (writeJSON(CATALOG_KEY,catalog)) writeJSON(marker,true);
   }
   function ensureCatalogAdditions() {
+    if(CATALOG_KEY==='bulk-routine-catalog-shared-v1')return;
     var marker = keyFor('bulk-catalog-expand-all-v3', activeProfile);
     if (readJSON(marker, false)) return;
     var seed = defaultCatalog();
@@ -839,7 +861,7 @@
     if(statsScope!=='all')return logs;
     var seen=new Set(),out=[];
     profiles.forEach(function(profile){
-      var source=profile===activeProfile?logs:readJSON(keyFor('bulk-routine-log-v1',profile),[]),cat=profile===activeProfile?catalog:readJSON(keyFor('bulk-routine-catalog-v3',profile),readJSON(keyFor('bulk-routine-catalog-v2',profile),{}));
+      var source=profile===activeProfile?logs:readJSON(keyFor('bulk-routine-log-v1',profile),[]),cat=profile===activeProfile?catalog:readJSON(CATALOG_KEY,catalog);
       if(!cat || typeof cat!=='object')cat={};
       if(!Array.isArray(source))return;
       source.forEach(function(group){
@@ -4519,7 +4541,7 @@
       name:name,
       routine:normalizeRoutine(savedRoutine),
       pending:isRoutine(pending)?normalizeRoutine(pending):null,
-      catalog:readJSON(keyFor('bulk-routine-catalog-v3',name),readJSON(keyFor('bulk-routine-catalog-v2',name),{})) || {},
+      catalog:readJSON(CATALOG_KEY,catalog) || {},
       logs:readJSON(keyFor('bulk-routine-log-v1',name),[]) || [],
       memos:readJSON(keyFor('bulk-routine-memos-v1',name),[]) || [],
       draft:readJSON(keyFor('bulk-routine-draft-v2',name),{}) || {},
@@ -4848,9 +4870,11 @@
       if(p.temporaryRoutine)operations.push({key:keyFor('bulk-workout-temporary-v1',name),value:p.temporaryRoutine});
       if(p.pending)operations.push({key:keyFor('bulk-routine-pending-v1',name),value:p.pending});
     });
+    var shared=readJSON(CATALOG_KEY,catalog);data.profiles.forEach(function(p){shared=mergeSharedCatalog(shared,p.catalog);});
+    operations.push({key:CATALOG_KEY,value:shared});
     operations.push({key:PROFILES_KEY,value:next});
     if(!storageTransaction(operations))throw new Error('가져오기를 저장하지 못했어요. 저장 공간을 확인해주세요.');
-    profiles=next;return added;
+    catalog=shared;profiles=next;return added;
   }
   function importTransfer(data) {
     validateTransfer(data);
@@ -4869,9 +4893,10 @@
     ];
     if(p.temporaryRoutine)operations.push({key:keyFor('bulk-workout-temporary-v1',name),value:p.temporaryRoutine});
     if(p.pending)operations.push({key:keyFor('bulk-routine-pending-v1',name),value:p.pending});
+    var shared=mergeSharedCatalog(readJSON(CATALOG_KEY,catalog),p.catalog);operations.push({key:CATALOG_KEY,value:shared});
     var next=profiles.concat(name);operations.push({key:PROFILES_KEY,value:next});
     if(!storageTransaction(operations))throw new Error('가져오기를 저장하지 못했어요. 저장 공간을 확인해주세요.');
-    profiles=next;return name;
+    catalog=shared;profiles=next;return name;
   }
   var importCandidate=null;
 
