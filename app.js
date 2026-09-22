@@ -3260,7 +3260,7 @@
       var offset=(new Date(year,m-1,1).getDay()+6)%7,count=new Date(year,m,0).getDate();
       for(var i=0;i<offset;i++)grid.appendChild(document.createElement('span'));
       for(var day=1;day<=count;day++){
-        var key=dateKey(new Date(year,m-1,day)),button=document.createElement('button');button.type='button';button.textContent=day;button.dataset.date=key;button.disabled=key>limit;button.setAttribute('aria-label',year+'년 '+m+'월 '+day+'일');button.setAttribute('aria-pressed',String(key===selected));
+        var key=dateKey(new Date(year,m-1,day)),button=document.createElement('button');button.type='button';button.textContent=day;button.dataset.date=key;button.disabled=key>limit || !!(options.minDate && key<options.minDate);button.setAttribute('aria-label',year+'년 '+m+'월 '+day+'일');button.setAttribute('aria-pressed',String(key===selected));
         if(key===limit)button.setAttribute('aria-current','date');
         if(options.rangeFrom && options.rangeTo && key>=options.rangeFrom && key<=options.rangeTo)button.classList.add('in-range');
         button.onclick=function(){selected=this.dataset.date;draw();grid.querySelector('[data-date="'+selected+'"]').focus();};grid.appendChild(button);
@@ -3272,7 +3272,13 @@
     function move(delta){var p=month.split('-').map(Number);month=dateKey(new Date(p[0],p[1]-1+delta,1)).slice(0,7);draw();}
     dialog.querySelector('[data-prev]').onclick=function(){move(-1);};dialog.querySelector('[data-next]').onclick=function(){move(1);};
     dialog.querySelector('[data-today]').onclick=function(){selected=limit;month=limit.slice(0,7);draw();};
-    dialog.querySelector('[data-apply]').onclick=function(){if(options.onApply){options.onApply(selected);}else{var input=document.getElementById('recordDate');input.value=selected;input.dispatchEvent(new Event('change',{bubbles:true}));}close();};
+    var rangeStart='';
+    if(options.selectRange)dialog.querySelector('[data-apply]').textContent='다음 · 종료일 선택';
+    dialog.querySelector('[data-apply]').onclick=function(){
+      if(options.minDate && selected<options.minDate)return;
+      if(options.selectRange && !rangeStart){rangeStart=selected;options.minDate=selected;options.rangeFrom=selected;options.rangeTo=selected;dialog.querySelector('h2').textContent='조회 종료일';this.textContent='조회 기간 적용';draw();return;}
+      if(options.onApply){options.onApply(selected,rangeStart);}else{var input=document.getElementById('recordDate');input.value=selected;input.dispatchEvent(new Event('change',{bubbles:true}));}close();
+    };
     document.body.appendChild(dialog);draw();dialog.showModal();var initial=grid.querySelector('[aria-pressed="true"]');if(initial)initial.focus();
   }
   var pendingActionDialog = false;
@@ -3711,7 +3717,7 @@
         renderRecords();
       });
     }
-    function pick(bound,trigger){openWorkoutDatePicker(trigger,{value:(bound==='from'?recFilterFrom:recFilterTo)||todayStr(),title:bound==='from'?'조회 시작일':'조회 종료일',rangeFrom:recFilterFrom,rangeTo:recFilterTo,onApply:function(value){if(bound==='from'){recFilterFrom=value;if(recFilterTo&&recFilterTo<value){recFilterTo=value;showToast('종료일도 같은 날짜로 맞췄어요.');}}else{recFilterTo=value;if(recFilterFrom&&recFilterFrom>value){recFilterFrom=value;showToast('시작일도 같은 날짜로 맞췄어요.');}}renderRecords();}});}
+    function pick(bound,trigger){openWorkoutDatePicker(trigger,{value:(bound==='from'?recFilterFrom:recFilterTo)||todayStr(),title:bound==='from'?'조회 시작일':'조회 종료일',selectRange:bound==='from',minDate:bound==='to'?recFilterFrom:'',rangeFrom:recFilterFrom,rangeTo:recFilterTo,onApply:function(value,start){if(bound==='from')recFilterFrom=start;recFilterTo=value;renderRecords();}});}
     document.getElementById('recFromPicker').onclick=function(){pick('from',this);};
     document.getElementById('recToPicker').onclick=function(){pick('to',this);};
     document.querySelectorAll('.rec-preset-btn').forEach(function (btn) {
@@ -4294,7 +4300,7 @@
     document.getElementById('recordsActionHint').textContent='';
     document.getElementById('recordExportWrap').hidden=true;
     document.getElementById('recordExportText').value='';
-    document.getElementById('btnRecordExport').textContent='운동 기록 텍스트 내보내기';
+    document.getElementById('btnRecordExport').textContent='기록 텍스트 보기';
     document.getElementById('btnSaveNow').classList.remove('pending-save');
     catalog = loadCatalog();
     applyHypertrophyDefaults();
@@ -5229,7 +5235,7 @@
   var recordExportWrapEl = document.getElementById('recordExportWrap');
   document.getElementById('btnRecordExport').addEventListener('click', function () {
     recordExportWrapEl.hidden = !recordExportWrapEl.hidden;
-    this.textContent = recordExportWrapEl.hidden ? '운동 기록 텍스트 내보내기' : '운동기록 닫기';
+    this.textContent = recordExportWrapEl.hidden ? '기록 텍스트 보기' : '기록 텍스트 접기';
     if (!recordExportWrapEl.hidden) {
       document.getElementById('recordExportText').value = workoutRecordsText();
       document.getElementById('recordExportHint').textContent = logs.length ? new Set(logs.map(function(g){return g.date;})).size + '일의 기록' : '';
@@ -5366,8 +5372,7 @@
       mirror.textContent=field.value.slice(0,field.selectionStart || 0);var marker=document.createElement('span');marker.textContent='\u200b';mirror.appendChild(marker);document.body.appendChild(mirror);
       caretTop=rect.top+marker.getBoundingClientRect().top-mirror.getBoundingClientRect().top-field.scrollTop;caretHeight=parseFloat(computed.lineHeight)||24;mirror.remove();
     }
-    var actions=document.querySelector('.memo-save-actions'),reserve=actions?actions.getBoundingClientRect().height+16:70;
-    var top=viewport.offsetTop+16,bottom=viewport.offsetTop+viewport.height-reserve;
+    var top=viewport.offsetTop+16,bottom=viewport.offsetTop+viewport.height-16;
     if(bottom<=top)return;
     if(caretTop<top)window.scrollBy({top:caretTop-top,behavior:'instant'});
     else if(caretTop+caretHeight>bottom)window.scrollBy({top:caretTop+caretHeight-bottom,behavior:'instant'});

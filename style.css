@@ -2038,7 +2038,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .memo-editor-card[open]>summary{font-size:14px;color:var(--muted);}
 .bulk-app .memo-save-actions{display:flex;gap:8px;padding:10px 0;background:var(--panel);}
 .bulk-app .memo-save-actions button{min-height:44px;flex:1;}
-.bulk-app.keyboard-open .memo-save-actions{position:sticky;bottom:calc(var(--keyboard-inset, 0px) + 8px);z-index:5;border-top:1px solid var(--line);box-shadow:0 -5px 12px #2030500a;}
+.bulk-app.keyboard-open .memo-save-actions{position:static;}
 .bulk-app .app-version-card{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:12px 16px;margin-bottom:12px;}
 .bulk-app .app-version-card strong{font-size:13px;}
 .bulk-app .app-version-card button{min-height:44px;margin-left:auto;font-size:12px;padding:8px;}
@@ -2316,3 +2316,10 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .guide-tile .guide-action{color:var(--ink);font-weight:600;margin-bottom:6px;}
 .bulk-app .settings-view .backup-options summary{min-height:44px;}
 .bulk-app .settings-view .transfer-actions>.btn-reset{white-space:nowrap;min-width:0;}
+
+/* v71 */
+.bulk-app .memo-save-actions{position:static;box-shadow:none;border-top:1px solid var(--line);margin-top:12px;}
+.bulk-app .memo-editor-card label{margin-top:10px;}
+.bulk-app .app-guide-icon{display:flex;align-items:center;justify-content:center;flex:0 0 24px;color:var(--muted);}
+.bulk-app .app-guide-icon svg{width:22px;height:22px;}
+.bulk-app .app-guide-sec[open]>summary .app-guide-title,.bulk-app .app-guide-sec[open]>summary .app-guide-icon{color:var(--primary);}
