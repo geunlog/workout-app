@@ -2527,10 +2527,17 @@
   }
 
   var catPendingDel = null;
-  function commitCatalog(next) {
-    if(!writeJSON(CATALOG_KEY,next)){showStorageError('catalogSaveHint');return false;}
+  function commitCatalog(next, input) {
+    var row=input && input.closest('.cat-item');
+    var status=row && row.querySelector('.cat-save-status');
+    if(status)clearTimeout(status._t);
+    if(!writeJSON(CATALOG_KEY,next)){
+      if(status){status.textContent='저장 실패 · 다시 수정해 주세요';status.classList.add('is-error');}
+      else showStorageError('catalogSaveHint');
+      return false;
+    }
     catalog=next;
-    var catalogStatus=document.getElementById('catalogSaveHint');clearTimeout(catalogStatus._t);catalogStatus.textContent='변경사항 자동 저장됨';catalogStatus.className='save-hint on';
+    if(status){status.classList.remove('is-error');status.textContent='✓ 저장됨';status._t=setTimeout(function(){status.textContent='';},2000);}
     return true;
   }
   function readCatalogEdits() {
@@ -2577,7 +2584,7 @@
               '" data-field="r" value="' + statsEscape(c.r) + '"><label>회</label></span>' +
             '<span class="field"><input type="text" class="in-rir cat-edit" data-muscle="' + m + '" data-idx="' + ci +
               '" data-field="rir" value="' + statsEscape(c.rir) + '"><label>RIR</label></span>' +
-          '</div>' +
+          '</div><p class="cat-save-status" role="status" aria-live="polite" aria-atomic="true"></p>' +
         '</details>';
       }).join('') : '<p class="cat-empty">등록된 종목이 없어요.</p>';
 
@@ -2611,7 +2618,7 @@
         var entry = catalog[m] && catalog[m][idx];
         if (!entry) return;
         if(field==='s' && (input.value==='' || !input.validity.valid))return;
-        if(commitCatalog(readCatalogEdits())){var summary=input.closest('.cat-item').querySelector('.cat-summary-spec'),c=catalog[m][idx];summary.textContent=c.s+'세트 · '+c.r+'회 · RIR '+c.rir;}
+        if(commitCatalog(readCatalogEdits(),input)){var summary=input.closest('.cat-item').querySelector('.cat-summary-spec'),c=catalog[m][idx];summary.textContent=c.s+'세트 · '+c.r+'회 · RIR '+c.rir;}
       });
       if (input.getAttribute('data-field') === 's') {
         input.addEventListener('blur', function () {
@@ -2621,7 +2628,7 @@
           if (!entry) return;
           var clamped = clampNumber(input.value, 1, 20, 3);
           input.value = clamped;
-          if(commitCatalog(readCatalogEdits())){var summary=input.closest('.cat-item').querySelector('.cat-summary-spec'),c=catalog[m][idx];summary.textContent=c.s+'세트 · '+c.r+'회 · RIR '+c.rir;}
+          if(commitCatalog(readCatalogEdits(),input)){var summary=input.closest('.cat-item').querySelector('.cat-summary-spec'),c=catalog[m][idx];summary.textContent=c.s+'세트 · '+c.r+'회 · RIR '+c.rir;}
         });
       }
     });

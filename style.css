@@ -2323,3 +2323,8 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .app-guide-icon{display:flex;align-items:center;justify-content:center;flex:0 0 24px;color:var(--muted);}
 .bulk-app .app-guide-icon svg{width:22px;height:22px;}
 .bulk-app .app-guide-sec[open]>summary .app-guide-title,.bulk-app .app-guide-sec[open]>summary .app-guide-icon{color:var(--primary);}
+
+/* v74: save feedback next to edited exercise */
+.bulk-app .cat-save-status{min-height:20px;margin:0 0 8px;font-size:12px;line-height:20px;color:var(--gain);}
+.bulk-app .cat-save-status.is-error{color:var(--drop);}
+.bulk-app #catalogSaveHint:empty{display:none;}
