@@ -521,7 +521,8 @@
               n: item.n,
               s: item.s != null ? item.s : 3,
               r: item.r != null ? item.r : '',
-              rir: item.rir != null ? item.rir : ''
+              rir: item.rir != null ? item.rir : '',
+              addedAt: Number(item.addedAt) || 0
             };
           }
           migrated = true;
@@ -1156,8 +1157,37 @@
   var statsScope=readJSON('bulk-workout-stats-scope-v1','current')==='all'?'all':'current';
   var statsMuscleQuery='',pinMuscleQuery='',recordMuscleQuery='';
   var recordExerciseQuery = '';
-  document.getElementById('recordSearchMuscle').innerHTML=makeMuscleSelect().innerHTML;
-  document.getElementById('recordSearchMuscle').onchange=function(){recordMuscleQuery=this.value;renderRecords();};
+  var catalogSort=readJSON('bulk-catalog-sort-v1','name');
+  var recordSort=readJSON('bulk-record-sort-v1','recent');
+  if(!['name','added'].includes(catalogSort))catalogSort='name';
+  if(!['recent','name','count'].includes(recordSort))recordSort='recent';
+  function compareCatalogItems(a,b){
+    return (catalogSort==='added' ? (Number(b.addedAt)||0)-(Number(a.addedAt)||0) : 0) || a.n.localeCompare(b.n,'ko');
+  }
+  function recordSortMetrics(entries){
+    var visible=entries.filter(function(e){return (!recFilterFrom || e.date>=recFilterFrom) && (!recFilterTo || e.date<=recFilterTo);});
+    return {count:visible.length,date:visible.reduce(function(date,e){return e.date>date?e.date:date;},'')};
+  }
+  function compareRecordGroups(a,b){
+    var am=recordSortMetrics(a[1]),bm=recordSortMetrics(b[1]);
+    return (recordSort==='recent'?bm.date.localeCompare(am.date):recordSort==='count'?bm.count-am.count:0) || JSON.parse(a[0])[1].localeCompare(JSON.parse(b[0])[1],'ko');
+  }
+  document.getElementById('catalogSort').value=catalogSort;
+  document.getElementById('catalogSort').onchange=function(){catalogSort=this.value;writeJSON('bulk-catalog-sort-v1',catalogSort);renderCatalog();};
+  document.getElementById('recordSort').value=recordSort;
+  document.getElementById('recordSort').onchange=function(){
+    if(document.querySelector('.record-edit-form')){this.value=recordSort;showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
+    recordSort=this.value;writeJSON('bulk-record-sort-v1',recordSort);renderRecords();
+  };
+  function refreshRecordFilterOptions(){
+    var select=document.getElementById('recordSearchMuscle');
+    select.replaceChildren(new Option('전체 부위',''));
+    MUSCLES.concat(['기타']).forEach(function(m){select.add(new Option(m,m));});
+    select.value=recordMuscleQuery;
+  }
+
+  refreshRecordFilterOptions();
+  document.getElementById('recordSearchMuscle').onchange=function(){recordMuscleQuery=this.value;renderRecords();recordsListEl.querySelectorAll('.record-muscle-group').forEach(function(group){if(recordMuscleQuery)group.open=true;});};
   var MODE_KEY = 'bulk-routine-active-mode-v1';
   var tabsEl = document.getElementById('dayTabs');
   var panelEl = document.getElementById('dayPanel');
@@ -2400,6 +2430,7 @@
     (trigger.classList.contains('record-card-date')?dateButton:weight).focus();
   }
   function renderRecords() {
+    refreshRecordFilterOptions();
     syncRecordFilterUI();
     var opened = {};
     recordsListEl.querySelectorAll('details[data-record-key]').forEach(function(el){opened[el.dataset.recordKey]=el.open;});
@@ -2456,7 +2487,8 @@
       logs = next;renderRecords();
       if(removed>0){if(allowUndo)offerRecordUndo(before,removed);else showToast('운동기록 '+removed+'세트 삭제 완료');}
     }
-    groups.forEach(function (all, key) {
+    Array.from(groups.entries()).sort(compareRecordGroups).forEach(function (pairEntry) {
+      var key=pairEntry[0],all=pairEntry[1];
       var pair=JSON.parse(key),muscle=pair[0],name=pair[1];
       if(recordMuscleQuery && muscle!==recordMuscleQuery)return;
       if(recordQuery && name.toLocaleLowerCase('ko-KR').indexOf(recordQuery) === -1)return;
@@ -2588,7 +2620,8 @@
     var html = '';
     MUSCLES.forEach(function (m, mi) {
       var arr = catalog[m];
-      var itemsHtml = arr.length ? arr.map(function (c, ci) {
+      var itemsHtml = arr.length ? arr.slice().sort(compareCatalogItems).map(function (c) {
+        var ci=arr.indexOf(c);
         var token = m + '|' + c.n;
         var confirming = catPendingDel === token;
         return '<details class="cat-item">' +
@@ -2660,7 +2693,7 @@
         var s = clampNumber(setsInput.value, 1, 20, 1);
         var r = repsInput.value.trim();
         var rir = rirInput.value.trim();
-        var next=readCatalogEdits();next[m].push({ n: v, s: s, r: r, rir: rir });
+        var next=readCatalogEdits();next[m].push({ n: v, s: s, r: r, rir: rir, addedAt: Date.now() });
         if(!commitCatalog(next))return;
         renderCatalog();
         showToast('운동 종목 추가 완료');
@@ -3500,7 +3533,7 @@
   function refreshRecordMuscleOptions() {
     var select=document.getElementById('recordMuscleSelect'),previous=select.value;
     select.replaceChildren();
-    var placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='부위 선택';select.appendChild(placeholder);
+    var placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='펼칠 부위';select.appendChild(placeholder);
     recordDisclosureGroups().forEach(function(group){
       var muscle=group.dataset.recordKey.slice(7),option=document.createElement('option');option.value=muscle;option.textContent=muscle;select.appendChild(option);
     });
@@ -4328,9 +4361,54 @@
     });
   }
 
-  function switchProfile(name, memoChecked) {
-    if(!memoChecked && memoEditingProfile===activeProfile && updateMemoSaveState()){
-      allowMemoLeave().then(function(ok){if(ok)switchProfile(name,true);});return;
+  var profileLeavePending=false;
+  function hasRoutineDraft(){
+    var temp=activeTemporary();
+    return routineOrderPending || !!(temp && temporaryWorkspace(temp).dirty);
+  }
+  function resolveRoutineDraft(keep){
+    var temp=activeTemporary(),work=temp && temporaryWorkspace(temp),ops=[];
+    if(routineOrderPending){
+      if(keep)ops.push({key:STORAGE_KEY,value:ensureRoutineIds(days)});
+      ops.push({key:routinePendingKey(),remove:true});
+    }
+    if(work && work.dirty){
+      if(keep){
+        try{
+          var candidate=JSON.parse(JSON.stringify(temp));
+          candidate.days=candidate.days.map(function(day){var d=work.days[day.date];return d?{date:day.date,title:d.title,rest:!d.ex.length,exercises:d.ex.map(function(e){return {name:e.n,muscle:e.m,sets:Number(e.s),reps:e.r,rir:e.rir,uid:e.uid};})}:day;});
+          var clean=validateTemporary(candidate,todayStr(),true);clean.revision=temp.revision;
+          ops.push({key:temporaryKey(),value:clean});
+        }catch(e){showToast(e.message,'error');return false;}
+      }
+      ops.push({key:temporaryPendingKey(),remove:true});
+    }
+    if(!storageTransaction(ops)){showToast('변경사항을 처리하지 못했어요. 다시 시도해주세요.','error');return false;}
+    routineOrderPending=false;temporaryWorkspaces.clear();days=load();routineEditing=false;
+    clearTimeout(save._t);renderTabs();renderPanel();return true;
+  }
+  function allowRoutineLeave(){
+    if(!hasRoutineDraft())return Promise.resolve(true);
+    return new Promise(function(resolve){
+      var owner=activeProfile,dialog=document.createElement('dialog');dialog.className='memo-leave-dialog';
+      dialog.setAttribute('aria-label','저장하지 않은 루틴');
+      dialog.innerHTML='<h2>저장하지 않은 루틴</h2><p>현재 플랜의 루틴 변경사항을 저장할까요?</p><div><button type="button" data-save>저장 후 이동</button><button type="button" data-discard>저장 안 함</button><button type="button" data-stay>계속 편집</button></div>';
+      function finish(ok){dialog.close();dialog.remove();resolve(ok && owner===activeProfile);}
+      function apply(keep){if(owner!==activeProfile){finish(false);return;}if(resolveRoutineDraft(keep))finish(true);else dialog.querySelector('p').textContent='처리하지 못했어요. 변경사항은 유지돼요. 다시 시도해주세요.';}
+      dialog.querySelector('[data-save]').onclick=function(){apply(true);};
+      dialog.querySelector('[data-discard]').onclick=function(){apply(false);};
+      dialog.querySelector('[data-stay]').onclick=function(){finish(false);};
+      dialog.addEventListener('cancel',function(e){e.preventDefault();finish(false);});
+      document.body.appendChild(dialog);dialog.showModal();
+    });
+  }
+  function switchProfile(name, leaveChecked) {
+    if(name!==activeProfile && !leaveChecked && (hasRoutineDraft() || (memoEditingProfile===activeProfile && updateMemoSaveState()))){
+      if(profileLeavePending)return;
+      profileLeavePending=true;
+      allowRoutineLeave().then(function(ok){return ok?allowMemoLeave():false;}).then(function(ok){
+        profileLeavePending=false;if(ok)switchProfile(name,true);
+      }).catch(function(){profileLeavePending=false;showToast('플랜을 변경하지 못했어요. 다시 시도해주세요.','error');});return;
     }
     if(name!==activeProfile)showToast(name+' 플랜으로 변경했어요.');
     clearRecordUndo();
@@ -4370,7 +4448,9 @@
     if (fromInput) fromInput.value = '';
     if (toInput) toInput.value = '';
     activeIndex = todayIndex;
+    routineEditing=!!hasRoutineDraft();
     updateProfileLabel();
+    renderProfileList();
     if (mode === 'catalog') renderCatalog();
     else if (mode === 'records') renderRecords();
     else if (mode === 'report') renderReport();
@@ -4472,7 +4552,7 @@
     switchProfile(v);
     renderProfileList();
     setProfileEditor(null);
-    hint.textContent = '새 플랜을 만들고 전환했어요.';
+    hint.textContent = '새 플랜을 만들었어요.';
     hint.className = 'save-hint on';
     showToast('새 플랜 추가 완료');
   });

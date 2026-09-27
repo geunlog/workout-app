@@ -2338,3 +2338,10 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .memo-leave-dialog div{display:grid;gap:8px;margin-top:20px;}
 .memo-leave-dialog button{min-height:44px;border:1px solid #e1e5ed;border-radius:12px;background:#f5f6fa;font:inherit;}
 .memo-leave-dialog [data-save]{background:#315bea;color:white;}
+
+/* v76: one separator before memo actions; compact sort controls */
+.bulk-app #memoEditor > .memo-editor-card:last-child{border-bottom:0;padding-bottom:0;}
+.bulk-app .memo-save-actions{margin-top:8px;}
+.bulk-app .list-sort-row{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:8px 0 16px;padding:3px;}
+.bulk-app .list-sort-row label{font-size:13px;color:var(--muted);}
+.bulk-app .list-sort-row select{width:auto;max-width:100%;min-height:44px;padding:8px 32px 8px 12px;border:1px solid var(--line-strong);border-radius:12px;background-color:var(--panel);font-size:14px;}
