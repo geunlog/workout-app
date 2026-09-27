@@ -2365,3 +2365,9 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 /* v78: visible sort affordance and unobstructed record scope note */
 .bulk-app select.card-sort{appearance:none;-webkit-appearance:none;padding-right:22px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m3 4.5 3 3 3-3' fill='none' stroke='%23626d7d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 5px center;background-size:12px 12px;}
 .bulk-app .record-scope-note{margin:-6px 0 14px;padding:0 2px;font-size:12px;line-height:1.5;color:var(--muted);word-break:keep-all;}
+
+/* v79: distinguish sorting from disclosure; show only in expanded cards */
+.bulk-app #catalogList > .rec-group:not([open]) > summary > .card-sort,
+.bulk-app #recordsList > .rec-group:not([open]) > summary > .card-sort{display:none;}
+.bulk-app select.card-sort{background-color:var(--sunken,#f3f4f8);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23626d7d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13V3m-3 3 3-3 3 3M11 3v10m-3-3 3 3 3-3'/%3E%3C/svg%3E");background-position:left 7px center;background-size:14px 14px;padding:6px 8px 6px 26px;border-radius:9px;max-width:132px;}
+@media(max-width:360px){.bulk-app select.card-sort{max-width:116px;padding-left:24px;padding-right:6px;background-position:left 6px center;}}
