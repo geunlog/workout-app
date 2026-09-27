@@ -3260,7 +3260,7 @@
       var target=Array.from(recordsListEl.querySelectorAll('.record-muscle-group')).find(function(el){return el.dataset.recordKey==='muscle:'+recordMuscleQuery;});
       if(target){target.open=true;target.querySelectorAll('details').forEach(function(el){el.open=false;});}
       requestAnimationFrame(function(){document.getElementById('recordSearchMuscle').focus({preventScroll:true});document.getElementById('recordBrowseTools').scrollIntoView({block:'start',behavior:'smooth'});});
-      if(statsScope==='all')showToast('기록 탭은 현재 플랜 기준이에요. 다른 플랜은 설정에서 전환해주세요.','pending');
+
     };});
     statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;writeJSON('bulk-workout-stats-scope-v1',statsScope);renderStats();};});
     statsViewEl.querySelectorAll('details[data-stats-key]').forEach(function(el){if(opened.has(el.dataset.statsKey))el.open=true;});

@@ -2361,3 +2361,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .card-sort:focus-visible{outline:2px solid var(--primary);outline-offset:-2px;}
 .bulk-app #recordsList > .rec-group > summary .rec-count{font-size:12px;white-space:nowrap;}
 @media(max-width:360px){.bulk-app #catalogList > .rec-group > summary,.bulk-app #recordsList > .rec-group > summary{padding-left:14px;padding-right:14px;gap:4px;}.bulk-app .card-sort{max-width:112px;font-size:11px;}.bulk-app #recordBrowseTools #recordSearchMuscle{width:140px;flex-basis:140px;}}
+
+/* v78: visible sort affordance and unobstructed record scope note */
+.bulk-app select.card-sort{appearance:none;-webkit-appearance:none;padding-right:22px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m3 4.5 3 3 3-3' fill='none' stroke='%23626d7d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 5px center;background-size:12px 12px;}
+.bulk-app .record-scope-note{margin:-6px 0 14px;padding:0 2px;font-size:12px;line-height:1.5;color:var(--muted);word-break:keep-all;}
