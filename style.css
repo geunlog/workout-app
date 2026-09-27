@@ -2328,3 +2328,13 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .cat-save-status{min-height:20px;margin:0 0 8px;font-size:12px;line-height:20px;color:var(--gain);}
 .bulk-app .cat-save-status.is-error{color:var(--drop);}
 .bulk-app #catalogSaveHint:empty{display:none;}
+
+/* v75: compact memo editor and unsaved-change choices */
+.bulk-app .memo-editor-card{scroll-margin-top:16px;}
+.bulk-app .memo-editor-card textarea{min-height:100px;}
+.memo-leave-dialog{width:calc(100% - 32px);max-width:420px;box-sizing:border-box;border:1px solid #e1e5ed;border-radius:22px;padding:24px;color:#202939;background:#fff;}
+.memo-leave-dialog::backdrop{background:#17203380;}
+.memo-leave-dialog h2{font-size:20px;margin:0 0 16px;}
+.memo-leave-dialog div{display:grid;gap:8px;margin-top:20px;}
+.memo-leave-dialog button{min-height:44px;border:1px solid #e1e5ed;border-radius:12px;background:#f5f6fa;font:inherit;}
+.memo-leave-dialog [data-save]{background:#315bea;color:white;}
