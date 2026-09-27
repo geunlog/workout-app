@@ -2345,3 +2345,19 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .list-sort-row{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:8px 0 16px;padding:3px;}
 .bulk-app .list-sort-row label{font-size:13px;color:var(--muted);}
 .bulk-app .list-sort-row select{width:auto;max-width:100%;min-height:44px;padding:8px 32px 8px 12px;border:1px solid var(--line-strong);border-radius:12px;background-color:var(--panel);font-size:14px;}
+
+/* v77: one muscle filter and sorting inside muscle card headings */
+.bulk-app .record-exercise-search{display:block;position:relative;}
+.bulk-app .record-exercise-search #recordExerciseSearch{width:100%;box-sizing:border-box;}
+.bulk-app .record-exercise-search .stats-search-icon{left:12px;}
+.bulk-app #recordBrowseTools{display:flex;justify-content:space-between;gap:12px;scroll-margin-top:16px;}
+.bulk-app #recordBrowseTools #recordSearchMuscle{flex:0 1 160px;width:160px;min-width:0;}
+.bulk-app #recordBrowseTools #btnRecordsExpand{flex:0 0 auto;}
+.bulk-app #catalogList > .rec-group > summary,
+.bulk-app #recordsList > .rec-group > summary{display:flex;align-items:center;gap:8px;}
+.bulk-app #catalogList > .rec-group > summary .rec-head,
+.bulk-app #recordsList > .rec-group > summary .rec-head{display:flex;align-items:baseline;gap:6px;flex:1;min-width:0;}
+.bulk-app .card-sort{flex:0 0 auto;width:auto;max-width:128px;min-height:44px;margin:0;padding:6px 20px 6px 6px;border:0;border-radius:8px;background-color:transparent;color:var(--muted);font-size:12px;box-shadow:none;}
+.bulk-app .card-sort:focus-visible{outline:2px solid var(--primary);outline-offset:-2px;}
+.bulk-app #recordsList > .rec-group > summary .rec-count{font-size:12px;white-space:nowrap;}
+@media(max-width:360px){.bulk-app #catalogList > .rec-group > summary,.bulk-app #recordsList > .rec-group > summary{padding-left:14px;padding-right:14px;gap:4px;}.bulk-app .card-sort{max-width:112px;font-size:11px;}.bulk-app #recordBrowseTools #recordSearchMuscle{width:140px;flex-basis:140px;}}

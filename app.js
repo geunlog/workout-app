@@ -1172,13 +1172,25 @@
     var am=recordSortMetrics(a[1]),bm=recordSortMetrics(b[1]);
     return (recordSort==='recent'?bm.date.localeCompare(am.date):recordSort==='count'?bm.count-am.count:0) || JSON.parse(a[0])[1].localeCompare(JSON.parse(b[0])[1],'ko');
   }
-  document.getElementById('catalogSort').value=catalogSort;
-  document.getElementById('catalogSort').onchange=function(){catalogSort=this.value;writeJSON('bulk-catalog-sort-v1',catalogSort);renderCatalog();};
-  document.getElementById('recordSort').value=recordSort;
-  document.getElementById('recordSort').onchange=function(){
-    if(document.querySelector('.record-edit-form')){this.value=recordSort;showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
-    recordSort=this.value;writeJSON('bulk-record-sort-v1',recordSort);renderRecords();
-  };
+  function cardSortHtml(kind,muscle){
+    var choices=kind==='catalog'?[['name','가나다순'],['added','최근 추가순']]:[['recent','최근 운동순'],['name','가나다순'],['count','기록 많은순']];
+    var value=kind==='catalog'?catalogSort:recordSort;
+    return '<select class="card-sort" data-card-sort="'+kind+'" data-sort-muscle="'+statsEscape(muscle)+'" aria-label="'+statsEscape(muscle)+' 정렬 · 모든 부위에 적용">'+choices.map(function(choice){return '<option value="'+choice[0]+'"'+(choice[0]===value?' selected':'')+'>'+choice[1]+'</option>';}).join('')+'</select>';
+  }
+  function bindCardSort(root){
+    root.querySelectorAll('[data-card-sort]').forEach(function(select){
+      select.addEventListener('click',function(e){e.stopPropagation();});
+      select.addEventListener('keydown',function(e){e.stopPropagation();});
+      select.onchange=function(){
+        var kind=select.dataset.cardSort,muscle=select.dataset.sortMuscle;
+        if(kind==='record' && document.querySelector('.record-edit-form')){select.value=recordSort;showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
+        if(kind==='catalog'){catalogSort=select.value;writeJSON('bulk-catalog-sort-v1',catalogSort);renderCatalog();}
+        else {recordSort=select.value;writeJSON('bulk-record-sort-v1',recordSort);renderRecords();}
+        var replacement=Array.from(root.querySelectorAll('[data-card-sort]')).find(function(el){return el.dataset.sortMuscle===muscle;});
+        if(replacement)replacement.focus({preventScroll:true});
+      };
+    });
+  }
   function refreshRecordFilterOptions(){
     var select=document.getElementById('recordSearchMuscle');
     select.replaceChildren(new Option('전체 부위',''));
@@ -1187,7 +1199,12 @@
   }
 
   refreshRecordFilterOptions();
-  document.getElementById('recordSearchMuscle').onchange=function(){recordMuscleQuery=this.value;renderRecords();recordsListEl.querySelectorAll('.record-muscle-group').forEach(function(group){if(recordMuscleQuery)group.open=true;});};
+  document.getElementById('recordSearchMuscle').onchange=function(){
+    if(document.querySelector('.record-edit-form')){this.value=recordMuscleQuery;showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
+    recordMuscleQuery=this.value;renderRecords();
+    recordsListEl.querySelectorAll('.record-muscle-group').forEach(function(group){if(recordMuscleQuery){group.open=true;group.querySelectorAll('details').forEach(function(el){el.open=false;});}});
+    syncRecordDisclosureControls();
+  };
   var MODE_KEY = 'bulk-routine-active-mode-v1';
   var tabsEl = document.getElementById('dayTabs');
   var panelEl = document.getElementById('dayPanel');
@@ -2463,7 +2480,7 @@
       var section=document.createElement('details');section.className='rec-group record-muscle-group';section.dataset.recordKey='muscle:'+m;section.open=!!opened[section.dataset.recordKey];
       var summary=document.createElement('summary');var label=document.createElement('span');label.className='rec-title';label.textContent=m;label.style.color=MUSCLE_COLOR[m] || 'var(--muted)';
       var count=document.createElement('span');count.className='rec-count';
-      var arrow=document.createElement('span');arrow.className='rec-chev';summary.appendChild(label);summary.appendChild(count);summary.appendChild(arrow);
+      var arrow=document.createElement('span');arrow.className='rec-chev';var heading=document.createElement('span');heading.className='rec-head';heading.append(label,count);summary.appendChild(heading);summary.insertAdjacentHTML('beforeend',cardSortHtml('record',m));summary.appendChild(arrow);
       var body=document.createElement('div');body.className='rec-body';section.appendChild(summary);section.appendChild(body);
       sections.set(m,{section:section,body:body,count:count});
     });
@@ -2573,9 +2590,10 @@
       recordsListEl.appendChild(group.section);
     });
     if(recordSearchEmpty){recordSearchEmpty.hidden=matchedExerciseCount>0;recordSearchEmpty.textContent='해당 조건의 운동기록이 없어요.';if(!matchedExerciseCount){var reset=document.createElement('button');reset.type='button';reset.className='btn-reset';reset.textContent='조회 조건 초기화';reset.onclick=function(){recFilterFrom='';recFilterTo='';recordExerciseQuery='';recordMuscleQuery='';document.getElementById('recordSearchMuscle').value='';renderRecords();};recordSearchEmpty.appendChild(reset);}}
-    document.querySelector('.records-disclosure-actions').hidden=!matchedExerciseCount;
+    document.querySelector('.records-disclosure-actions').hidden=false;
+    bindCardSort(recordsListEl);
 
-    refreshRecordMuscleOptions();
+    syncRecordDisclosureControls();
   }
 
   var catPendingDel = null;
@@ -2646,7 +2664,7 @@
         '<summary>' +
           '<span class="rec-head"><span class="rec-title" style="color:' + MUSCLE_COLOR[m] + '">' + m + '</span>' +
           '<span class="rec-count">' + arr.length + '개</span></span>' +
-          '<span class="rec-chev"></span>' +
+          cardSortHtml('catalog',m) + '<span class="rec-chev"></span>' +
         '</summary>' +
         '<div class="rec-body">' +
           '<details class="cat-add-panel"><summary>+ 종목 추가</summary><div class="cat-add-row">' +
@@ -2661,7 +2679,7 @@
         '</div>' +
       '</details>';
     });
-    catalogListEl.innerHTML = html;applyCatalogSearch();
+    catalogListEl.innerHTML = html;applyCatalogSearch();bindCardSort(catalogListEl);
 
     catalogListEl.querySelectorAll('.cat-edit').forEach(function(input){
       input.addEventListener('input',function(){var status=input.closest('.cat-item').querySelector('.cat-save-status');clearTimeout(status._t);status.textContent='';status.classList.remove('is-error');});
@@ -3240,8 +3258,8 @@
       document.getElementById('recordSearchMuscle').value=recordMuscleQuery;
       mode='records';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();renderRecords();
       var target=Array.from(recordsListEl.querySelectorAll('.record-muscle-group')).find(function(el){return el.dataset.recordKey==='muscle:'+recordMuscleQuery;});
-      if(target){target.open=true;target.querySelectorAll('details').forEach(function(el){el.open=false;});requestAnimationFrame(function(){var summary=target.querySelector('summary');summary.focus({preventScroll:true});summary.scrollIntoView({block:'start',behavior:'smooth'});});}
-      else recordsViewEl.scrollIntoView({block:'start'});
+      if(target){target.open=true;target.querySelectorAll('details').forEach(function(el){el.open=false;});}
+      requestAnimationFrame(function(){document.getElementById('recordSearchMuscle').focus({preventScroll:true});document.getElementById('recordBrowseTools').scrollIntoView({block:'start',behavior:'smooth'});});
       if(statsScope==='all')showToast('기록 탭은 현재 플랜 기준이에요. 다른 플랜은 설정에서 전환해주세요.','pending');
     };});
     statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;writeJSON('bulk-workout-stats-scope-v1',statsScope);renderStats();};});
@@ -3524,21 +3542,6 @@
     button.disabled=!all.length;
     button.textContent=all.length && all.every(function(el){return el.open;})?'전체 접기':'전체 펼치기';
     button.dataset.expanded=String(!!all.length&&all.every(function(el){return el.open;}));
-    var muscle=document.getElementById('recordMuscleSelect').value;
-    var selected=muscle?recordDisclosureTargets(muscle):[],toggle=document.getElementById('btnRecordMuscleToggle');
-    toggle.disabled=!selected.length;
-    toggle.textContent=selected.length && selected.every(function(el){return el.open;})?'접기':'펼치기';
-    toggle.setAttribute('aria-label',muscle?muscle+' 기록 '+toggle.textContent:'부위를 먼저 선택하세요');
-  }
-  function refreshRecordMuscleOptions() {
-    var select=document.getElementById('recordMuscleSelect'),previous=select.value;
-    select.replaceChildren();
-    var placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='펼칠 부위';select.appendChild(placeholder);
-    recordDisclosureGroups().forEach(function(group){
-      var muscle=group.dataset.recordKey.slice(7),option=document.createElement('option');option.value=muscle;option.textContent=muscle;select.appendChild(option);
-    });
-    select.value=Array.from(select.options).some(function(option){return option.value===previous;})?previous:'';
-    select.disabled=select.options.length===1;syncRecordDisclosureControls();
   }
   function setRecordDisclosures(expand,muscle) {
     var targets=recordDisclosureTargets(muscle);
@@ -3549,11 +3552,6 @@
   }
   document.getElementById('btnRecordsExpand').addEventListener('click',function(){
     var targets=recordDisclosureTargets();setRecordDisclosures(!targets.every(function(el){return el.open;}));
-  });
-  document.getElementById('recordMuscleSelect').addEventListener('change',syncRecordDisclosureControls);
-  document.getElementById('btnRecordMuscleToggle').addEventListener('click',function(){
-    var muscle=document.getElementById('recordMuscleSelect').value;if(!muscle)return;
-    var targets=recordDisclosureTargets(muscle);setRecordDisclosures(!targets.every(function(el){return el.open;}),muscle);
   });
   recordsListEl.addEventListener('toggle',function(event){
     var detail=event.target;
