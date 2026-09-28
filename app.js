@@ -862,17 +862,20 @@
       var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000);
       var apply=dialog.querySelector('[data-yes]'),cancel=dialog.querySelector('[data-no]');
       aiAdjustmentBusy=true;revise.disabled=true;apply.disabled=true;cancel.disabled=true;revise.textContent='제안 조정 중…';hint.dataset.kind='loading';hint.textContent='요청사항을 반영하고 있어요. 최대 약 80초 걸릴 수 있어요.';
+      var requestStage='NET';
       try{
         var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'});
-        var result=await response.json();if(!dialog.isConnected || owner!==activeProfile)return;
-        if(!response.ok)throw new Error(result.error||'재조정에 실패했어요.');
-        if(result.protocol!==2)throw new Error('앱과 추천 서버 버전이 맞지 않아요.');
+        requestStage='PARSE';
+        var result;try{result=await response.json();}catch(parseError){throw aiProtocolError('PARSE');}if(!dialog.isConnected || owner!==activeProfile)return;
+        requestStage='RESULT';
+        if(!response.ok)throw aiHttpError(response,result);
+        if(result.protocol!==2)throw aiProtocolError('VERSION');
         if(result.clarification){hint.textContent='조건을 확인해주세요: '+result.clarification;return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('요청 중 기록·일정이 바뀌었어요. 설문에서 다시 추천받아주세요.');
         var updated=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(updated).inputStamp=inputStamp;aiProposalMeta.get(updated).reasons=result.reasons||{};
         saveProposalHistory('week',updated,result.reasons||{},'수정된 이번 주 제안');
         lastAiProposals.set(owner+'|'+todayStr(),updated);dialog.close();matchTemporaryExercises(updated,owner);
-      }catch(e){if(dialog.isConnected){hint.dataset.kind='error';hint.textContent=(e.name==='AbortError'?'응답 시간이 지났어요.':e.message||'연결을 확인해주세요.')+' 이전 제안은 유지돼요.';}}
+      }catch(e){if(dialog.isConnected){hint.dataset.kind='error';hint.textContent=aiFailureText('R',e,requestStage)+' 이전 제안은 유지돼요.';}}
       finally{clearTimeout(timer);aiAdjustmentBusy=false;if(dialog.isConnected){revise.disabled=false;cancel.disabled=false;apply.disabled=false;revise.textContent='수정 요청 보내기';}}
     };
     dialog.querySelector('[data-yes]').onclick=function(){try{
@@ -1289,7 +1292,7 @@
     document.getElementById('btnSaveNow').hidden = !pending;
     document.getElementById('btnRevertNow').hidden = !pending;
     // 변경사항이 있으면 저장/취소 중 하나를 거쳐야 편집을 벗어난다.
-    button.hidden = (routineEditing && pending) || (!routineEditing && !(tempDay.ex || []).length);
+    button.hidden = routineEditing && pending;
     // 임시 루틴에는 초기화/기본적용이 없으므로 고급 옵션 자체를 접어 숨긴다(빈 채로 펼쳐지는 것 방지).
     var advanced=document.getElementById('btnClearDay').closest('.routine-advanced-options');
     if(advanced){advanced.hidden=isTemp;if(isTemp)advanced.open=false;}
@@ -3720,6 +3723,23 @@
   }
   function planForAi(routine,week){return routine.map(function(d,i){return {date:week.dates[i],title:d.title||'루틴',exercises:(d.ex||[]).map(function(e){return {name:e.n,muscle:e.m,sets:e.s,reps:e.r,rir:e.rir};})};});}
   var BASE_PLAN_ENDPOINT='https://ai.geunlog.workers.dev/plan';
+  // AI error codes: B=base plan, W=week adjustment, R=revision.
+  // NET/TIME identify transport; HTTP + status + Worker code identify server failures.
+  function aiProtocolError(stage){var error=new Error(stage);error.aiStage=stage;return error;}
+  function aiHttpError(response,result){
+    var error=new Error(result && typeof result.error==='string'?result.error:'');
+    error.aiStage='HTTP';error.aiStatus=response.status;
+    error.aiCode=result && /^[A-Z0-9_]{1,30}$/.test(result.code||'')?result.code:'';
+    error.aiUpstream=result && Number.isInteger(result.upstreamStatus)?result.upstreamStatus:0;
+    return error;
+  }
+  function aiFailureText(flow,error,stage){
+    var kind=error && error.aiStage || (error && error.name==='AbortError'?'TIME':stage==='NET' && error instanceof TypeError?'NET':stage||'RESULT');
+    var code='AI-'+flow+'-'+kind;
+    if(kind==='HTTP')code+='-'+(error.aiStatus||0)+(error.aiCode?'-'+error.aiCode:'')+(error.aiUpstream?'-G'+error.aiUpstream:'');
+    var detail=kind==='NET'?'서버 연결 또는 브라우저 통신을 확인해주세요.':kind==='TIME'?'응답 시간이 초과됐어요.':kind==='PARSE'?'서버 응답 형식을 확인해주세요.':kind==='VERSION'?'앱과 Worker 버전이 맞는지 확인해주세요.':kind==='HTTP'?(error.message||'서버 요청을 확인해주세요.'):'입력·제안 처리 중 오류가 발생했어요.';
+    return 'AI 제안을 완료하지 못했어요. [오류 코드: '+code+'] '+detail;
+  }
   function proposalHistoryKey(){return keyFor('geunlog-ai-proposal-history-v1',activeProfile);}
   function proposalHistory(){var list=readJSON(proposalHistoryKey(),[]);return Array.isArray(list)?list.filter(function(e){return e && (e.kind==='base'||e.kind==='week') && e.routine && Array.isArray(e.routine.days);}).slice(-12):[];}
   function boundedProposalHistory(list){list=list.slice(-12);while(list.length>1 && JSON.stringify(list).length>200000)list.shift();return list;}
@@ -3805,9 +3825,9 @@
     if(hasRoutineDraft()){showToast('수정 중인 루틴을 먼저 저장하거나 취소해주세요.','pending');return;}
     var owner=activeProfile,week=adjustmentWeek(todayStr()),saved=loadSavedRoutine(),info=athleteInfo(),dialog=document.createElement('dialog');
     dialog.className='data-confirm-dialog ai-preview-dialog ai-base-survey';dialog.setAttribute('aria-label','AI 기본 루틴 만들기');
-    dialog.innerHTML='<h2>AI 기본 루틴 만들기</h2><p class="ai-preview-meta">매주 반복할 요일을 선택하세요. 기존 루틴은 미리보기에서 확인한 요일만 교체해요. 아래 운동 정보 수정은 이번 제안에만 적용돼요.</p>'+
-      '<div class="ai-base-fields"><label>운동 목표<select data-goal>'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>운동 경력<select data-experience>'+adjustmentOptions(AI_EXPERIENCE,info.experience,'경력 선택')+'</select></label><label>선호 운동·우선 부위<input data-preferences maxlength="500" value="'+statsEscape(info.preferences)+'"></label><label>피할 운동<input data-excluded maxlength="500" value="'+statsEscape(info.excluded)+'"></label><label>사용 가능한 장비<input data-equipment maxlength="500" value="'+statsEscape(info.equipment)+'"></label></div><p class="ai-survey-caption">요일별로 ‘AI 생성’, ‘기존 유지’, ‘휴식’을 선택하세요. 운동 시간은 준비와 세트 간 휴식도 포함해요.</p><div class="ai-base-days">'+
-      week.dates.map(function(date,i){return '<div class="ai-base-day" data-base-day="'+i+'"><strong>'+['월','화','수','목','금','토','일'][i]+'요일 · '+(saved[i].title||'일정 없음')+'</strong><select data-base-mode><option value="keep">기존 유지</option><option value="generate">AI 생성</option><option value="rest">휴식으로 교체</option></select><select data-base-time disabled>'+adjustmentTimeOptions('60')+'</select></div>';}).join('')+'</div><label class="ai-base-notes">추가 요청사항 (선택)<textarea data-notes maxlength="1000" rows="2" placeholder="예: 등 운동을 조금 더 하고 싶어요"></textarea></label><p role="status" data-status></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-generate>제안받기</button></div>';
+    dialog.innerHTML='<h2>기본 루틴 만들기</h2><p class="ai-preview-meta">매주 반복할 요일을 골라주세요. 적용하기 전에 제안을 확인할 수 있어요.</p>'+
+      '<div class="ai-base-fields"><label>운동 목표<select data-goal>'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>운동 경력<select data-experience>'+adjustmentOptions(AI_EXPERIENCE,info.experience,'경력 선택')+'</select></label></div><p class="ai-survey-caption">바꿀 요일만 <strong>AI로 만들기</strong>를 선택하세요. 나머지 요일은 유지돼요.</p><div class="ai-base-days">'+
+      week.dates.map(function(date,i){return '<div class="ai-base-day" data-base-day="'+i+'"><strong>'+['월','화','수','목','금','토','일'][i]+'요일</strong><small>'+statsEscape(saved[i].title||'일정 없음')+'</small><select data-base-mode aria-label="'+['월','화','수','목','금','토','일'][i]+'요일 변경"><option value="keep">그대로 두기</option><option value="generate">AI로 만들기</option><option value="rest">휴식으로 바꾸기</option></select><select data-base-time disabled aria-label="'+['월','화','수','목','금','토','일'][i]+'요일 운동 시간">'+adjustmentTimeOptions('60')+'</select></div>';}).join('')+'</div><label class="ai-base-notes">추가 요청사항 (선택)<textarea data-notes maxlength="1000" rows="2" placeholder="예: 집에서 덤벨만 사용해요. 무릎 통증으로 런지는 빼주세요."></textarea></label><p class="ai-survey-caption">선호 운동·사용 장비·피할 운동이 있다면 여기에 적어주세요.</p><p role="status" aria-live="polite" data-status></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-generate>제안받기</button></div>';
     dialog.querySelectorAll('[data-base-mode]').forEach(function(select){select.onchange=function(){select.closest('.ai-base-day').querySelector('[data-base-time]').disabled=select.value!=='generate';};});
     addTemporaryClose(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
     dialog.querySelector('[data-generate]').onclick=async function(){
@@ -3818,12 +3838,15 @@
       var rows=[...dialog.querySelectorAll('[data-base-day]')],planDays=rows.map(function(row,i){var mode=row.querySelector('[data-base-mode]').value;return {date:week.dates[i],mode:mode,minutes:mode==='generate'?Number(row.querySelector('[data-base-time]').value):null};});
       if(!planDays.some(function(day){return day.mode==='generate';})){status.textContent='AI가 만들 요일을 한 개 이상 선택해주세요.';return;}
       if(planDays.some(function(day){return day.mode==='generate' && ![30,45,60,75,90,120].includes(day.minutes);})){status.textContent='AI 생성 요일의 운동 시간을 선택해주세요.';return;}
-      var fingerprint=basePlanFingerprint(),payload={plan:{schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:{goal:goal,experience:experience,preferences:dialog.querySelector('[data-preferences]').value.trim(),excluded:dialog.querySelector('[data-excluded]').value.trim(),equipment:dialog.querySelector('[data-equipment]').value.trim()},notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),registeredExercises:VOLUME_MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
+      var fingerprint=basePlanFingerprint(),payload={plan:{schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:{goal:goal,experience:experience,preferences:'',excluded:'',equipment:''},notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),registeredExercises:VOLUME_MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
       var button=this,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000);button.disabled=true;status.dataset.kind='loading';status.textContent='매주 반복할 루틴을 제안하고 있어요. 최대 약 80초 걸릴 수 있어요.';
-      try{var response=await fetch(BASE_PLAN_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal,cache:'no-store'}),result=await response.json();
+      var requestStage='NET';
+      try{var response=await fetch(BASE_PLAN_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal,cache:'no-store'}),result;
+        requestStage='PARSE';try{result=await response.json();}catch(parseError){throw aiProtocolError('PARSE');}
         if(!dialog.isConnected || owner!==activeProfile)return;
-        if(!response.ok)throw new Error(result.error||'기본 루틴 추천에 실패했어요.');
-        if(result.protocol!==3)throw new Error('앱과 추천 서버 버전이 맞지 않아요. Worker 배포를 확인해주세요.');
+        if(!response.ok)throw aiHttpError(response,result);
+        if(result.protocol!==3)throw aiProtocolError('VERSION');
+        requestStage='RESULT';
         if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification;return;}
         if(fingerprint!==basePlanFingerprint())throw new Error('요청 중 기본 루틴이나 종목이 바뀌었어요. 다시 추천받아주세요.');
         var expected=planDays.filter(function(d){return d.mode==='generate';}).map(function(d){return d.date;}),candidate=result.routine;
@@ -3831,7 +3854,7 @@
         candidate.days.push(...planDays.filter(function(d){return d.mode==='rest';}).map(function(d){return {date:d.date,title:'휴식',rest:true,exercises:[]};}));
         candidate=validateTemporary(candidate,todayStr(),true);
         saveProposalHistory('base',candidate,result.reasons||{},'AI 기본 루틴 제안');dialog.close();previewBasePlan(candidate,result.reasons||{},fingerprint);
-      }catch(e){if(dialog.isConnected){status.dataset.kind='error';status.textContent=e.name==='AbortError'?'AI 응답 시간이 지났어요. 입력은 유지돼요.':e.message||'연결을 확인해주세요.';}}
+      }catch(e){if(dialog.isConnected){status.dataset.kind='error';status.textContent=aiFailureText('B',e,requestStage)+' 입력은 유지돼요.';}}
       finally{clearTimeout(timer);if(dialog.isConnected)button.disabled=false;}
     };
     document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-no]').focus();
@@ -3957,19 +3980,19 @@
       if(aiAdjustmentBusy){feedback('이미 AI 제안을 생성하고 있어요. 잠시 기다려주세요.');return;}
       var button=this,owner=activeProfile,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000),inputStamp=JSON.stringify(context);
       aiAdjustmentBusy=true;button.disabled=true;button.textContent='AI 제안 생성 중…';status.dataset.kind='loading';status.textContent='운동 기록과 남은 일정을 바탕으로 추천하고 있어요. 최대 약 80초 걸릴 수 있어요.';
-      var requestStage='request';
+      var requestStage='NET';
       try{
         var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'});
-        requestStage='response';
-        var result;try{result=await response.json();}catch(e){throw new Error('추천 서버 응답을 읽지 못했어요. 잠시 후 다시 시도해주세요.');}
+        requestStage='PARSE';
+        var result;try{result=await response.json();}catch(e){throw aiProtocolError('PARSE');}
         if(owner!==activeProfile || !root.isConnected)return;
-        if(!response.ok)throw new Error(result.error||'AI 요청에 실패했어요.');
-        if(result.protocol!==2)throw new Error('앱과 추천 서버의 버전이 맞지 않아요. 최신 Worker 배포를 확인해주세요.');
+        if(!response.ok)throw aiHttpError(response,result);
+        if(result.protocol!==2)throw aiProtocolError('VERSION');
+        requestStage='RESULT';
         if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification+' 입력 내용을 수정한 뒤 다시 요청해주세요.';return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(contextNow()))throw new Error('요청 중 기록·루틴·입력 조건이 바뀌었어요. 최신 내용으로 다시 추천받아주세요.');
-        requestStage='result';
-        var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;aiProposalMeta.get(candidate).reasons=result.reasons||{};lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';requestStage='preview';saveProposalHistory('week',candidate,result.reasons||{},'이번 주 AI 제안');matchTemporaryExercises(candidate,owner);
-      }catch(e){if(owner===activeProfile && root.isConnected)feedback(e.name==='AbortError'?'응답 시간이 지났어요. 입력은 유지돼요. 잠시 후 다시 시도해주세요.':e instanceof TypeError?(requestStage==='request'?'추천 서버에 연결하지 못했어요. 인터넷 연결과 Cloudflare Worker 배포 상태를 확인한 뒤 다시 시도해주세요. (요청 단계)':'AI 응답을 앱에서 처리하는 중 오류가 발생했어요. 이전 루틴은 유지돼요. 새로고침 후 다시 시도해주세요. ('+(requestStage==='response'?'응답 확인':requestStage==='result'?'결과 처리':'미리보기')+' 단계)'):e);}
+        var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;aiProposalMeta.get(candidate).reasons=result.reasons||{};lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';requestStage='PREVIEW';saveProposalHistory('week',candidate,result.reasons||{},'이번 주 AI 제안');matchTemporaryExercises(candidate,owner);
+      }catch(e){if(owner===activeProfile && root.isConnected)feedback(aiFailureText('W',e,requestStage));}
       finally{clearTimeout(timer);aiAdjustmentBusy=false;if(root.isConnected){button.disabled=false;button.textContent=activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기';}}
     };
     root.querySelector('#btnAdjustmentCopy').onclick=async function(){try{var context=contextNow(),text='아래 구조화된 정보를 바탕으로 남은 운동을 조정해주세요. baseRoutine은 기본 계획, currentRoutine은 임시 변경을 포함한 현재 계획, recentRecords는 실제 수행 세트입니다. supplementalSets는 누락 보완이며 중복 계산하지 마세요. 대표 종목을 우선하고 무리한 보충은 피하세요. availability에서 adjust인 날짜만 빠짐없이 반환하고 keep/rest는 앱에서 처리합니다. 모호하거나 충돌하는 조건은 먼저 질문하세요. 최종 응답은 다음 형식의 JSON 파일로 주세요.\n'+temporaryFormatRules(todayStr())+'\n\n'+JSON.stringify(context,null,2);await copyText(text,'요청을 복사했어요. 다른 AI에 붙여넣고 받은 JSON을 가져오세요.');}catch(e){feedback(e);}};
