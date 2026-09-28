@@ -875,7 +875,7 @@
         var updated=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(updated).inputStamp=inputStamp;aiProposalMeta.get(updated).reasons=result.reasons||{};
         saveProposalHistory('week',updated,result.reasons||{},'수정된 이번 주 제안');
         lastAiProposals.set(owner+'|'+todayStr(),updated);dialog.close();matchTemporaryExercises(updated,owner);
-      }catch(e){if(dialog.isConnected){hint.dataset.kind='error';hint.textContent=aiFailureText('R',e,requestStage)+' 이전 제안은 유지돼요.';}}
+      }catch(e){if(dialog.isConnected){hint.dataset.kind='error';hint.textContent=aiFailureText('R',e,requestStage);}}
       finally{clearTimeout(timer);aiAdjustmentBusy=false;if(dialog.isConnected){revise.disabled=false;cancel.disabled=false;apply.disabled=false;revise.textContent='수정 요청 보내기';}}
     };
     dialog.querySelector('[data-yes]').onclick=function(){try{
@@ -3737,8 +3737,9 @@
     var kind=error && error.aiStage || (error && error.name==='AbortError'?'TIME':stage==='NET' && error instanceof TypeError?'NET':stage||'RESULT');
     var code='AI-'+flow+'-'+kind;
     if(kind==='HTTP')code+='-'+(error.aiStatus||0)+(error.aiCode?'-'+error.aiCode:'')+(error.aiUpstream?'-G'+error.aiUpstream:'');
-    var detail=kind==='NET'?'서버 연결 또는 브라우저 통신을 확인해주세요.':kind==='TIME'?'응답 시간이 초과됐어요.':kind==='PARSE'?'서버 응답 형식을 확인해주세요.':kind==='VERSION'?'앱과 Worker 버전이 맞는지 확인해주세요.':kind==='HTTP'?(error.message||'서버 요청을 확인해주세요.'):'입력·제안 처리 중 오류가 발생했어요.';
-    return 'AI 제안을 완료하지 못했어요. [오류 코드: '+code+'] '+detail;
+    var detail=kind==='NET'?'추천 서버에 연결하지 못했어요. 인터넷 연결과 Worker 배포 상태를 확인해주세요.':kind==='TIME'?'응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.':kind==='PARSE'?'추천 서버가 올바른 응답을 보내지 않았어요.':kind==='VERSION'?'앱과 Worker 버전이 맞지 않아요.':kind==='HTTP'?(error.message||'추천 서버 요청을 확인해주세요.'):'제안 내용을 처리하지 못했어요. 다시 시도해주세요.';
+    var preserved=flow==='R'?'이전 제안은 유지돼요.':flow==='B'?'입력은 유지돼요.':'기존 루틴은 유지돼요.';
+    return detail+' '+preserved+'\n오류 코드: '+code;
   }
   function proposalHistoryKey(){return keyFor('geunlog-ai-proposal-history-v1',activeProfile);}
   function proposalHistory(){var list=readJSON(proposalHistoryKey(),[]);return Array.isArray(list)?list.filter(function(e){return e && (e.kind==='base'||e.kind==='week') && e.routine && Array.isArray(e.routine.days);}).slice(-12):[];}
@@ -3827,7 +3828,7 @@
     dialog.className='data-confirm-dialog ai-preview-dialog ai-base-survey';dialog.setAttribute('aria-label','AI 기본 루틴 만들기');
     dialog.innerHTML='<h2>기본 루틴 만들기</h2><p class="ai-preview-meta">매주 반복할 요일을 골라주세요. 적용하기 전에 제안을 확인할 수 있어요.</p>'+
       '<div class="ai-base-fields"><label>운동 목표<select data-goal>'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>운동 경력<select data-experience>'+adjustmentOptions(AI_EXPERIENCE,info.experience,'경력 선택')+'</select></label></div><p class="ai-survey-caption">바꿀 요일만 <strong>AI로 만들기</strong>를 선택하세요. 나머지 요일은 유지돼요.</p><div class="ai-base-days">'+
-      week.dates.map(function(date,i){return '<div class="ai-base-day" data-base-day="'+i+'"><strong>'+['월','화','수','목','금','토','일'][i]+'요일</strong><small>'+statsEscape(saved[i].title||'일정 없음')+'</small><select data-base-mode aria-label="'+['월','화','수','목','금','토','일'][i]+'요일 변경"><option value="keep">그대로 두기</option><option value="generate">AI로 만들기</option><option value="rest">휴식으로 바꾸기</option></select><select data-base-time disabled aria-label="'+['월','화','수','목','금','토','일'][i]+'요일 운동 시간">'+adjustmentTimeOptions('60')+'</select></div>';}).join('')+'</div><label class="ai-base-notes">추가 요청사항 (선택)<textarea data-notes maxlength="1000" rows="2" placeholder="예: 집에서 덤벨만 사용해요. 무릎 통증으로 런지는 빼주세요."></textarea></label><p class="ai-survey-caption">선호 운동·사용 장비·피할 운동이 있다면 여기에 적어주세요.</p><p role="status" aria-live="polite" data-status></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-generate>제안받기</button></div>';
+      week.dates.map(function(date,i){var day=['월','화','수','목','금','토','일'][i];return '<div class="ai-base-day" data-base-day="'+i+'"><div class="ai-base-day-label"><strong>'+day+'</strong><small>'+statsEscape(saved[i].title||'일정 없음')+'</small></div><select data-base-mode aria-label="'+day+'요일 변경"><option value="keep">그대로 두기</option><option value="generate">AI로 만들기</option><option value="rest">휴식으로 바꾸기</option></select><select data-base-time disabled aria-label="'+day+'요일 운동 시간">'+adjustmentTimeOptions('60')+'</select></div>';}).join('')+'</div><label class="ai-base-notes">추가 요청사항 (선택)<textarea data-notes maxlength="1000" rows="2" placeholder="예: 집에서 덤벨만 사용해요. 무릎 통증으로 런지는 빼주세요."></textarea></label><p class="ai-survey-caption">선호 운동·사용 장비·피할 운동이 있다면 여기에 적어주세요.</p><p role="status" aria-live="polite" data-status></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-generate>제안받기</button></div>';
     dialog.querySelectorAll('[data-base-mode]').forEach(function(select){select.onchange=function(){select.closest('.ai-base-day').querySelector('[data-base-time]').disabled=select.value!=='generate';};});
     addTemporaryClose(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
     dialog.querySelector('[data-generate]').onclick=async function(){
@@ -3854,7 +3855,7 @@
         candidate.days.push(...planDays.filter(function(d){return d.mode==='rest';}).map(function(d){return {date:d.date,title:'휴식',rest:true,exercises:[]};}));
         candidate=validateTemporary(candidate,todayStr(),true);
         saveProposalHistory('base',candidate,result.reasons||{},'AI 기본 루틴 제안');dialog.close();previewBasePlan(candidate,result.reasons||{},fingerprint);
-      }catch(e){if(dialog.isConnected){status.dataset.kind='error';status.textContent=aiFailureText('B',e,requestStage)+' 입력은 유지돼요.';}}
+      }catch(e){if(dialog.isConnected){status.dataset.kind='error';status.textContent=aiFailureText('B',e,requestStage);}}
       finally{clearTimeout(timer);if(dialog.isConnected)button.disabled=false;}
     };
     document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-no]').focus();
