@@ -3827,9 +3827,15 @@
     var owner=activeProfile,week=adjustmentWeek(todayStr()),saved=loadSavedRoutine(),info=athleteInfo(),dialog=document.createElement('dialog');
     dialog.className='data-confirm-dialog ai-preview-dialog ai-base-survey';dialog.setAttribute('aria-label','AI 기본 루틴 만들기');
     dialog.innerHTML='<h2>기본 루틴 만들기</h2><p class="ai-preview-meta">매주 반복할 요일을 골라주세요. 적용하기 전에 제안을 확인할 수 있어요.</p>'+
-      '<div class="ai-base-fields"><label>운동 목표<select data-goal>'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>운동 경력<select data-experience>'+adjustmentOptions(AI_EXPERIENCE,info.experience,'경력 선택')+'</select></label></div><p class="ai-survey-caption">바꿀 요일만 <strong>AI로 만들기</strong>를 선택하세요. 나머지 요일은 유지돼요.</p><div class="ai-base-days">'+
-      week.dates.map(function(date,i){var day=['월','화','수','목','금','토','일'][i];return '<div class="ai-base-day" data-base-day="'+i+'"><div class="ai-base-day-label"><strong>'+day+'</strong><small>'+statsEscape(saved[i].title||'일정 없음')+'</small></div><select data-base-mode aria-label="'+day+'요일 변경"><option value="keep">그대로 두기</option><option value="generate">AI로 만들기</option><option value="rest">휴식으로 바꾸기</option></select><select data-base-time disabled aria-label="'+day+'요일 운동 시간">'+adjustmentTimeOptions('60')+'</select></div>';}).join('')+'</div><label class="ai-base-notes">추가 요청사항 (선택)<textarea data-notes maxlength="1000" rows="2" placeholder="예: 집에서 덤벨만 사용해요. 무릎 통증으로 런지는 빼주세요."></textarea></label><p class="ai-survey-caption">선호 운동·사용 장비·피할 운동이 있다면 여기에 적어주세요.</p><p role="status" aria-live="polite" data-status></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-generate>제안받기</button></div>';
-    dialog.querySelectorAll('[data-base-mode]').forEach(function(select){select.onchange=function(){select.closest('.ai-base-day').querySelector('[data-base-time]').disabled=select.value!=='generate';};});
+      '<div class="ai-base-fields"><label>운동 목표<select data-goal>'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>운동 경력<select data-experience>'+adjustmentOptions(AI_EXPERIENCE,info.experience,'경력 선택')+'</select></label></div><div class="ai-day-picker"><strong>AI가 만들 요일</strong><div class="ai-day-chips">'+
+      week.dates.map(function(date,i){return '<button type="button" data-day-chip="'+i+'" aria-pressed="false" aria-label="'+['월','화','수','목','금','토','일'][i]+'요일 AI 루틴 만들기">'+['월','화','수','목','금','토','일'][i]+'</button>';}).join('')+'</div><p>선택한 요일은 60분 기준이에요. 선택하지 않은 요일은 그대로 둬요.</p></div><details class="ai-day-details"><summary>운동 시간·휴식 자세히 설정 <small data-selection-count>선택 0일</small></summary><div class="ai-base-days">'+
+      week.dates.map(function(date,i){var day=['월','화','수','목','금','토','일'][i];return '<div class="ai-base-day" data-base-day="'+i+'"><div class="ai-base-day-label"><strong>'+day+'</strong><small>'+statsEscape(saved[i].title||'일정 없음')+'</small></div><select data-base-mode aria-label="'+day+'요일 변경"><option value="keep">그대로 두기</option><option value="generate">AI로 만들기</option><option value="rest">휴식으로 바꾸기</option></select><select data-base-time disabled aria-label="'+day+'요일 운동 시간">'+adjustmentTimeOptions('60')+'</select></div>';}).join('')+'</div></details><label class="ai-base-notes">추가 요청사항 (선택)<textarea data-notes maxlength="1000" rows="2" placeholder="예: 집에서 덤벨만 사용해요. 무릎 통증으로 런지는 빼주세요."></textarea></label><p class="ai-survey-caption">선호 운동·사용 장비·피할 운동이 있다면 여기에 적어주세요.</p><p role="status" aria-live="polite" data-status></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-generate>제안받기</button></div>';
+    function syncBaseDayPicker(){
+      var count=0;dialog.querySelectorAll('[data-base-mode]').forEach(function(select,i){var selected=select.value==='generate',chip=dialog.querySelector('[data-day-chip="'+i+'"]');chip.setAttribute('aria-pressed',String(selected));select.closest('.ai-base-day').querySelector('[data-base-time]').disabled=!selected;if(selected)count++;});
+      dialog.querySelector('[data-selection-count]').textContent='선택 '+count+'일';
+    }
+    dialog.querySelectorAll('[data-base-mode]').forEach(function(select){select.onchange=syncBaseDayPicker;});
+    dialog.querySelectorAll('[data-day-chip]').forEach(function(chip){chip.onclick=function(){var select=dialog.querySelector('[data-base-day="'+chip.dataset.dayChip+'"]').querySelector('[data-base-mode]');select.value=select.value==='generate'?'keep':'generate';syncBaseDayPicker();};});
     addTemporaryClose(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
     dialog.querySelector('[data-generate]').onclick=async function(){
       var goal=dialog.querySelector('[data-goal]').value,experience=dialog.querySelector('[data-experience]').value,status=dialog.querySelector('[data-status]');
@@ -3878,9 +3884,13 @@
     };});
     document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-close]').focus();
   }
-  document.getElementById('btnBaseAi').onclick=openBasePlanSurvey;
-  document.getElementById('btnAiHistoryDay').onclick=openProposalHistory;
-  document.getElementById('btnWeekAiFromDay').onclick=function(){mode='report';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();adjustmentState().open=true;renderReport();document.getElementById('weekAdjustment').scrollIntoView({block:'start',behavior:'smooth'});};
+  var aiQuickMenu=document.getElementById('aiQuickMenu');
+  document.getElementById('btnAiMenu').onclick=function(){aiQuickMenu.showModal();};
+  aiQuickMenu.querySelector('[data-ai-menu-close]').onclick=function(){aiQuickMenu.close();};
+  aiQuickMenu.addEventListener('click',function(event){if(event.target===aiQuickMenu)aiQuickMenu.close();});
+  document.getElementById('btnBaseAi').onclick=function(){aiQuickMenu.close();openBasePlanSurvey();};
+  document.getElementById('btnAiHistoryDay').onclick=function(){aiQuickMenu.close();openProposalHistory();};
+  document.getElementById('btnWeekAiFromDay').onclick=function(){aiQuickMenu.close();mode='report';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();adjustmentState().open=true;renderReport();document.getElementById('weekAdjustment').scrollIntoView({block:'start',behavior:'smooth'});};
   function representativeCatalog(){
     var names=['덤벨 플라이(플랫)','스탠딩 오버헤드 프레스(바벨)','시티드 오버헤드 프레스(덤벨)','스컬 크러셔','덤벨 오버헤드 트라이셉스 익스텐션','클로즈 그립 벤치 프레스','덤벨 해머 컬','EZ바 컬','가슴 딥스','카프 레이즈','푸시업','플랫 벤치 프레스(바벨)','플랫 벤치 프레스(덤벨)','인클라인 벤치 프레스(덤벨)','덤벨 플라이','풀업','친업','랫풀다운(와이드 그립)','바벨 로우','벤트오버 바벨 로우','원암 덤벨 로우','덤벨 로우','숄더 프레스(덤벨)','덤벨 숄더 프레스','오버헤드 프레스(바벨)','사이드 레터럴 레이즈(덤벨)','벤트오버 레터럴 레이즈(덤벨)','백 스쿼트','고블릿 스쿼트','런지','덤벨 런지','불가리안 스플릿 스쿼트','루마니안 데드리프트','루마니안 데드리프트(바벨)','레그 컬','스탠딩 카프 레이즈','바벨 컬','덤벨 컬','해머 컬','라잉 트라이셉스 익스텐션(EZ바)','오버헤드 트라이셉스 익스텐션(덤벨)','딥스'];
     return VOLUME_MUSCLES.flatMap(function(m){return (catalog[m]||[]).filter(function(e){return names.includes(e.n);}).map(function(e){return {name:e.n,muscle:m};});});

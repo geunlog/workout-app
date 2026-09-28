@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="92">
+<meta name="workout-app-version" content="93">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" sizes="192x192" href="/workout-app/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/workout-app/icon-192.png">
 <title>운동 루틴 · Light</title>
-<link rel="stylesheet" href="style.css?v=92">
+<link rel="stylesheet" href="style.css?v=93">
 
 
 </head>
@@ -123,7 +123,7 @@
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 92 · 2026-09-29</strong>
+      <strong>앱 버전 93 · 2026-09-29</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -144,7 +144,8 @@
         <button class="btn-reset btn-revert-now" id="btnRevertNow" type="button">변경 취소</button>
       </div>
       <div class="edit-action-row routine-edit-only" id="editActionRow"></div>
-      <details class="ai-edit-menu routine-edit-only"><summary>AI로 루틴 만들기</summary><div class="ai-day-actions"><button class="btn-reset" id="btnBaseAi" type="button"><strong>기본 루틴 만들기</strong><small>매주 반복할 운동 계획</small></button><button class="btn-reset" id="btnWeekAiFromDay" type="button"><strong>이번 주 조정</strong><small>남은 일정만 변경</small></button><button class="btn-reset" id="btnAiHistoryDay" type="button">이전 제안 보기</button></div></details>
+      <button class="btn-reset ai-menu-trigger routine-edit-only" id="btnAiMenu" type="button" aria-haspopup="dialog">AI 루틴 추천 <span aria-hidden="true">›</span></button>
+      <dialog class="data-confirm-dialog ai-quick-menu" id="aiQuickMenu" aria-label="AI 루틴 추천"><h2>AI 루틴 추천</h2><p>어떤 계획을 만들까요?</p><div class="ai-day-actions"><button type="button" id="btnBaseAi"><strong>기본 루틴 만들기</strong><small>매주 반복할 계획</small></button><button type="button" id="btnWeekAiFromDay"><strong>이번 주 조정</strong><small>이번 주 남은 일정</small></button><button type="button" id="btnAiHistoryDay"><strong>이전 제안 보기</strong><small>저장된 제안 확인</small></button></div><button class="ai-menu-close" type="button" data-ai-menu-close>닫기</button></dialog>
       <details class="routine-advanced-options routine-edit-only">
         <summary>고급 옵션</summary>
         <div class="routine-advanced-row">
@@ -211,7 +212,7 @@
 
 <nav class="tab-bar" id="modeToggle" role="tablist"></nav>
 
-<script src="app.js?v=92"></script>
+<script src="app.js?v=93"></script>
 
 
 
