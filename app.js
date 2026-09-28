@@ -90,7 +90,7 @@
     return ['bulk-routine-v4','bulk-routine-v5','bulk-routine-v6','bulk-routine-v7','bulk-routine-v8','bulk-routine-v9',
       'bulk-routine-pending-v1','bulk-routine-catalog-v2','bulk-routine-catalog-v3','bulk-routine-log-v1',
       'bulk-routine-draft-v1','bulk-routine-draft-v2','bulk-routine-log-recovery-v1','bulk-routine-memos-v1','bulk-catalog-hypertrophy-v1',
-      'bulk-catalog-add-bulgarian-v1','bulk-catalog-expand-all-v2','bulk-catalog-expand-all-v3','bulk-workout-pins-v1','bulk-workout-backup-status-v1','bulk-workout-panels-v1','bulk-workout-temporary-v1','bulk-workout-temporary-pending-v1'];
+      'bulk-catalog-add-bulgarian-v1','bulk-catalog-expand-all-v2','bulk-catalog-expand-all-v3','bulk-workout-pins-v1','bulk-workout-backup-status-v1','bulk-workout-panels-v1','bulk-workout-temporary-v1','bulk-workout-temporary-pending-v1','geunlog-ai-proposal-history-v1'];
   }
   function readJSON(key, fallback) {
     try {
@@ -839,9 +839,10 @@
   }
   function previewTemporaryFile(candidate,owner) {
     var meta=aiProposalMeta.get(candidate)||{fingerprint:adjustmentFingerprint(),asOf:todayStr(),kept:[]};
+    var selected=new Set(candidate.days.map(function(day){return day.date;}));
     var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog ai-preview-dialog';dialog.setAttribute('aria-label','이번 주 제안 미리보기');
     dialog.innerHTML='<h2>이번 주 제안 미리보기</h2><p class="ai-preview-meta">플랜 <strong data-owner></strong> · 아래 날짜만 변경돼요.</p>'+(meta.kept.length?'<p class="ai-kept-note">기존 일정 유지: '+meta.kept.map(adjustmentDayLabel).join(', ')+'</p>':'')+'<div data-preview></div>'+(meta.inputStamp?'<details class="ai-revision"><summary>이 제안 수정 요청</summary><div class="ai-revision-fields"><label for="aiRevisionRequest">바꾸고 싶은 내용</label><textarea id="aiRevisionRequest" rows="2" maxlength="500" placeholder="예: 금요일에는 등 운동을 더 넣어주세요."></textarea><p class="ai-revision-help">운동 날짜와 시간은 앞 화면에서 변경할 수 있어요.</p><button type="button" data-revise>수정 요청 보내기</button><p role="status" data-revise-status></p></div></details>':'')+'<p role="status" data-error></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>이번 주에 적용</button></div>';
-    dialog.querySelector('[data-owner]').textContent=owner;dialog.querySelector('[data-preview]').innerHTML=temporaryDaysHtml(candidate,selectedRecordDate);
+    dialog.querySelector('[data-owner]').textContent=owner;editAiProposal(dialog.querySelector('[data-preview]'),candidate,'week',meta.reasons||{},selected);
     var revisionPanel=dialog.querySelector('.ai-revision');if(revisionPanel)dialog.querySelector('[data-preview]').before(revisionPanel);
     addTemporaryClose(dialog);
     dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.addEventListener('close',function(){dialog.remove();});dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
@@ -868,7 +869,8 @@
         if(result.protocol!==2)throw new Error('앱과 추천 서버 버전이 맞지 않아요.');
         if(result.clarification){hint.textContent='조건을 확인해주세요: '+result.clarification;return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('요청 중 기록·일정이 바뀌었어요. 설문에서 다시 추천받아주세요.');
-        var updated=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(updated).inputStamp=inputStamp;
+        var updated=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(updated).inputStamp=inputStamp;aiProposalMeta.get(updated).reasons=result.reasons||{};
+        saveProposalHistory('week',updated,result.reasons||{},'수정된 이번 주 제안');
         lastAiProposals.set(owner+'|'+todayStr(),updated);dialog.close();matchTemporaryExercises(updated,owner);
       }catch(e){if(dialog.isConnected){hint.dataset.kind='error';hint.textContent=(e.name==='AbortError'?'응답 시간이 지났어요.':e.message||'연결을 확인해주세요.')+' 이전 제안은 유지돼요.';}}
       finally{clearTimeout(timer);aiAdjustmentBusy=false;if(dialog.isConnected){revise.disabled=false;cancel.disabled=false;apply.disabled=false;revise.textContent='수정 요청 보내기';}}
@@ -878,9 +880,13 @@
       if(meta.asOf!==todayStr() || meta.fingerprint!==adjustmentFingerprint())throw new Error('추천 이후 날짜·운동 기록·루틴이 바뀌었어요. 닫고 최신 내용으로 다시 조정해주세요.');
       if(meta.inputStamp && meta.inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('입력 조건이 바뀐 이전 제안이에요. 최신 조건으로 다시 추천받아주세요.');
       if(hasRoutineDraft())throw new Error('수정 중인 루틴을 먼저 저장하거나 취소해주세요.');
-      var next=validateTemporary(candidate,todayStr(),false);if(next.days.some(function(day){return day.exercises.some(function(e){return !(catalog[e.muscle]||[]).some(function(c){return c.n===e.name;});});}))throw new Error('등록 종목이 변경됐어요. 파일을 다시 가져와 연결해주세요.');next.revision=genId();
+      if(!selected.size)throw new Error('적용할 날짜를 하나 이상 선택해주세요.');
+      var next=validateTemporary({...candidate,days:candidate.days.filter(function(d){return selected.has(d.date);})},todayStr(),false);if(next.days.some(function(day){return day.exercises.some(function(e){return !(catalog[e.muscle]||[]).some(function(c){return c.n===e.name;});});}))throw new Error('등록 종목이 변경됐어요. 파일을 다시 가져와 연결해주세요.');next.revision=genId();
       var previous=activeTemporary();next.days=mergeTemporaryDays(previous,next);
-      if(!storageTransaction([{key:temporaryKey(),value:next},{key:temporaryPendingKey(),remove:true}]))throw new Error('저장하지 못했어요. 기존 루틴은 유지돼요.');
+      var history=proposalHistory();
+      if(previous)history.push({kind:'week',routine:previous,reasons:{},label:'교체 전 임시 루틴',savedAt:new Date().toISOString()});
+      history.push({kind:'week',routine:next,reasons:meta.reasons||{},label:'이번 주 적용한 제안',savedAt:new Date().toISOString()});
+      if(!storageTransaction([{key:temporaryKey(),value:next},{key:temporaryPendingKey(),remove:true},{key:proposalHistoryKey(),value:boundedProposalHistory(history)}]))throw new Error('저장하지 못했어요. 기존 루틴은 유지돼요.');
       dialog.close();var index=(new Date(todayStr()+'T00:00:00Z').getUTCDay()+6)%7;activeIndex=index;selectedRecordDate=todayStr();refreshTemporaryViews();showToast('이번 주 임시 루틴을 적용했어요.');
     }catch(e){dialog.querySelector('[data-error]').textContent=e.message;}};
     if(meta.inputStamp){try{if(meta.fingerprint!==adjustmentFingerprint() || meta.inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('changed');}catch(e){dialog.querySelector('[data-error]').textContent='이전 조건으로 만든 제안이에요. 확인만 가능하며, 적용하려면 최신 조건으로 다시 추천받아주세요.';dialog.querySelector('[data-yes]').disabled=true;}}
@@ -3709,10 +3715,148 @@
       '<section class="ai-survey-section"><h3>1. 실제 운동 기록 확인</h3><ul class="ai-record-summary">'+adjustmentRecordSummary(state)+'</ul><p class="adjustment-note">다른 플랜의 기록도 포함해요. 기록 없음이 휴식을 뜻하지는 않아요.</p><label>지금까지 한 운동이 모두 반영됐나요?<select id="adjustCoverage">'+adjustmentOptions({all:'네, 모두 반영됐어요',some:'기록하지 않은 운동이 있어요',none:'이번 주는 아직 운동하지 않았어요',unknown:'정확히 모르겠어요'},state.coverage,'선택해주세요')+'</select></label><div id="aiSupplementArea"'+(state.coverage==='some'?'':' hidden')+'><p class="adjustment-note">빠진 운동만 추가하세요. 추천에만 반영하며 실제 기록에는 저장하지 않아요.</p><div id="aiSupplements">'+adjustmentSupplementsHtml(state)+'</div><button type="button" class="btn-reset" id="btnSupplementAdd">+ 누락 운동 추가</button></div></section>'+
       '<section class="ai-survey-section"><h3>2. 남은 일정과 시간</h3><p class="adjustment-note">운동할 수 있는 날은 ‘AI가 조정’, 바꾸지 않을 날은 ‘기존 일정 유지’, 운동할 수 없는 날은 ‘휴식’을 선택하세요. AI는 가능한 날에도 휴식을 제안할 수 있어요.</p><p id="aiScheduleGuidance" class="ai-schedule-guidance" role="status"></p><div id="aiBulkMinutes"><label>시간 일괄 적용<select id="adjustMinutes">'+adjustmentTimeOptions(state.minutes)+'</select></label><button type="button" class="btn-reset" id="applyAiMinutes">조정할 날짜에 적용</button><p class="adjustment-note">아래 날짜별 시간이 최종 기준이에요. 적용 후 개별 변경할 수 있어요.</p></div><div id="aiSchedule">'+adjustmentScheduleHtml(state)+'</div><div id="aiTodayArea"><label>오늘 운동은 어디까지 했나요?<select id="aiTodayStatus">'+adjustmentOptions({before:'아직 시작 전',partial:'일부 진행 · 추가 운동 가능',done:'오늘 운동 완료 · 오늘 일정 유지'},state.todayStatus,'오늘을 조정할 때 선택')+'</select></label><p id="aiTodayHint" class="adjustment-note" role="status"></p></div></section>'+
       '<section class="ai-survey-section"><h3>3. 추가 조건 <small>선택</small></h3><label>이번 추천의 목표<select id="aiWeekGoal">'+adjustmentOptions(AI_GOALS,state.goal,'내 운동 정보의 목표 사용')+'</select></label><label>추가 요청사항<textarea id="adjustNotes" rows="3" maxlength="1000" placeholder="예: 이번 주는 운동량을 줄이고 싶어요. 하체를 더 하고 싶어요. 집에서 덤벨로 운동해요.">'+statsEscape(state.notes||'')+'</textarea></label><p class="adjustment-note">피로, 통증, 피하고 싶은 운동 등 추천에 반영할 내용이 있을 때만 적어주세요.</p></section>'+
-      '<button type="button" class="btn-reset adjustment-generate" id="btnAdjustmentGenerate">'+(activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기')+'</button><p class="adjustment-note">운동 정보·최근 14일 기록·입력 조건이 Gemini에 전송돼요. 제안을 확인한 뒤 적용할 수 있어요.</p><p id="adjustmentStatus" role="status" aria-live="polite"></p><button type="button" class="btn-reset" id="reopenAiProposal" hidden>이전 제안 다시 보기</button>'+
+      '<button type="button" class="btn-reset adjustment-generate" id="btnAdjustmentGenerate">'+(activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기')+'</button><p class="adjustment-note">운동 정보·최근 14일 기록·입력 조건이 Gemini에 전송돼요. 제안을 확인한 뒤 적용할 수 있어요.</p><p id="adjustmentStatus" role="status" aria-live="polite"></p><button type="button" class="btn-reset" id="reopenAiProposal" hidden>이전 제안 다시 보기</button><button type="button" class="btn-reset" id="btnAiHistoryReport">저장된 이전 제안</button>'+
       '<details class="adjustment-manual"><summary>다른 AI로 추천받기</summary><p class="adjustment-note">연결 오류나 사용 한도에 도달했을 때 사용하세요. 요청을 복사해 다른 AI에 붙여넣고, 받은 JSON 파일을 가져오세요.</p><button class="btn-reset adjustment-copy" id="btnAdjustmentCopy" type="button">요청 복사</button><button type="button" class="btn-reset temporary-import" id="btnTemporaryImport">추천 파일 가져오기</button></details><input type="file" id="temporaryFile" accept=".json,application/json" hidden><button type="button" class="btn-reset" id="btnTemporaryRepair" hidden>오류 수정 요청 복사</button><textarea id="adjustmentFallback" rows="8" readonly hidden aria-label="복사할 루틴 조정 내용"></textarea></details>';
   }
   function planForAi(routine,week){return routine.map(function(d,i){return {date:week.dates[i],title:d.title||'루틴',exercises:(d.ex||[]).map(function(e){return {name:e.n,muscle:e.m,sets:e.s,reps:e.r,rir:e.rir};})};});}
+  var BASE_PLAN_ENDPOINT='https://ai.geunlog.workers.dev/plan';
+  function proposalHistoryKey(){return keyFor('geunlog-ai-proposal-history-v1',activeProfile);}
+  function proposalHistory(){var list=readJSON(proposalHistoryKey(),[]);return Array.isArray(list)?list.filter(function(e){return e && (e.kind==='base'||e.kind==='week') && e.routine && Array.isArray(e.routine.days);}).slice(-12):[];}
+  function boundedProposalHistory(list){list=list.slice(-12);while(list.length>1 && JSON.stringify(list).length>200000)list.shift();return list;}
+  function saveProposalHistory(kind,routine,reasons,label){
+    var list=proposalHistory();list.push({kind:kind,routine:JSON.parse(JSON.stringify(routine)),reasons:reasons||{},label:label,savedAt:new Date().toISOString()});
+    if(!writeJSON(proposalHistoryKey(),boundedProposalHistory(list)))showToast('제안 이력을 저장하지 못했어요. 현재 제안은 사용할 수 있어요.','pending');
+  }
+  function baseSnapshot(){var week=adjustmentWeek(todayStr()),saved=loadSavedRoutine();return {format:'workout-temporary-routine',version:1,weekStart:week.from,weekEnd:week.to,days:saved.map(function(d,i){return {date:week.dates[i],title:d.title||(d.ex.length?'루틴':'휴식'),rest:!d.ex.length,exercises:d.ex.map(function(e){return {name:e.n,muscle:e.m,sets:Number(e.s),reps:e.r,rir:e.rir};})};})};}
+  function validateBaseCandidate(candidate){
+    // Existing basic routines may contain abs. AI proposals never create abs,
+    // but restoring a previous basic routine must preserve them exactly.
+    var transformed={...candidate,days:candidate.days.map(function(day){return {...day,exercises:day.exercises.map(function(e){return {...e,muscle:e.muscle==='복근'?'가슴':e.muscle};})};})};
+    var validated=validateTemporary(transformed,todayStr(),true);
+    validated.days.forEach(function(day){var original=candidate.days.find(function(d){return d.date===day.date;});day.exercises.forEach(function(e,i){if(original.exercises[i].muscle==='복근')e.muscle='복근';});});
+    return validated;
+  }
+  function proposalComparison(candidate,kind,selected){
+    var source=kind==='base'?loadSavedRoutine():effectiveWeek(),week=adjustmentWeek(todayStr()),byMuscle={};
+    (kind==='base'?MUSCLES:VOLUME_MUSCLES).forEach(function(m){byMuscle[m]={before:0,after:0,done:0};});
+    week.dates.forEach(function(date,i){var replaced=selected.has(date)?candidate.days.find(function(d){return d.date===date;}):null;
+      (source[i].ex||[]).forEach(function(e){if(byMuscle[e.m])byMuscle[e.m].before+=Number(e.s)||0;});
+      (replaced?replaced.exercises.map(function(e){return {m:e.muscle,s:e.sets};}):(source[i].ex||[])).forEach(function(e){if(byMuscle[e.m])byMuscle[e.m].after+=Number(e.s)||0;});
+    });
+    if(kind==='week')adjustmentRecords(todayStr()).filter(function(e){return e.date>=week.from;}).forEach(function(e){if(byMuscle[e.muscle])byMuscle[e.muscle].done++;});
+    return '<section class="ai-compare"><h3>부위별 세트 비교</h3><p>'+(kind==='week'?'계획과 이번 주 저장 기록은 별개예요.':'반복 주간 계획의 변경 전후예요.')+'</p><div class="ai-compare-grid"><strong>부위</strong><strong>기존</strong>'+(kind==='week'?'<strong>수행</strong>':'')+'<strong>제안</strong>'+(kind==='base'?MUSCLES:VOLUME_MUSCLES).map(function(m){var v=byMuscle[m];return '<span>'+m+'</span><span>'+v.before+'</span>'+(kind==='week'?'<span>'+v.done+'</span>':'')+'<strong>'+v.after+'</strong>';}).join('')+'</div></section>';
+  }
+  function editAiProposal(container,candidate,kind,reasons,selected){
+    var rested=new Map(),opened=new Set(),initial=true;
+    function render(){
+      if(!initial)opened=new Set([...container.querySelectorAll('.ai-edit-day[open]')].map(function(el){return candidate.days[Number(el.dataset.day)].date;}));
+      initial=false;
+      container.innerHTML='<p class="ai-editor-intro">요일별 제안을 확인하고 종목·순서·세트·횟수·RIR을 수정할 수 있어요.</p>'+
+        candidate.days.map(function(day,di){return '<details class="ai-edit-day" data-day="'+di+'"'+((initial || di===0 && !container.querySelector('.ai-edit-day')) || opened.has(day.date)?' open':'')+'><summary>'+adjustmentDayLabel(day.date)+' · '+statsEscape(day.title)+' <small>'+(day.rest?'휴식':day.exercises.length+'종목')+'</small></summary><div class="ai-edit-day-body"><label class="ai-day-choose"><input type="checkbox" data-day-select'+(selected.has(day.date)?' checked':'')+'> '+(kind==='base'?'이 요일 교체':'이번 주 적용')+'</label><label class="ai-edit-title">요일 제목<input data-day-title maxlength="100" value="'+statsEscape(day.title)+'"></label><label class="ai-day-rest"><input type="checkbox" data-day-rest'+(day.rest?' checked':'')+'> 휴식일</label>'+
+          (reasons && reasons[day.date]?'<p class="ai-reason">AI의 원래 추천 이유 · '+statsEscape(reasons[day.date])+'</p>':'')+
+          '<div class="ai-edit-exercises"'+(day.rest?' hidden':'')+'>'+day.exercises.map(function(e,ei){return '<div class="ai-edit-exercise" data-ex="'+ei+'"><div class="ai-edit-pair"><label>부위<select data-ex-muscle>'+(kind==='base'?MUSCLES:VOLUME_MUSCLES).map(function(m){return '<option'+(m===e.muscle?' selected':'')+'>'+m+'</option>';}).join('')+'</select></label><label>운동<select data-ex-name>'+(catalog[e.muscle]||[]).map(function(item){return '<option'+(item.n===e.name?' selected':'')+'>'+statsEscape(item.n)+'</option>';}).join('')+'</select></label></div><div class="ai-edit-spec"><label>세트<input data-ex-sets type="number" inputmode="numeric" min="1" max="20" value="'+statsEscape(e.sets)+'"></label><label>횟수<input data-ex-reps maxlength="30" value="'+statsEscape(e.reps)+'"></label><label>RIR<input data-ex-rir maxlength="20" value="'+statsEscape(e.rir)+'"></label></div><div class="ai-edit-row-actions"><button type="button" data-ex-up aria-label="종목 위로">↑</button><button type="button" data-ex-down aria-label="종목 아래로">↓</button><button type="button" data-ex-remove>삭제</button></div></div>';}).join('')+'<button type="button" data-ex-add>+ 종목 추가</button></div></div></details>';}).join('')+'<div data-compare>'+proposalComparison(candidate,kind,selected)+'</div>';
+    }
+    function compare(){var el=container.querySelector('[data-compare]');if(el)el.innerHTML=proposalComparison(candidate,kind,selected);}
+    container.onchange=function(event){var target=event.target,section=target.closest('[data-day]');if(!section)return;var day=candidate.days[Number(section.dataset.day)],row=target.closest('[data-ex]'),e=row&&day.exercises[Number(row.dataset.ex)];
+      if(target.matches('[data-day-select]')){if(target.checked)selected.add(day.date);else selected.delete(day.date);compare();return;}
+      if(target.matches('[data-day-title]'))day.title=target.value;
+      if(target.matches('[data-day-rest]')){day.rest=target.checked;if(day.rest){rested.set(day.date,day.exercises);day.exercises=[];}else{day.exercises=rested.get(day.date)||[];if(!day.exercises.length){var first=(catalog['가슴']||[])[0];if(first)day.exercises.push({name:first.n,muscle:'가슴',sets:2,reps:'8~12',rir:'2'});}}render();return;}
+      if(e){if(target.matches('[data-ex-muscle]')){e.muscle=target.value;e.name=(catalog[e.muscle]||[])[0]?.n||'';render();return;}
+        if(target.matches('[data-ex-name]'))e.name=target.value;
+        if(target.matches('[data-ex-sets]'))e.sets=Number(target.value);
+        if(target.matches('[data-ex-reps]'))e.reps=target.value;
+        if(target.matches('[data-ex-rir]'))e.rir=target.value;}
+      compare();
+    };
+    container.onclick=function(event){var button=event.target.closest('button');if(!button)return;var section=button.closest('[data-day]'),day=candidate.days[Number(section.dataset.day)],row=button.closest('[data-ex]'),index=row?Number(row.dataset.ex):-1;
+      if(button.matches('[data-ex-add]')){var m=VOLUME_MUSCLES.find(function(m){return (catalog[m]||[]).length;});if(!m)return;day.exercises.push({name:catalog[m][0].n,muscle:m,sets:2,reps:'8~12',rir:'2'});day.rest=false;}
+      else if(button.matches('[data-ex-remove]')){day.exercises.splice(index,1);if(!day.exercises.length)day.rest=true;}
+      else if(button.matches('[data-ex-up]') && index>0){var t=day.exercises[index-1];day.exercises[index-1]=day.exercises[index];day.exercises[index]=t;}
+      else if(button.matches('[data-ex-down]') && index<day.exercises.length-1){var next=day.exercises[index+1];day.exercises[index+1]=day.exercises[index];day.exercises[index]=next;}
+      render();
+    };
+    render();
+  }
+  function basePlanFingerprint(){return JSON.stringify([activeProfile,loadSavedRoutine(),athleteInfo(),catalog,hasRoutineDraft()]);}
+  function previewBasePlan(candidate,reasons,fingerprint){
+    var owner=activeProfile,selected=new Set(candidate.days.map(function(d){return d.date;}));
+    var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog ai-preview-dialog ai-base-preview';dialog.setAttribute('aria-label','기본 루틴 제안 미리보기');
+    dialog.innerHTML='<h2>기본 루틴 제안</h2><p class="ai-preview-meta">선택한 요일만 매주 반복할 기본 루틴으로 교체해요. 기존 기록과 이번 주 임시 루틴은 유지돼요.</p><div data-preview></div><p data-error role="status"></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>선택한 요일 저장</button></div>';
+    editAiProposal(dialog.querySelector('[data-preview]'),candidate,'base',reasons,selected);
+    addTemporaryClose(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
+    dialog.querySelector('[data-yes]').onclick=function(){try{
+      if(owner!==activeProfile || fingerprint!==basePlanFingerprint())throw new Error('플랜 또는 종목 정보가 바뀌었어요. 최신 내용으로 다시 추천받아주세요.');
+      if(hasRoutineDraft())throw new Error('수정 중인 루틴을 먼저 저장하거나 취소해주세요.');
+      if(!selected.size)throw new Error('저장할 요일을 하나 이상 선택해주세요.');
+      var chosen={...candidate,days:candidate.days.filter(function(d){return selected.has(d.date);})};
+      var clean=validateBaseCandidate(chosen),previous=loadSavedRoutine(),next=JSON.parse(JSON.stringify(previous));
+      clean.days.forEach(function(day){var i=(new Date(day.date+'T00:00:00Z').getUTCDay()+6)%7;
+        if(day.exercises.some(function(e){return !(catalog[e.muscle]||[]).some(function(item){return item.n===e.name;});}))throw new Error('등록 종목이 달라졌어요. 종목을 다시 선택해주세요.');
+        next[i].title=day.title;next[i].ex=day.exercises.map(function(e){return {uid:'row-'+genId(),n:e.name,m:e.muscle,s:e.sets,r:e.reps,rir:e.rir};});
+      });
+      var before=baseSnapshot(),history=proposalHistory();
+      history.push({kind:'base',routine:before,reasons:{},label:'교체 전 기본 루틴',savedAt:new Date().toISOString()});
+      if(!storageTransaction([{key:STORAGE_KEY,value:next},{key:routinePendingKey(),remove:true},{key:proposalHistoryKey(),value:boundedProposalHistory(history)}]))throw new Error('저장하지 못했어요. 이전 기본 루틴은 유지돼요.');
+      days=ensureRoutineIds(next);routineOrderPending=false;dialog.close();renderTabs();renderPanel();renderReport();refreshBackupStatus();showToast(selected.size+'개 요일의 기본 루틴을 저장했어요.');
+    }catch(e){dialog.querySelector('[data-error]').textContent=e.message;}};
+    document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-no]').focus();
+  }
+  function openBasePlanSurvey(){
+    if(hasRoutineDraft()){showToast('수정 중인 루틴을 먼저 저장하거나 취소해주세요.','pending');return;}
+    var owner=activeProfile,week=adjustmentWeek(todayStr()),saved=loadSavedRoutine(),info=athleteInfo(),dialog=document.createElement('dialog');
+    dialog.className='data-confirm-dialog ai-preview-dialog ai-base-survey';dialog.setAttribute('aria-label','AI 기본 루틴 만들기');
+    dialog.innerHTML='<h2>AI 기본 루틴 만들기</h2><p class="ai-preview-meta">매주 반복할 요일을 선택하세요. 기존 루틴은 미리보기에서 확인한 요일만 교체해요. 아래 운동 정보 수정은 이번 제안에만 적용돼요.</p>'+
+      '<div class="ai-base-fields"><label>운동 목표<select data-goal>'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>운동 경력<select data-experience>'+adjustmentOptions(AI_EXPERIENCE,info.experience,'경력 선택')+'</select></label><label>선호 운동·우선 부위<input data-preferences maxlength="500" value="'+statsEscape(info.preferences)+'"></label><label>피할 운동<input data-excluded maxlength="500" value="'+statsEscape(info.excluded)+'"></label><label>사용 가능한 장비<input data-equipment maxlength="500" value="'+statsEscape(info.equipment)+'"></label></div><p class="ai-survey-caption">요일별로 ‘AI 생성’, ‘기존 유지’, ‘휴식’을 선택하세요. 운동 시간은 준비와 세트 간 휴식도 포함해요.</p><div class="ai-base-days">'+
+      week.dates.map(function(date,i){return '<div class="ai-base-day" data-base-day="'+i+'"><strong>'+['월','화','수','목','금','토','일'][i]+'요일 · '+(saved[i].title||'일정 없음')+'</strong><select data-base-mode><option value="keep">기존 유지</option><option value="generate">AI 생성</option><option value="rest">휴식으로 교체</option></select><select data-base-time disabled>'+adjustmentTimeOptions('60')+'</select></div>';}).join('')+'</div><label class="ai-base-notes">추가 요청사항 (선택)<textarea data-notes maxlength="1000" rows="2" placeholder="예: 등 운동을 조금 더 하고 싶어요"></textarea></label><p role="status" data-status></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-generate>제안받기</button></div>';
+    dialog.querySelectorAll('[data-base-mode]').forEach(function(select){select.onchange=function(){select.closest('.ai-base-day').querySelector('[data-base-time]').disabled=select.value!=='generate';};});
+    addTemporaryClose(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
+    dialog.querySelector('[data-generate]').onclick=async function(){
+      var goal=dialog.querySelector('[data-goal]').value,experience=dialog.querySelector('[data-experience]').value,status=dialog.querySelector('[data-status]');
+      if(!goal || !experience){status.textContent='운동 목표와 경력을 선택해주세요.';return;}
+      if(owner!==activeProfile || week.from!==adjustmentWeek(todayStr()).from){status.textContent='날짜나 플랜이 바뀌었어요. 화면을 다시 열어주세요.';return;}
+      if(hasRoutineDraft()){status.textContent='수정 중인 루틴을 먼저 저장하거나 취소해주세요.';return;}
+      var rows=[...dialog.querySelectorAll('[data-base-day]')],planDays=rows.map(function(row,i){var mode=row.querySelector('[data-base-mode]').value;return {date:week.dates[i],mode:mode,minutes:mode==='generate'?Number(row.querySelector('[data-base-time]').value):null};});
+      if(!planDays.some(function(day){return day.mode==='generate';})){status.textContent='AI가 만들 요일을 한 개 이상 선택해주세요.';return;}
+      if(planDays.some(function(day){return day.mode==='generate' && ![30,45,60,75,90,120].includes(day.minutes);})){status.textContent='AI 생성 요일의 운동 시간을 선택해주세요.';return;}
+      var fingerprint=basePlanFingerprint(),payload={plan:{schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:{goal:goal,experience:experience,preferences:dialog.querySelector('[data-preferences]').value.trim(),excluded:dialog.querySelector('[data-excluded]').value.trim(),equipment:dialog.querySelector('[data-equipment]').value.trim()},notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),registeredExercises:VOLUME_MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
+      var button=this,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000);button.disabled=true;status.dataset.kind='loading';status.textContent='매주 반복할 루틴을 제안하고 있어요. 최대 약 80초 걸릴 수 있어요.';
+      try{var response=await fetch(BASE_PLAN_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal,cache:'no-store'}),result=await response.json();
+        if(!dialog.isConnected || owner!==activeProfile)return;
+        if(!response.ok)throw new Error(result.error||'기본 루틴 추천에 실패했어요.');
+        if(result.protocol!==3)throw new Error('앱과 추천 서버 버전이 맞지 않아요. Worker 배포를 확인해주세요.');
+        if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification;return;}
+        if(fingerprint!==basePlanFingerprint())throw new Error('요청 중 기본 루틴이나 종목이 바뀌었어요. 다시 추천받아주세요.');
+        var expected=planDays.filter(function(d){return d.mode==='generate';}).map(function(d){return d.date;}),candidate=result.routine;
+        if(!candidate || !Array.isArray(candidate.days) || candidate.days.length!==expected.length || candidate.days.some(function(d){return !expected.includes(d.date);}))throw new Error('추천된 요일이 선택한 요일과 맞지 않아요.');
+        candidate.days.push(...planDays.filter(function(d){return d.mode==='rest';}).map(function(d){return {date:d.date,title:'휴식',rest:true,exercises:[]};}));
+        candidate=validateTemporary(candidate,todayStr(),true);
+        saveProposalHistory('base',candidate,result.reasons||{},'AI 기본 루틴 제안');dialog.close();previewBasePlan(candidate,result.reasons||{},fingerprint);
+      }catch(e){if(dialog.isConnected){status.dataset.kind='error';status.textContent=e.name==='AbortError'?'AI 응답 시간이 지났어요. 입력은 유지돼요.':e.message||'연결을 확인해주세요.';}}
+      finally{clearTimeout(timer);if(dialog.isConnected)button.disabled=false;}
+    };
+    document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-no]').focus();
+  }
+  function openProposalHistory(){
+    var list=proposalHistory().slice().reverse(),owner=activeProfile,dialog=document.createElement('dialog');dialog.className='data-confirm-dialog ai-preview-dialog ai-history-dialog';
+    dialog.innerHTML='<h2>이전 AI 제안</h2><p class="ai-preview-meta">이 기기에 보관한 최근 12개예요. 내용을 확인한 뒤 다시 적용할 수 있어요.</p>'+
+      (list.length?list.map(function(item,i){return '<div class="ai-history-item"><strong>'+statsEscape(item.label||'제안')+'</strong><small>'+statsEscape(new Date(item.savedAt).toLocaleString('ko-KR'))+' · '+(item.kind==='base'?'기본 루틴':'이번 주 임시 루틴')+'</small><button type="button" data-history="'+i+'">미리보기</button></div>';}).join(''):'<p>보관한 제안이 없어요.</p>')+
+      '<div class="data-confirm-actions"><button type="button" data-close>닫기</button></div>';
+    addTemporaryClose(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-close]').onclick=function(){dialog.close();};
+    dialog.querySelectorAll('[data-history]').forEach(function(button){button.onclick=function(){if(owner!==activeProfile)return;var item=list[Number(button.dataset.history)],week=adjustmentWeek(todayStr()),copy=JSON.parse(JSON.stringify(item.routine));
+      dialog.close();
+      if(item.kind==='base'){
+        // The stored dates identify weekdays of a repeating template.
+        copy.weekStart=week.from;copy.weekEnd=week.to;copy.days.forEach(function(day){var i=(new Date(day.date+'T00:00:00Z').getUTCDay()+6)%7;day.date=week.dates[i];});
+        var reasons={};Object.keys(item.reasons||{}).forEach(function(date){var i=(new Date(date+'T00:00:00Z').getUTCDay()+6)%7;reasons[week.dates[i]]=item.reasons[date];});
+        try{previewBasePlan(validateBaseCandidate(copy),reasons,basePlanFingerprint());}catch(e){showToast(e.message,'error');}
+      }else if(copy.weekStart!==week.from){showToast('지난주의 제안이에요. 이번 주 일정은 새로 추천받아주세요.','pending');}
+      else {try{var candidate=validateTemporary(copy,todayStr(),false);aiProposalMeta.set(candidate,{fingerprint:adjustmentFingerprint(),asOf:todayStr(),kept:[],reasons:item.reasons||{}});previewTemporaryFile(candidate,owner);}catch(e){showToast('지난 날짜는 다시 적용할 수 없어요. 이번 주 일정을 확인해주세요.','pending');}}
+    };});
+    document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-close]').focus();
+  }
+  document.getElementById('btnBaseAi').onclick=openBasePlanSurvey;
+  document.getElementById('btnAiHistoryDay').onclick=openProposalHistory;
+  document.getElementById('btnWeekAiFromDay').onclick=function(){mode='report';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();adjustmentState().open=true;renderReport();document.getElementById('weekAdjustment').scrollIntoView({block:'start',behavior:'smooth'});};
   function representativeCatalog(){
     var names=['덤벨 플라이(플랫)','스탠딩 오버헤드 프레스(바벨)','시티드 오버헤드 프레스(덤벨)','스컬 크러셔','덤벨 오버헤드 트라이셉스 익스텐션','클로즈 그립 벤치 프레스','덤벨 해머 컬','EZ바 컬','가슴 딥스','카프 레이즈','푸시업','플랫 벤치 프레스(바벨)','플랫 벤치 프레스(덤벨)','인클라인 벤치 프레스(덤벨)','덤벨 플라이','풀업','친업','랫풀다운(와이드 그립)','바벨 로우','벤트오버 바벨 로우','원암 덤벨 로우','덤벨 로우','숄더 프레스(덤벨)','덤벨 숄더 프레스','오버헤드 프레스(바벨)','사이드 레터럴 레이즈(덤벨)','벤트오버 레터럴 레이즈(덤벨)','백 스쿼트','고블릿 스쿼트','런지','덤벨 런지','불가리안 스플릿 스쿼트','루마니안 데드리프트','루마니안 데드리프트(바벨)','레그 컬','스탠딩 카프 레이즈','바벨 컬','덤벨 컬','해머 컬','라잉 트라이셉스 익스텐션(EZ바)','오버헤드 트라이셉스 익스텐션(덤벨)','딥스'];
     return VOLUME_MUSCLES.flatMap(function(m){return (catalog[m]||[]).filter(function(e){return names.includes(e.n);}).map(function(e){return {name:e.n,muscle:m};});});
@@ -3824,11 +3968,12 @@
         if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification+' 입력 내용을 수정한 뒤 다시 요청해주세요.';return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(contextNow()))throw new Error('요청 중 기록·루틴·입력 조건이 바뀌었어요. 최신 내용으로 다시 추천받아주세요.');
         requestStage='result';
-        var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';requestStage='preview';matchTemporaryExercises(candidate,owner);
+        var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;aiProposalMeta.get(candidate).reasons=result.reasons||{};lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';requestStage='preview';saveProposalHistory('week',candidate,result.reasons||{},'이번 주 AI 제안');matchTemporaryExercises(candidate,owner);
       }catch(e){if(owner===activeProfile && root.isConnected)feedback(e.name==='AbortError'?'응답 시간이 지났어요. 입력은 유지돼요. 잠시 후 다시 시도해주세요.':e instanceof TypeError?(requestStage==='request'?'추천 서버에 연결하지 못했어요. 인터넷 연결과 Cloudflare Worker 배포 상태를 확인한 뒤 다시 시도해주세요. (요청 단계)':'AI 응답을 앱에서 처리하는 중 오류가 발생했어요. 이전 루틴은 유지돼요. 새로고침 후 다시 시도해주세요. ('+(requestStage==='response'?'응답 확인':requestStage==='result'?'결과 처리':'미리보기')+' 단계)'):e);}
       finally{clearTimeout(timer);aiAdjustmentBusy=false;if(root.isConnected){button.disabled=false;button.textContent=activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기';}}
     };
     root.querySelector('#btnAdjustmentCopy').onclick=async function(){try{var context=contextNow(),text='아래 구조화된 정보를 바탕으로 남은 운동을 조정해주세요. baseRoutine은 기본 계획, currentRoutine은 임시 변경을 포함한 현재 계획, recentRecords는 실제 수행 세트입니다. supplementalSets는 누락 보완이며 중복 계산하지 마세요. 대표 종목을 우선하고 무리한 보충은 피하세요. availability에서 adjust인 날짜만 빠짐없이 반환하고 keep/rest는 앱에서 처리합니다. 모호하거나 충돌하는 조건은 먼저 질문하세요. 최종 응답은 다음 형식의 JSON 파일로 주세요.\n'+temporaryFormatRules(todayStr())+'\n\n'+JSON.stringify(context,null,2);await copyText(text,'요청을 복사했어요. 다른 AI에 붙여넣고 받은 JSON을 가져오세요.');}catch(e){feedback(e);}};
+    root.querySelector('#btnAiHistoryReport').onclick=openProposalHistory;
     async function copyText(text,message){try{await navigator.clipboard.writeText(text);fallback.hidden=true;status.textContent=message;}catch(e){fallback.value=text;fallback.hidden=false;fallback.focus();fallback.select();status.textContent='아래 내용을 길게 눌러 복사해주세요.';}}
     root.querySelector('#btnTemporaryImport').onclick=function(){root.querySelector('#temporaryFile').click();};
     root.querySelector('#temporaryFile').onchange=async function(){var file=this.files[0],owner=activeProfile;this.value='';if(!file)return;var raw=null;try{var context=contextNow(),fingerprint=adjustmentFingerprint();if(file.size>500000)throw new Error('500KB 이하 JSON 파일을 선택해주세요.');raw=await file.text();if(owner!==activeProfile || !root.isConnected)return;var parsed=JSON.parse(raw.replace(/^\uFEFF/,''));checkImportKind(parsed,'temporary');var candidate=prepareAiCandidate(parsed,context,fingerprint);state.importFailure=null;root.querySelector('#btnTemporaryRepair').hidden=true;matchTemporaryExercises(candidate,owner);}catch(e){if(owner!==activeProfile || !root.isConnected)return;state.importFailure={raw:raw,message:e.message};root.querySelector('#btnTemporaryRepair').hidden=!raw;feedback(e);}};
@@ -4810,11 +4955,12 @@
       Object.keys(group).forEach(function(name){var v=group[name];if(!text(name,500)||!v||!text(String(v.w),30)||!text(String(v.reps),30))fail();});
     });
     if(p.temporaryRoutine)validateTemporary(p.temporaryRoutine,todayStr(),true);
+    if(p.aiProposalHistory!=null && (!Array.isArray(p.aiProposalHistory)||p.aiProposalHistory.length>12||p.aiProposalHistory.some(function(item){return !item || !['base','week'].includes(item.kind) || !item.routine || !Array.isArray(item.routine.days) || item.routine.days.length>7 || !text(item.label,100) || typeof item.savedAt!=='string';}) || JSON.stringify(p.aiProposalHistory).length>300000))fail();
   }
   function transferSnapshot() {
     return {format:'workout-routine-transfer',version:1,exportedAt:new Date().toISOString(),profile:{
       name:activeProfile,routine:loadSavedRoutine(),pending:routineOrderPending?days:null,
-      catalog:readJSON(CATALOG_KEY,catalog),logs:logs,memos:getMemos(),draft:draft,pins:pinnedExercises(),temporaryRoutine:temporaryRoutine()
+      catalog:readJSON(CATALOG_KEY,catalog),logs:logs,memos:getMemos(),draft:draft,pins:pinnedExercises(),temporaryRoutine:temporaryRoutine(),aiProposalHistory:proposalHistory()
     }};
   }
   // 10번: 활성 플랜이 아닌 플랜은 저장소에서 직접 읽어 스냅샷을 만든다.
@@ -4831,7 +4977,8 @@
       memos:readJSON(keyFor('bulk-routine-memos-v1',name),[]) || [],
       draft:readJSON(keyFor('bulk-routine-draft-v2',name),{}) || {},
       pins:readJSON(keyFor('bulk-workout-pins-v1',name),[]) || [],
-      temporaryRoutine:readJSON(keyFor('bulk-workout-temporary-v1',name),null)
+      temporaryRoutine:readJSON(keyFor('bulk-workout-temporary-v1',name),null),
+      aiProposalHistory:readJSON(keyFor('geunlog-ai-proposal-history-v1',name),[]) || []
     };
   }
   function allProfilesSnapshot(){
@@ -5123,6 +5270,7 @@
       {key:keyFor('bulk-routine-memos-v1',name),value:p.memos},
       {key:keyFor('bulk-routine-draft-v2',name),value:p.draft},
       {key:keyFor('bulk-workout-pins-v1',name),value:p.pins || []},
+      {key:keyFor('geunlog-ai-proposal-history-v1',name),value:p.aiProposalHistory || []},
       {key:keyFor('bulk-catalog-hypertrophy-v1',name),value:true},
       {key:keyFor('bulk-catalog-expand-all-v2',name),value:true}
     ];
@@ -5155,6 +5303,7 @@
       {key:keyFor('bulk-routine-memos-v1',name),value:p.memos},
       {key:keyFor('bulk-routine-draft-v2',name),value:p.draft},
       {key:keyFor('bulk-workout-pins-v1',name),value:p.pins || []},
+      {key:keyFor('geunlog-ai-proposal-history-v1',name),value:p.aiProposalHistory || []},
       {key:keyFor('bulk-catalog-hypertrophy-v1',name),value:true},
       {key:keyFor('bulk-catalog-expand-all-v2',name),value:true}
     ];

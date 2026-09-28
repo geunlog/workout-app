@@ -2296,6 +2296,41 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .ai-preview-dialog .temporary-dialog-body{font-size:14px;line-height:1.5;scrollbar-gutter:auto;scrollbar-width:thin;}
 .ai-preview-dialog .ai-preview-meta{margin:4px 0 8px;color:#596579;}
 .ai-preview-dialog .ai-preview-meta strong{color:#20283b;}
+.bulk-app .ai-day-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px;}
+.bulk-app .ai-day-actions button{flex:1 1 125px;min-height:44px;padding:8px 10px;font-size:13px;}
+.bulk-app .ai-day-actions #btnBaseAi{background:var(--primary);border-color:var(--primary);color:var(--on-primary);}
+.ai-base-fields{display:grid;gap:9px;margin:14px 0;}
+.ai-base-fields label,.ai-base-notes,.ai-edit-title,.ai-edit-exercise label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:#273047;}
+.ai-base-survey input,.ai-base-survey select,.ai-base-survey textarea,.ai-base-preview input,.ai-base-preview select,.ai-preview-dialog .ai-edit-day input,.ai-preview-dialog .ai-edit-day select{box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:8px;border:1px solid #dfe3eb;border-radius:10px;background:white;color:#20283b;font:16px var(--ui,sans-serif);}
+.ai-base-survey textarea{resize:vertical;}
+.ai-base-days{display:grid;gap:6px;margin:10px 0 16px;}
+.ai-base-day{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center;padding:9px;border:1px solid #dfe3eb;border-radius:12px;}
+.ai-base-day strong{grid-column:1/-1;font-size:13px;}
+.ai-base-day select:disabled{background:#f4f5f8;color:#777;}
+.ai-survey-caption,.ai-editor-intro{font-size:13px;line-height:1.5;color:#596579;}
+.ai-edit-day{margin:12px 0;padding:12px;border:1px solid #dfe3eb;border-radius:14px;background:#fff;}
+.ai-edit-day summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;font-weight:700;cursor:pointer;}
+.ai-edit-day summary small{color:#697386;white-space:nowrap;font-weight:400;}
+.ai-edit-day-body{padding-top:10px;border-top:1px solid #e6e9ef;}
+.ai-day-choose,.ai-day-rest{display:flex;align-items:center;gap:9px;margin-bottom:10px;font-weight:700;color:#20283b;}
+.ai-preview-dialog .ai-edit-day input[type=checkbox]{width:20px;min-width:20px;height:20px;min-height:20px;padding:0;}
+.ai-edit-title{margin-bottom:10px;}
+.ai-reason{margin:8px 0;padding:9px 11px;border-radius:10px;background:#edf2ff;color:#29467e;font-size:13px;line-height:1.5;}
+.ai-edit-exercise{margin:10px 0;padding:10px;border:1px solid #e6e9ef;border-radius:11px;background:#f9faff;}
+.ai-edit-pair{display:grid;grid-template-columns:90px minmax(0,1fr);gap:7px;}
+.ai-edit-spec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px;}
+.ai-edit-row-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;}
+.ai-edit-row-actions button,.ai-edit-exercises>[data-ex-add],.ai-history-item button{min-height:40px;padding:7px 12px;border:1px solid #cbd5e7;border-radius:10px;background:#fff;color:#315bea;font:600 13px var(--ui,sans-serif);}
+.ai-edit-exercises>[data-ex-add]{width:100%;}
+.ai-compare{margin:16px 0;padding:12px;border:1px solid #dfe3eb;border-radius:12px;}
+.ai-compare h3{margin:0;font-size:15px;}.ai-compare p{margin:5px 0 10px;color:#596579;font-size:12px;}
+.ai-compare-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;text-align:center;font-size:12px;}
+.ai-base-preview .ai-compare-grid{grid-template-columns:repeat(3,1fr);}
+.ai-compare-grid>*{padding:5px 0;border-bottom:1px solid #eff1f5;}
+.ai-history-item{display:grid;gap:6px;padding:12px 0;border-bottom:1px solid #e6e9ef;}
+.ai-history-item small{color:#596579;}.ai-history-item button{justify-self:start;}
+.ai-base-survey [data-status]:not(:empty){padding:9px 12px;border-radius:10px;background:#edf2ff;color:#243c85;font-size:13px;}
+.ai-base-survey [data-status][data-kind=error]{background:#fff4ed;color:#813812;}
 .ai-preview-dialog .ai-kept-note{margin:0 0 12px;padding:9px 12px;font-size:13px;line-height:1.45;}
 .ai-preview-dialog .ai-revision{margin:0 0 12px;border:1px solid #dfe3eb;border-radius:12px;background:#fff;}
 .ai-preview-dialog .ai-revision summary{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:10px 14px;list-style:none;cursor:pointer;font-weight:700;color:#315bea;}
