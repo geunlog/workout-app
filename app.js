@@ -847,12 +847,14 @@
     dialog.querySelector('[data-yes]').onclick=function(){try{
       if(owner!==activeProfile)throw new Error('플랜이 바뀌었어요. 파일을 다시 가져와주세요.');
       if(meta.asOf!==todayStr() || meta.fingerprint!==adjustmentFingerprint())throw new Error('추천 이후 날짜·운동 기록·루틴이 바뀌었어요. 닫고 최신 내용으로 다시 조정해주세요.');
+      if(meta.inputStamp && meta.inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('입력 조건이 바뀐 이전 제안이에요. 최신 조건으로 다시 추천받아주세요.');
       if(hasRoutineDraft())throw new Error('수정 중인 루틴을 먼저 저장하거나 취소해주세요.');
       var next=validateTemporary(candidate,todayStr(),false);if(next.days.some(function(day){return day.exercises.some(function(e){return !(catalog[e.muscle]||[]).some(function(c){return c.n===e.name;});});}))throw new Error('등록 종목이 변경됐어요. 파일을 다시 가져와 연결해주세요.');next.revision=genId();
       var previous=activeTemporary();next.days=mergeTemporaryDays(previous,next);
       if(!storageTransaction([{key:temporaryKey(),value:next},{key:temporaryPendingKey(),remove:true}]))throw new Error('저장하지 못했어요. 기존 루틴은 유지돼요.');
       dialog.close();var index=(new Date(todayStr()+'T00:00:00Z').getUTCDay()+6)%7;activeIndex=index;selectedRecordDate=todayStr();refreshTemporaryViews();showToast('이번 주 임시 루틴을 적용했어요.');
     }catch(e){dialog.querySelector('[data-error]').textContent=e.message;}};
+    if(meta.inputStamp){try{if(meta.fingerprint!==adjustmentFingerprint() || meta.inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('changed');}catch(e){dialog.querySelector('[data-error]').textContent='이전 조건으로 만든 제안이에요. 확인만 가능하며, 적용하려면 최신 조건으로 다시 추천받아주세요.';dialog.querySelector('[data-yes]').disabled=true;}}
     document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-no]').focus();
   }
   function temporaryJsonPrompt(state) {
@@ -3605,6 +3607,7 @@
   var AI_ROUTINE_ENDPOINT='https://ai.geunlog.workers.dev/adjust';
   var ATHLETE_INFO_KEY='geunlog-athlete-info-v1';
   var aiProposalMeta=new WeakMap();
+  var lastAiProposals=new Map();
   var aiAdjustmentBusy=false;
   var AI_GOALS={hypertrophy:'근육 키우기',strength:'근력 향상',maintenance:'유지',fitness:'체력·건강'};
   var AI_EXPERIENCE={new:'시작 단계',under1:'1년 미만',one3:'1~3년',over3:'3년 이상'};
@@ -3653,20 +3656,20 @@
     return week.dates.filter(function(d){return d<=asOf;}).map(function(d){return '<li><strong>'+adjustmentDayLabel(d)+'</strong><span>'+(byDate[d]?Object.keys(byDate[d]).map(function(m){return statsEscape(m)+' '+byDate[d][m]+'세트';}).join(' · '):'저장 기록 없음')+'</span></li>';}).join('');
   }
   function adjustmentScheduleHtml(state){
-    return adjustmentWeek(todayStr()).dates.filter(function(d){return d>=todayStr();}).map(function(date){var row=state.schedule[date];return '<div class="ai-schedule-row"><strong>'+adjustmentDayLabel(date)+(date===todayStr()?' · 오늘':'')+'</strong><label><span class="sr-only">'+date+' 일정</span><select data-ai-mode="'+date+'">'+['adjust','keep','rest'].map(function(mode,i){return '<option value="'+mode+'"'+(row.mode===mode?' selected':'')+'>'+['AI가 조정','기존 일정 유지','휴식'][i]+'</option>';}).join('')+'</select></label><label><span class="sr-only">'+date+' 운동 시간</span><select data-ai-time="'+date+'"'+(row.mode!=='adjust'?' disabled':'')+'>'+adjustmentTimeOptions(row.minutes)+'</select></label></div>';}).join('');
+    return adjustmentWeek(todayStr()).dates.filter(function(d){return d>=todayStr();}).map(function(date){var row=state.schedule[date];return '<div class="ai-schedule-row"><strong>'+adjustmentDayLabel(date)+(date===todayStr()?' · 오늘':'')+'</strong><label><span class="sr-only">'+date+' 일정</span><select data-ai-mode="'+date+'">'+['adjust','keep','rest'].map(function(mode,i){return '<option value="'+mode+'"'+(row.mode===mode?' selected':'')+'>'+['AI가 조정','기존 일정 유지','휴식'][i]+'</option>';}).join('')+'</select></label><label><span class="sr-only">'+date+' 운동 시간</span><select data-ai-time="'+date+'"'+(row.mode!=='adjust'?' disabled':'')+'>'+(row.mode==='adjust'?adjustmentTimeOptions(row.minutes):'<option>해당 없음</option>')+'</select></label></div>';}).join('');
   }
   function adjustmentSupplementsHtml(state){
     var dates=adjustmentWeek(todayStr()).dates.filter(function(d){return d<=todayStr();});
-    return state.supplements.map(function(row,i){return '<div class="ai-supplement" data-supplement="'+i+'"><label>운동 날짜<select data-supp-date>'+dates.map(function(d){return '<option value="'+d+'"'+(row.date===d?' selected':'')+'>'+adjustmentDayLabel(d)+'</option>';}).join('')+'</select></label><label>부위<select data-supp-muscle>'+VOLUME_MUSCLES.map(function(m){return '<option'+(row.muscle===m?' selected':'')+'>'+m+'</option>';}).join('')+'</select></label><label>세트<input data-supp-sets type="number" min="1" max="100" inputmode="numeric" value="'+statsEscape(String(row.sets||''))+'"></label><button type="button" class="btn-reset" data-supp-delete="'+i+'" aria-label="누락 운동 '+(i+1)+' 삭제">삭제</button></div>';}).join('');
+    return state.supplements.map(function(row,i){return '<div class="ai-supplement" data-supplement="'+i+'"><label>운동 날짜<select data-supp-date>'+dates.map(function(d){return '<option value="'+d+'"'+(row.date===d?' selected':'')+'>'+adjustmentDayLabel(d)+'</option>';}).join('')+'</select></label><label>부위<select data-supp-muscle>'+VOLUME_MUSCLES.map(function(m){return '<option'+(row.muscle===m?' selected':'')+'>'+m+'</option>';}).join('')+'</select></label><label>세트<input data-supp-sets type="number" min="1" max="100" inputmode="numeric" value="'+statsEscape(String(row.sets||''))+'"></label><button type="button" class="btn-reset" data-supp-delete="'+i+'" aria-label="누락 운동 '+(i+1)+' 삭제">×</button></div>';}).join('');
   }
   function adjustmentHtml(){
     var state=adjustmentState(),info=athleteInfo(),complete=AI_GOALS[info.goal] && AI_EXPERIENCE[info.experience],week=adjustmentWeek(todayStr());
     return '<details class="adjustment-card ai-adjustment" id="weekAdjustment"'+(state.open?' open':'')+'><summary>'+(activeTemporary()?'남은 일정 다시 조정':'이번 주 루틴 조정')+'</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+' · 현재 플랜 기준</p>'+
       '<details class="ai-athlete" id="aiAthleteInfo"'+(!complete?' open':'')+'><summary>내 운동 정보 <small>'+(complete?statsEscape(AI_GOALS[info.goal]+' · '+AI_EXPERIENCE[info.experience]):'최초 한 번 입력')+'</small></summary><p class="adjustment-note">이 기기에 저장되며 모든 플랜에서 함께 사용해요.</p><div class="ai-fields"><label>운동 목표<select id="aiGoal">'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>꾸준히 운동한 기간<select id="aiExperience">'+adjustmentOptions(AI_EXPERIENCE,info.experience,'기간 선택')+'</select></label><label>선호 운동·우선 부위 (선택)<input id="aiPreferences" maxlength="500" value="'+statsEscape(info.preferences)+'" placeholder="예: 하체를 우선하고 싶어요"></label><label>피할 운동 (선택)<input id="aiExcluded" maxlength="500" value="'+statsEscape(info.excluded)+'" placeholder="예: 딥스 제외"></label><label>평소 장비 제약 (선택)<input id="aiEquipment" maxlength="500" value="'+statsEscape(info.equipment)+'" placeholder="없으면 비워두세요"></label></div><button type="button" class="btn-reset" id="btnAthleteSave">내 운동 정보 저장</button><p id="athleteSaveStatus" role="status"></p></details>'+
       '<section class="ai-survey-section"><h3>1. 실제 운동 기록 확인</h3><ul class="ai-record-summary">'+adjustmentRecordSummary(state)+'</ul><p class="adjustment-note">다른 플랜의 기록도 포함해요. 기록 없음이 휴식을 뜻하지는 않아요.</p><label>지금까지 한 운동이 모두 반영됐나요?<select id="adjustCoverage">'+adjustmentOptions({all:'네, 모두 반영됐어요',some:'기록하지 않은 운동이 있어요',none:'이번 주는 아직 운동하지 않았어요',unknown:'정확히 모르겠어요'},state.coverage,'선택해주세요')+'</select></label><div id="aiSupplementArea"'+(state.coverage==='some'?'':' hidden')+'><p class="adjustment-note">빠진 운동만 추가하세요. 추천에만 반영하며 실제 기록에는 저장하지 않아요.</p><div id="aiSupplements">'+adjustmentSupplementsHtml(state)+'</div><button type="button" class="btn-reset" id="btnSupplementAdd">+ 누락 운동 추가</button></div></section>'+
-      '<section class="ai-survey-section"><h3>2. 남은 일정과 시간</h3><p class="adjustment-note">PT 등 고정 일정은 ‘기존 일정 유지’, 운동할 수 없는 날은 ‘휴식’을 선택하세요. AI는 가능한 날에도 휴식을 제안할 수 있어요.</p><label>조정할 날짜에 같은 시간 적용<select id="adjustMinutes">'+adjustmentTimeOptions(state.minutes)+'</select></label><div id="aiSchedule">'+adjustmentScheduleHtml(state)+'</div><label>오늘 운동은 어디까지 했나요?<select id="aiTodayStatus">'+adjustmentOptions({before:'아직 시작 전',partial:'일부 진행 · 추가 운동 가능',done:'오늘 운동 완료 · 오늘 일정 유지'},state.todayStatus,'오늘을 조정할 때 선택')+'</select></label></section>'+
+      '<section class="ai-survey-section"><h3>2. 남은 일정과 시간</h3><p class="adjustment-note">PT 등 고정 일정은 ‘기존 일정 유지’, 운동할 수 없는 날은 ‘휴식’을 선택하세요. AI는 가능한 날에도 휴식을 제안할 수 있어요.</p><label>시간 일괄 적용<select id="adjustMinutes">'+adjustmentTimeOptions(state.minutes)+'</select></label><button type="button" class="btn-reset" id="applyAiMinutes">조정할 날짜에 적용</button><p class="adjustment-note">아래 날짜별 시간이 최종 기준이에요. 적용 후 개별 변경할 수 있어요.</p><div id="aiSchedule">'+adjustmentScheduleHtml(state)+'</div><label>오늘 운동은 어디까지 했나요?<select id="aiTodayStatus">'+adjustmentOptions({before:'아직 시작 전',partial:'일부 진행 · 추가 운동 가능',done:'오늘 운동 완료 · 오늘 일정 유지'},state.todayStatus,'오늘을 조정할 때 선택')+'</select></label><p id="aiTodayHint" class="adjustment-note" role="status"></p></section>'+
       '<section class="ai-survey-section"><h3>3. 추가 조건 <small>선택</small></h3><label>이번 추천의 목표<select id="aiWeekGoal">'+adjustmentOptions(AI_GOALS,state.goal,'내 운동 정보의 목표 사용')+'</select></label><label>특이사항<select id="aiSpecial">'+adjustmentOptions({fatigue:'피로가 커서 운동량을 줄이고 싶어요',pain:'통증이 있어 피해야 할 운동이 있어요',returning:'쉬었다가 다시 운동해요'},state.special,'없음')+'</select></label><label>추가 요청사항<textarea id="adjustNotes" rows="3" maxlength="1000" placeholder="예: 목요일 PT 유지, 토요일은 덤벨만 가능. 통증이 있다면 피할 부위·운동을 적어주세요.">'+statsEscape(state.notes||'')+'</textarea></label></section>'+
-      '<button type="button" class="btn-reset adjustment-generate" id="btnAdjustmentGenerate">'+(activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기')+'</button><p class="adjustment-note">운동 정보·최근 14일 기록·입력 조건이 Gemini에 전송돼요. 제안을 확인한 뒤 적용할 수 있어요.</p><p id="adjustmentStatus" class="adjustment-note" role="status" aria-live="polite"></p>'+
+      '<button type="button" class="btn-reset adjustment-generate" id="btnAdjustmentGenerate">'+(activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기')+'</button><p class="adjustment-note">운동 정보·최근 14일 기록·입력 조건이 Gemini에 전송돼요. 제안을 확인한 뒤 적용할 수 있어요.</p><p id="adjustmentStatus" role="status" aria-live="polite"></p><button type="button" class="btn-reset" id="reopenAiProposal" hidden>이전 제안 다시 보기</button>'+
       '<details class="adjustment-manual"><summary>다른 AI로 추천받기</summary><p class="adjustment-note">연결 오류나 사용 한도에 도달했을 때 사용하세요. 요청을 복사해 다른 AI에 붙여넣고, 받은 JSON 파일을 가져오세요.</p><button class="btn-reset adjustment-copy" id="btnAdjustmentCopy" type="button">요청 복사</button><button type="button" class="btn-reset temporary-import" id="btnTemporaryImport">추천 파일 가져오기</button></details><input type="file" id="temporaryFile" accept=".json,application/json" hidden><button type="button" class="btn-reset" id="btnTemporaryRepair" hidden>오류 수정 요청 복사</button><textarea id="adjustmentFallback" rows="8" readonly hidden aria-label="복사할 루틴 조정 내용"></textarea></details>';
   }
   function planForAi(routine,week){return routine.map(function(d,i){return {date:week.dates[i],title:d.title||'루틴',exercises:(d.ex||[]).map(function(e){return {name:e.n,muscle:e.m,sets:e.s,reps:e.r,rir:e.rir};})};});}
@@ -3712,16 +3715,34 @@
   function bindAdjustment(){
     var root=document.getElementById('weekAdjustment'),state=adjustmentState(),renderedOn=todayStr();if(!root)return;
     var status=root.querySelector('#adjustmentStatus'),fallback=root.querySelector('#adjustmentFallback');
-    function save(){persistAdjustment(state);}
-    function feedback(error){status.textContent=error.message||String(error);}
+    function save(){persistAdjustment(state);syncToday();}
+    function syncToday(){
+      var el=root.querySelector('#aiTodayStatus'),hint=root.querySelector('#aiTodayHint');
+      var performed=adjustmentRecords(todayStr()).some(function(e){return e.date===todayStr();}) || (state.coverage==='some' && state.supplements.some(function(e){return e.date===todayStr() && Number(e.sets)>0;}));
+      el.querySelector('option[value="before"]').disabled=performed;
+      if(performed && (!state.todayStatus || state.todayStatus==='before')){state.todayStatus='partial';el.value='partial';persistAdjustment(state);}
+      if(hint)hint.textContent=performed?'오늘 수행 내역이 있어요. 추가 운동이 가능하면 ‘일부 진행’, 마쳤다면 ‘완료’를 선택하세요.':'';
+    }
+    syncToday();
+    root.addEventListener('input',function(){if(!aiAdjustmentBusy){status.textContent='';status.removeAttribute('data-kind');}root.querySelectorAll('[aria-invalid]').forEach(function(el){el.removeAttribute('aria-invalid');});});
+    var proposalKey=activeProfile+'|'+renderedOn,reopen=root.querySelector('#reopenAiProposal');
+    reopen.hidden=!lastAiProposals.has(proposalKey);
+    reopen.onclick=function(){var previous=lastAiProposals.get(proposalKey);if(previous)previewTemporaryFile(previous,activeProfile);};
+    function feedback(error){
+      var message=error.message||String(error);status.dataset.kind='error';status.textContent='추천을 진행하지 못했어요. '+message;
+      var selector=/내 운동 정보/.test(message)?'#aiGoal':/누락 운동/.test(message)?'#aiSupplements input':/기록.*선택|반영됐는지/.test(message)?'#adjustCoverage':/오늘 운동.*상태/.test(message)?'#aiTodayStatus':/추가 요청사항/.test(message)?'#adjustNotes':null;
+      var field=selector && root.querySelector(selector);
+      if(field){var details=field.closest('details');if(details)details.open=true;field.setAttribute('aria-invalid','true');field.focus();field.scrollIntoView({block:'center',behavior:'smooth'});showToast(message);}else status.scrollIntoView({block:'center',behavior:'smooth'});
+    }
+    root.querySelectorAll('.ai-fields input,.ai-fields select').forEach(function(el){el.addEventListener('input',function(){var b=root.querySelector('#btnAthleteSave');b.disabled=false;b.textContent='변경사항 저장';root.querySelector('#athleteSaveStatus').textContent='';});});
     root.addEventListener('toggle',function(){state.open=root.open;save();});
     root.querySelector('#btnAthleteSave').onclick=function(){var info={goal:root.querySelector('#aiGoal').value,experience:root.querySelector('#aiExperience').value,preferences:root.querySelector('#aiPreferences').value.trim(),excluded:root.querySelector('#aiExcluded').value.trim(),equipment:root.querySelector('#aiEquipment').value.trim()};
       var hint=root.querySelector('#athleteSaveStatus');if(!info.goal || !info.experience){hint.textContent='목표와 운동 경력을 선택해주세요.';return;}
       if(!writeJSON(ATHLETE_INFO_KEY,info)){hint.textContent='저장하지 못했어요. 다시 시도해주세요.';return;}
-      hint.textContent='내 운동 정보 저장됨';root.querySelector('#aiAthleteInfo small').textContent=AI_GOALS[info.goal]+' · '+AI_EXPERIENCE[info.experience];
+      hint.textContent='';this.textContent='✓ 저장됨';this.disabled=true;root.querySelector('#aiAthleteInfo small').textContent=AI_GOALS[info.goal]+' · '+AI_EXPERIENCE[info.experience];
     };
     function bindSchedule(){
-      root.querySelectorAll('[data-ai-mode]').forEach(function(select){select.onchange=function(){state.schedule[select.dataset.aiMode].mode=select.value;save();root.querySelector('#aiSchedule').innerHTML=adjustmentScheduleHtml(state);bindSchedule();};});
+      root.querySelectorAll('[data-ai-mode]').forEach(function(select){select.onchange=function(){state.schedule[select.dataset.aiMode].mode=select.value;if(select.dataset.aiMode===todayStr() && select.value==='adjust' && state.todayStatus==='done'){state.todayStatus='partial';root.querySelector('#aiTodayStatus').value='partial';}save();root.querySelector('#aiSchedule').innerHTML=adjustmentScheduleHtml(state);bindSchedule();};});
       root.querySelectorAll('[data-ai-time]').forEach(function(select){select.onchange=function(){state.schedule[select.dataset.aiTime].minutes=select.value;save();};});
     }
     function bindSupplements(){
@@ -3731,7 +3752,8 @@
     bindSchedule();bindSupplements();
     root.querySelector('#btnSupplementAdd').onclick=function(){if(state.supplements.length>=21){feedback('누락 운동은 최대 21개까지 입력할 수 있어요.');return;}state.supplements.push({date:todayStr(),muscle:'가슴',sets:''});save();renderSupplements();};
     root.querySelector('#adjustCoverage').onchange=function(){state.coverage=this.value;root.querySelector('#aiSupplementArea').hidden=this.value!=='some';save();};
-    root.querySelector('#adjustMinutes').onchange=function(){state.minutes=this.value;Object.keys(state.schedule).forEach(function(d){if(d>=todayStr())state.schedule[d].minutes=state.minutes;});save();root.querySelector('#aiSchedule').innerHTML=adjustmentScheduleHtml(state);bindSchedule();};
+    root.querySelector('#adjustMinutes').onchange=function(){state.minutes=this.value;save();};
+    root.querySelector('#applyAiMinutes').onclick=function(){state.minutes=root.querySelector('#adjustMinutes').value;Object.keys(state.schedule).forEach(function(d){if(d>=todayStr() && state.schedule[d].mode==='adjust')state.schedule[d].minutes=state.minutes;});save();root.querySelector('#aiSchedule').innerHTML=adjustmentScheduleHtml(state);bindSchedule();};
     [['aiTodayStatus','todayStatus'],['aiWeekGoal','goal'],['aiSpecial','special']].forEach(function(pair){root.querySelector('#'+pair[0]).onchange=function(){state[pair[1]]=this.value;if(pair[1]==='todayStatus' && this.value==='done'){state.schedule[todayStr()].mode='keep';root.querySelector('#aiSchedule').innerHTML=adjustmentScheduleHtml(state);bindSchedule();}save();};});
     root.querySelector('#adjustNotes').oninput=function(){state.notes=this.value;save();};
     function contextNow(){
@@ -3742,17 +3764,17 @@
     root.querySelector('#btnAdjustmentGenerate').onclick=async function(){
       var context,fingerprint;try{context=contextNow();fingerprint=adjustmentFingerprint();}catch(e){feedback(e);return;}
       if(aiAdjustmentBusy){feedback('이미 AI 제안을 생성하고 있어요. 잠시 기다려주세요.');return;}
-      var button=this,owner=activeProfile,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},50000),inputStamp=JSON.stringify(context);
-      aiAdjustmentBusy=true;button.disabled=true;button.textContent='AI 제안 생성 중…';status.textContent='기록과 남은 일정을 검토하고 있어요.';
+      var button=this,owner=activeProfile,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},95000),inputStamp=JSON.stringify(context);
+      aiAdjustmentBusy=true;button.disabled=true;button.textContent='AI 제안 생성 중…';status.dataset.kind='loading';status.textContent='기록과 남은 일정을 검토하고 있어요. 응답 형식을 한 번 자동 보정할 수 있어 최대 약 90초 걸려요.';
       try{
         var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'}),result=await response.json();
         if(owner!==activeProfile || !root.isConnected)return;
         if(!response.ok)throw new Error(result.error||'AI 요청에 실패했어요.');
         if(result.protocol!==2)throw new Error('Cloudflare Worker를 v81 코드로 업데이트해주세요.');
-        if(result.clarification){status.textContent='조건 확인이 필요해요: '+result.clarification+' 입력 내용을 수정한 뒤 다시 요청해주세요.';return;}
+        if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification+' 입력 내용을 수정한 뒤 다시 요청해주세요.';return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(contextNow()))throw new Error('요청 중 기록·루틴·입력 조건이 바뀌었어요. 최신 내용으로 다시 추천받아주세요.');
-        var candidate=prepareAiCandidate(result.routine,context,fingerprint);status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';matchTemporaryExercises(candidate,owner);
-      }catch(e){if(owner===activeProfile && root.isConnected)feedback(e.name==='AbortError'?'응답 시간이 지났어요. 다시 시도하거나 다른 AI로 추천받기를 사용해주세요.':e instanceof TypeError?'AI 연결을 확인해주세요. Cloudflare Worker v81 배포도 필요해요.':e);}
+        var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';matchTemporaryExercises(candidate,owner);
+      }catch(e){if(owner===activeProfile && root.isConnected)feedback(e.name==='AbortError'?'응답 시간이 지났어요. 다시 시도하거나 다른 AI로 추천받기를 사용해주세요.':e instanceof TypeError?'AI 연결을 확인해주세요. 인터넷 연결과 Cloudflare Worker 배포 상태를 확인해주세요.':e);}
       finally{clearTimeout(timer);aiAdjustmentBusy=false;if(root.isConnected){button.disabled=false;button.textContent=activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기';}}
     };
     root.querySelector('#btnAdjustmentCopy').onclick=async function(){try{var context=contextNow(),text='아래 구조화된 정보를 바탕으로 남은 운동을 조정해주세요. baseRoutine은 기본 계획, currentRoutine은 임시 변경을 포함한 현재 계획, recentRecords는 실제 수행 세트입니다. supplementalSets는 누락 보완이며 중복 계산하지 마세요. 대표 종목을 우선하고 무리한 보충은 피하세요. availability에서 adjust인 날짜만 빠짐없이 반환하고 keep/rest는 앱에서 처리합니다. 모호하거나 충돌하는 조건은 먼저 질문하세요. 최종 응답은 다음 형식의 JSON 파일로 주세요.\n'+temporaryFormatRules(todayStr())+'\n\n'+JSON.stringify(context,null,2);await copyText(text,'요청을 복사했어요. 다른 AI에 붙여넣고 받은 JSON을 가져오세요.');}catch(e){feedback(e);}};

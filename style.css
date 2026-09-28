@@ -2402,3 +2402,19 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .ai-supplement select,.bulk-app .ai-supplement input{font-size:14px;}
 .ai-kept-note{background:#edf4ff;border-radius:10px;padding:10px;font-size:13px;line-height:1.6;}
 @media(max-width:360px){.bulk-app .ai-schedule-row{grid-template-columns:65px minmax(0,1.2fr) minmax(0,1fr);gap:4px;}.bulk-app .ai-schedule-row select{font-size:12px;}}
+
+/* v82: compact survey controls and visible request feedback */
+.bulk-app .ai-supplement{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(48px,.6fr) 40px;gap:6px;align-items:end;}
+.bulk-app .ai-supplement>button{grid-column:auto;min-width:40px;min-height:44px;padding:0;font-size:24px;align-self:end;}
+.bulk-app #athleteSaveStatus:empty,.bulk-app #aiTodayHint:empty,.bulk-app #adjustmentStatus:empty{display:none;}
+.bulk-app #adjustmentStatus:not(:empty){padding:12px 14px;border-radius:12px;background:#eef2ff;border:1px solid #c7d2fe;color:#243c85;font-size:14px;line-height:1.6;margin:12px 0;}
+.bulk-app #adjustmentStatus[data-kind="error"]{background:#fff4ed;border-color:#e8b38e;color:#813812;font-weight:600;}
+.bulk-app #adjustmentStatus[data-kind="success"]{background:#edf8f1;border-color:#abd5bb;color:#23623b;}
+.bulk-app .ai-survey-section{padding-block:16px;margin-block:16px;}
+.bulk-app #applyAiMinutes{margin-top:8px;}
+.bulk-app #btnAthleteSave:disabled{opacity:1;color:#23623b;background:#edf8f1;border-color:#abd5bb;}
+.bulk-app #reopenAiProposal{margin-bottom:12px;}
+
+.bulk-app .ai-adjustment [aria-invalid="true"]{border:2px solid #b64b23;background:#fff8f3;}
+.bulk-app .ai-adjustment .adjustment-generate{margin-top:16px;}
+.bulk-app .ai-supplement select{padding-inline:4px;}
