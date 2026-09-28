@@ -2418,3 +2418,5 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .ai-adjustment [aria-invalid="true"]{border:2px solid #b64b23;background:#fff8f3;}
 .bulk-app .ai-adjustment .adjustment-generate{margin-top:16px;}
 .bulk-app .ai-supplement select{padding-inline:4px;}
+
+.bulk-app .ai-survey-section:last-of-type{margin-bottom:0;padding-bottom:0;}
