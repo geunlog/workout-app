@@ -839,8 +839,8 @@
   }
   function previewTemporaryFile(candidate,owner) {
     var meta=aiProposalMeta.get(candidate)||{fingerprint:adjustmentFingerprint(),asOf:todayStr(),kept:[]};
-    var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';dialog.setAttribute('aria-label','임시 루틴 적용 미리보기');
-    dialog.innerHTML='<h2>임시 루틴 적용 미리보기</h2><p>현재 플랜: <strong data-owner></strong></p><p>아래 날짜만 변경해요. 휴식으로 선택한 날은 휴식으로 적용하고, 나머지 일정과 완료한 기록은 유지해요.</p>'+(meta.kept.length?'<p class="ai-kept-note">기존 일정 유지: '+meta.kept.map(adjustmentDayLabel).join(', ')+'</p>':'')+'<div data-preview></div>'+(meta.inputStamp?'<details class="ai-revision"><summary>이 제안 다시 조정하기 <small>선택</small></summary><label for="aiRevisionRequest">바꾸고 싶은 내용</label><textarea id="aiRevisionRequest" rows="2" maxlength="500" placeholder="예: 금요일은 등을 우선해주세요. 어깨 운동은 조금 줄여주세요."></textarea><p>운동 날짜·가능 시간을 변경하려면 설문에서 먼저 수정한 뒤 새로 추천받아주세요.</p><button type="button" class="btn-reset" data-revise>요청대로 다시 제안받기</button><p role="status" data-revise-status></p></details>':'')+'<p role="status" data-error></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>이번 주에 적용</button></div>';
+    var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog ai-preview-dialog';dialog.setAttribute('aria-label','이번 주 제안 미리보기');
+    dialog.innerHTML='<h2>이번 주 제안 미리보기</h2><p class="ai-preview-meta">플랜 <strong data-owner></strong> · 아래 날짜만 변경돼요.</p>'+(meta.kept.length?'<p class="ai-kept-note">기존 일정 유지: '+meta.kept.map(adjustmentDayLabel).join(', ')+'</p>':'')+'<div data-preview></div>'+(meta.inputStamp?'<details class="ai-revision"><summary>이 제안 수정 요청</summary><div class="ai-revision-fields"><label for="aiRevisionRequest">바꾸고 싶은 내용</label><textarea id="aiRevisionRequest" rows="2" maxlength="500" placeholder="예: 금요일에는 등 운동을 더 넣어주세요."></textarea><p class="ai-revision-help">운동 날짜와 시간은 앞 화면에서 변경할 수 있어요.</p><button type="button" data-revise>수정 요청 보내기</button><p role="status" data-revise-status></p></div></details>':'')+'<p role="status" data-error></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>이번 주에 적용</button></div>';
     dialog.querySelector('[data-owner]').textContent=owner;dialog.querySelector('[data-preview]').innerHTML=temporaryDaysHtml(candidate,selectedRecordDate);
     var revisionPanel=dialog.querySelector('.ai-revision');if(revisionPanel)dialog.querySelector('[data-preview]').before(revisionPanel);
     addTemporaryClose(dialog);
@@ -871,7 +871,7 @@
         var updated=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(updated).inputStamp=inputStamp;
         lastAiProposals.set(owner+'|'+todayStr(),updated);dialog.close();matchTemporaryExercises(updated,owner);
       }catch(e){if(dialog.isConnected){hint.dataset.kind='error';hint.textContent=(e.name==='AbortError'?'응답 시간이 지났어요.':e.message||'연결을 확인해주세요.')+' 이전 제안은 유지돼요.';}}
-      finally{clearTimeout(timer);aiAdjustmentBusy=false;if(dialog.isConnected){revise.disabled=false;cancel.disabled=false;apply.disabled=false;revise.textContent='요청대로 다시 제안받기';}}
+      finally{clearTimeout(timer);aiAdjustmentBusy=false;if(dialog.isConnected){revise.disabled=false;cancel.disabled=false;apply.disabled=false;revise.textContent='수정 요청 보내기';}}
     };
     dialog.querySelector('[data-yes]').onclick=function(){try{
       if(owner!==activeProfile)throw new Error('플랜이 바뀌었어요. 파일을 다시 가져와주세요.');
