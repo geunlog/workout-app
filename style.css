@@ -2195,6 +2195,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .adjustment-json-option button{width:100%;}
 .bulk-app .adjustment-json-option>summary{display:flex;align-items:center;min-height:44px;font-size:13px;cursor:pointer;}
 .bulk-app .temporary-import{background:white;border-color:var(--line-strong);color:var(--primary);}
+.bulk-app .adjustment-generate{width:100%;min-height:52px;margin-top:14px;background:var(--primary);border-color:var(--primary);color:var(--on-primary);font-size:16px;font-weight:700;}
+.bulk-app .adjustment-generate:disabled{opacity:.7;cursor:wait;}
+.bulk-app .adjustment-manual{margin-top:14px;border-top:1px solid var(--line);padding-top:6px;}
+.bulk-app .adjustment-manual>summary{min-height:48px;display:flex;align-items:center;font-size:14px;font-weight:600;cursor:pointer;}
+.bulk-app .adjustment-manual .adjustment-copy{background:white;color:var(--primary);border-color:var(--line-strong);}
+.bulk-app .rec-filter{scroll-margin-top:12px;}
 @media(max-width:360px){.bulk-app .records-disclosure-actions{grid-template-columns:minmax(0,1fr) 96px 68px;}.bulk-app .records-disclosure-actions button,.bulk-app .records-disclosure-actions select{font-size:13px;}.bulk-app .record-exercise-search{grid-template-columns:100px minmax(0,1fr);}.bulk-app #recordSearchMuscle{flex-basis:100px;width:100px;}.bulk-app .record-exercise-search .stats-search-icon{left:120px;}}
 .bulk-app #statsView{--stats-line:#e9edf4;}
 .bulk-app #statsView .stats-card{background:#fff;border:1px solid var(--stats-line);border-radius:16px;padding:18px;margin:16px 0;box-shadow:0 3px 14px rgba(30,45,80,.025);}

@@ -3259,7 +3259,7 @@
       mode='records';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();renderRecords();
       var target=Array.from(recordsListEl.querySelectorAll('.record-muscle-group')).find(function(el){return el.dataset.recordKey==='muscle:'+recordMuscleQuery;});
       if(target){target.open=true;target.querySelectorAll('details').forEach(function(el){el.open=false;});}
-      requestAnimationFrame(function(){document.getElementById('recordSearchMuscle').focus({preventScroll:true});document.getElementById('recordBrowseTools').scrollIntoView({block:'start',behavior:'smooth'});});
+      requestAnimationFrame(function(){var dateFilter=recordsViewEl.querySelector('.rec-filter');if(dateFilter)dateFilter.scrollIntoView({block:'start',behavior:'smooth'});});
 
     };});
     statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;writeJSON('bulk-workout-stats-scope-v1',statsScope);renderStats();};});
@@ -3604,9 +3604,18 @@
       '- 남은 날짜별 종목·세트·횟수·RIR과 제외하거나 다음 주로 넘길 운동을 텍스트로 추천해주세요.');
     return lines.join('\n');
   }
+  var AI_ROUTINE_ENDPOINT='https://ai.geunlog.workers.dev/adjust';
+  function aiAdjustmentPrompt(asOf,state){
+    var request=buildAdjustmentText(asOf,effectiveWeek(),logs,state,activeProfile);
+    return request+'\n\n[앱에 바로 적용할 응답]\n'+
+      '질문이나 설명 대신 이번 주 남은 선택 날짜만 JSON으로 제안해주세요. 기록이 일부 누락됐을 수 있으므로 실제 운동을 단정하지 말고 무리한 보충을 피하세요. 중요한 추가 조건이 불명확하다면 보수적인 기존 계획을 유지하세요. '+
+      '오늘 이미 완료한 세트를 다시 계획하지 마세요. 날짜별 title은 간결하게, 휴식일은 rest:true, exercises:[]로 표시하세요. '+
+      temporaryFormatRules(asOf).replace('다운로드 가능한 UTF-8 .json 파일로 제공하고, 파일 본문은 설명이나 코드블록 없이 JSON 객체 하나만 포함.','JSON 객체 하나만 반환.')+
+      registeredExerciseText();
+  }
   function adjustmentHtml() {
     var asOf=todayStr(),week=adjustmentWeek(asOf),state=adjustmentState(),labels=['월','화','수','목','금','토','일'];
-    return '<details class="adjustment-card" id="weekAdjustment"'+(state.open?' open':'')+'><summary>이번 주 루틴 조정</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+'</p>'+temporaryStatusHtml()+'<fieldset><legend>앞으로 운동할 날짜 <small>· 여러 날짜 선택</small></legend><div class="adjustment-days">'+week.dates.map(function(date,i){return '<button type="button" data-adjust-date="'+date+'" aria-pressed="'+state.dates.includes(date)+'" aria-label="'+date+' '+labels[i]+'요일"'+(date<asOf?' disabled':'')+'>'+labels[i]+'<small>'+date.slice(5).replace('-','/')+'</small></button>';}).join('')+'</div><p class="adjustment-note">남은 운동 가능 날짜를 선택해주세요.</p></fieldset><div class="adjustment-fields"><label>웨이트 가능 시간 (1회)<select id="adjustMinutes"><option value="">미정</option><option value="45">45분</option><option value="60">60분</option><option value="75">75분</option><option value="90">90분</option><option value="unlimited">제한 없음</option></select></label><label>이번 주 운동을 빠짐없이 기록했나요?<select id="adjustCoverage"><option value="unknown">일부 누락 가능</option><option value="all">모든 세트를 기록했어요</option><option value="some">일부 세트만 기록했어요</option></select></label></div><label class="adjustment-notes">꼭 반영할 조건 (선택)<textarea id="adjustNotes" rows="2" maxlength="1000" placeholder="예: 변경할 수 없는 PT 일정, 운동하지 못한 날">'+statsEscape(state.notes)+'</textarea></label><div class="adjustment-copy-actions"><button class="btn-reset adjustment-copy" id="btnAdjustmentCopy" type="button">루틴 조정 요청 복사</button><details class="adjustment-json-option"><summary>JSON 요청 옵션</summary><button class="btn-reset adjustment-copy" id="btnAdjustmentJson" type="button">JSON 요청 복사</button></details></div><p class="adjustment-note">요청을 AI에 붙여넣고 받은 JSON 파일을 가져오세요.</p><button type="button" class="btn-reset temporary-import" id="btnTemporaryImport">임시 루틴 가져오기</button><input type="file" id="temporaryFile" accept=".json,application/json" hidden><p id="adjustmentStatus" class="adjustment-note" role="status"></p><button type="button" class="btn-reset" id="btnTemporaryRepair" hidden>오류 수정 요청 복사</button><textarea id="adjustmentFallback" rows="8" readonly hidden aria-label="복사할 루틴 조정 내용"></textarea></details>';
+    return '<details class="adjustment-card" id="weekAdjustment"'+(state.open?' open':'')+'><summary>이번 주 루틴 조정</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+'</p>'+temporaryStatusHtml()+'<fieldset><legend>앞으로 운동할 날짜 <small>· 여러 날짜 선택</small></legend><div class="adjustment-days">'+week.dates.map(function(date,i){return '<button type="button" data-adjust-date="'+date+'" aria-pressed="'+state.dates.includes(date)+'" aria-label="'+date+' '+labels[i]+'요일"'+(date<asOf?' disabled':'')+'>'+labels[i]+'<small>'+date.slice(5).replace('-','/')+'</small></button>';}).join('')+'</div><p class="adjustment-note">남은 운동 가능 날짜를 선택해주세요.</p></fieldset><div class="adjustment-fields"><label>웨이트 가능 시간 (1회)<select id="adjustMinutes"><option value="">미정</option><option value="45">45분</option><option value="60">60분</option><option value="75">75분</option><option value="90">90분</option><option value="unlimited">제한 없음</option></select></label><label>이번 주 운동을 빠짐없이 기록했나요?<select id="adjustCoverage"><option value="unknown">일부 누락 가능</option><option value="all">모든 세트를 기록했어요</option><option value="some">일부 세트만 기록했어요</option></select></label></div><label class="adjustment-notes">꼭 반영할 조건 (선택)<textarea id="adjustNotes" rows="2" maxlength="1000" placeholder="예: 변경할 수 없는 PT 일정, 운동하지 못한 날">'+statsEscape(state.notes)+'</textarea></label><button type="button" class="btn-reset adjustment-generate" id="btnAdjustmentGenerate">AI로 루틴 제안받기</button><p class="adjustment-note">현재 플랜·운동 기록·입력 조건이 Gemini에 전송돼요. 제안을 확인한 뒤 적용할 수 있어요.</p><details class="adjustment-manual"><summary>직접 요청하거나 JSON 가져오기</summary><div class="adjustment-copy-actions"><button class="btn-reset adjustment-copy" id="btnAdjustmentCopy" type="button">루틴 조정 요청 복사</button><details class="adjustment-json-option"><summary>JSON 요청 옵션</summary><button class="btn-reset adjustment-copy" id="btnAdjustmentJson" type="button">JSON 요청 복사</button></details></div><p class="adjustment-note">복사한 요청을 다른 AI에 붙여넣거나 받은 JSON 파일을 가져올 수 있어요.</p><button type="button" class="btn-reset temporary-import" id="btnTemporaryImport">임시 루틴 가져오기</button></details><input type="file" id="temporaryFile" accept=".json,application/json" hidden><p id="adjustmentStatus" class="adjustment-note" role="status"></p><button type="button" class="btn-reset" id="btnTemporaryRepair" hidden>오류 수정 요청 복사</button><textarea id="adjustmentFallback" rows="8" readonly hidden aria-label="복사할 루틴 조정 내용"></textarea></details>';
   }
   function bindAdjustment() {
     var root=document.getElementById('weekAdjustment'),state=adjustmentState(),renderedOn=todayStr();if(!root)return;
@@ -3614,6 +3623,28 @@
     root.querySelectorAll('[data-adjust-date]').forEach(function(b){b.addEventListener('click',function(){var date=b.dataset.adjustDate;if(date<todayStr()){renderReport();return;}state.dates=state.dates.includes(date)?state.dates.filter(function(d){return d!==date;}):state.dates.concat(date);b.setAttribute('aria-pressed',String(state.dates.includes(date)));});});
     var minutes=document.getElementById('adjustMinutes'),coverage=document.getElementById('adjustCoverage'),notes=document.getElementById('adjustNotes');minutes.value=state.minutes;coverage.value=state.coverage;
     minutes.addEventListener('change',function(){state.minutes=minutes.value;});coverage.addEventListener('change',function(){state.coverage=coverage.value;});notes.addEventListener('input',function(){state.notes=notes.value;});
+    document.getElementById('btnAdjustmentGenerate').onclick=async function(){
+      var button=this,status=document.getElementById('adjustmentStatus'),owner=activeProfile,asOf=todayStr(),controller=new AbortController(),timer;
+      if(asOf!==renderedOn){renderReport();showToast('날짜가 바뀌었어요. 남은 운동 가능 요일을 다시 확인해주세요.','pending');return;}
+      var selected=Array.from(new Set(state.dates)).filter(function(date){return date>=asOf;}).sort(),prompt;
+      try{prompt=aiAdjustmentPrompt(asOf,state);if(routineOrderPending)throw new Error('먼저 운동 탭에서 수정 중인 루틴을 저장하거나 취소해주세요.');}
+      catch(error){status.textContent=error.message;return;}
+      button.disabled=true;button.textContent='AI 제안 생성 중…';status.textContent='AI 제안을 생성하고 있어요. 잠시 기다려주세요.';
+      try{
+        timer=setTimeout(function(){controller.abort();},45000);
+        var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({asOf:asOf,dates:selected,prompt:prompt}),signal:controller.signal,cache:'no-store'});
+        var result=await response.json();
+        if(owner!==activeProfile || !root.isConnected || todayStr()!==asOf)return;
+        if(!response.ok)throw new Error(result.error || 'AI 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요.');
+        var candidate=validateTemporary(result.routine,asOf,false);
+        if(candidate.days.some(function(day){return !selected.includes(day.date);}))throw new Error('선택하지 않은 날짜가 포함됐어요. 다시 제안받아주세요.');
+        status.textContent='제안을 받았어요. 미리보기에서 날짜와 운동을 확인한 뒤 적용해주세요.';
+        matchTemporaryExercises(candidate,owner);
+      }catch(error){
+        if(owner!==activeProfile || !root.isConnected)return;
+        status.textContent=error.name==='AbortError'?'응답 시간이 지났어요. 잠시 후 다시 시도해주세요.':error instanceof TypeError?'AI 서버에 연결할 수 없어요. Worker 배포와 연결 상태를 확인해주세요.':error.message;
+      }finally{clearTimeout(timer);if(root.isConnected){button.disabled=false;button.textContent='AI로 루틴 제안받기';}}
+    };
     bindTemporaryCancel(root);
     document.getElementById('btnTemporaryImport').onclick=function(){document.getElementById('temporaryFile').click();};
     function updateImportFailure(){
