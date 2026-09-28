@@ -2377,3 +2377,28 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #recordsList > .rec-group:not([open]) > summary > .card-sort{display:none;}
 .bulk-app select.card-sort{background-color:var(--sunken,#f3f4f8);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23626d7d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13V3m-3 3 3-3 3 3M11 3v10m-3-3 3 3 3-3'/%3E%3C/svg%3E");background-position:left 7px center;background-size:14px 14px;padding:6px 8px 6px 26px;border-radius:9px;max-width:132px;}
 @media(max-width:360px){.bulk-app select.card-sort{max-width:116px;padding-left:24px;padding-right:6px;background-position:left 6px center;}}
+
+/* v81: saved athlete information and compact weekly adjustment survey */
+.bulk-app .ai-adjustment .ai-athlete{background:var(--surface,#fff);border:1px solid var(--line);border-radius:14px;padding:12px;margin:16px 0;}
+.bulk-app .ai-athlete>summary{display:flex;align-items:center;gap:8px;min-height:44px;font-weight:650;}
+.bulk-app .ai-athlete>summary small{font-size:12px;font-weight:400;color:var(--muted);}
+.bulk-app .ai-adjustment label{display:block;font-size:14px;line-height:1.6;margin:10px 0;}
+.bulk-app .ai-adjustment select,.bulk-app .ai-adjustment input,.bulk-app .ai-adjustment textarea{display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:44px;margin-top:5px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface,#fff);color:var(--text);font:inherit;font-size:16px;}
+.bulk-app .ai-adjustment select:disabled{opacity:.45;}
+.bulk-app .ai-adjustment [hidden]{display:none!important;}
+.bulk-app .ai-survey-section{margin:18px 0;padding:14px 0;border-top:1px solid var(--line);}
+.bulk-app .ai-survey-section h3{margin:0 0 10px;font-size:17px;}
+.bulk-app .ai-survey-section h3 small{font-size:12px;color:var(--muted);font-weight:400;}
+.bulk-app .ai-record-summary{list-style:none;padding:0;margin:0;}
+.bulk-app .ai-record-summary li{display:flex;flex-wrap:wrap;gap:5px 12px;justify-content:space-between;padding:8px 0;font-size:13px;}
+.bulk-app .ai-record-summary li span{color:var(--muted);}
+.bulk-app .ai-schedule-row{display:grid;grid-template-columns:76px minmax(0,1.2fr) minmax(0,1fr);gap:7px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0;}
+.bulk-app .ai-schedule-row strong{font-size:12px;line-height:1.5;}
+.bulk-app .ai-schedule-row label{margin:0;}
+.bulk-app .ai-schedule-row select{font-size:13px;padding:8px 3px;margin:0;}
+.bulk-app .ai-supplement{display:grid;grid-template-columns:1.3fr 1fr .65fr;gap:7px;padding:8px 0;border-bottom:1px solid var(--line);}
+.bulk-app .ai-supplement>button{grid-column:1/-1;justify-self:end;font-size:13px;}
+.bulk-app .ai-supplement label{min-width:0;margin:0;font-size:12px;}
+.bulk-app .ai-supplement select,.bulk-app .ai-supplement input{font-size:14px;}
+.ai-kept-note{background:#edf4ff;border-radius:10px;padding:10px;font-size:13px;line-height:1.6;}
+@media(max-width:360px){.bulk-app .ai-schedule-row{grid-template-columns:65px minmax(0,1.2fr) minmax(0,1fr);gap:4px;}.bulk-app .ai-schedule-row select{font-size:12px;}}
