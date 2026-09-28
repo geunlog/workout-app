@@ -3769,13 +3769,14 @@
     root.querySelector('#btnAdjustmentGenerate').onclick=async function(){
       var context,fingerprint;try{context=contextNow();fingerprint=adjustmentFingerprint();}catch(e){feedback(e);return;}
       if(aiAdjustmentBusy){feedback('이미 AI 제안을 생성하고 있어요. 잠시 기다려주세요.');return;}
-      var button=this,owner=activeProfile,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},95000),inputStamp=JSON.stringify(context);
-      aiAdjustmentBusy=true;button.disabled=true;button.textContent='AI 제안 생성 중…';status.dataset.kind='loading';status.textContent='운동 기록과 남은 일정을 바탕으로 추천하고 있어요. 최대 약 90초 걸릴 수 있어요.';
+      var button=this,owner=activeProfile,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000),inputStamp=JSON.stringify(context);
+      aiAdjustmentBusy=true;button.disabled=true;button.textContent='AI 제안 생성 중…';status.dataset.kind='loading';status.textContent='운동 기록과 남은 일정을 바탕으로 추천하고 있어요. 최대 약 80초 걸릴 수 있어요.';
       try{
-        var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'}),result=await response.json();
+        var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'});
+        var result;try{result=await response.json();}catch(e){throw new Error('추천 서버 응답을 읽지 못했어요. 잠시 후 다시 시도해주세요.');}
         if(owner!==activeProfile || !root.isConnected)return;
         if(!response.ok)throw new Error(result.error||'AI 요청에 실패했어요.');
-        if(result.protocol!==2)throw new Error('Cloudflare Worker를 v81 코드로 업데이트해주세요.');
+        if(result.protocol!==2)throw new Error('앱과 추천 서버의 버전이 맞지 않아요. Cloudflare Worker v84 배포를 확인해주세요.');
         if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification+' 입력 내용을 수정한 뒤 다시 요청해주세요.';return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(contextNow()))throw new Error('요청 중 기록·루틴·입력 조건이 바뀌었어요. 최신 내용으로 다시 추천받아주세요.');
         var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';matchTemporaryExercises(candidate,owner);
