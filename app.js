@@ -840,10 +840,39 @@
   function previewTemporaryFile(candidate,owner) {
     var meta=aiProposalMeta.get(candidate)||{fingerprint:adjustmentFingerprint(),asOf:todayStr(),kept:[]};
     var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog';dialog.setAttribute('aria-label','임시 루틴 적용 미리보기');
-    dialog.innerHTML='<h2>임시 루틴 적용 미리보기</h2><p>현재 플랜: <strong data-owner></strong></p><p>아래 날짜만 변경해요. 휴식으로 선택한 날은 휴식으로 적용하고, 나머지 일정과 완료한 기록은 유지해요.</p>'+(meta.kept.length?'<p class="ai-kept-note">기존 일정 유지: '+meta.kept.map(adjustmentDayLabel).join(', ')+'</p>':'')+'<div data-preview></div><p role="status" data-error></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>이번 주에 적용</button></div>';
+    dialog.innerHTML='<h2>임시 루틴 적용 미리보기</h2><p>현재 플랜: <strong data-owner></strong></p><p>아래 날짜만 변경해요. 휴식으로 선택한 날은 휴식으로 적용하고, 나머지 일정과 완료한 기록은 유지해요.</p>'+(meta.kept.length?'<p class="ai-kept-note">기존 일정 유지: '+meta.kept.map(adjustmentDayLabel).join(', ')+'</p>':'')+'<div data-preview></div>'+(meta.inputStamp?'<details class="ai-revision"><summary>이 제안 다시 조정하기 <small>선택</small></summary><label for="aiRevisionRequest">바꾸고 싶은 내용</label><textarea id="aiRevisionRequest" rows="2" maxlength="500" placeholder="예: 금요일은 등을 우선해주세요. 어깨 운동은 조금 줄여주세요."></textarea><p>운동 날짜·가능 시간을 변경하려면 설문에서 먼저 수정한 뒤 새로 추천받아주세요.</p><button type="button" class="btn-reset" data-revise>요청대로 다시 제안받기</button><p role="status" data-revise-status></p></details>':'')+'<p role="status" data-error></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>이번 주에 적용</button></div>';
     dialog.querySelector('[data-owner]').textContent=owner;dialog.querySelector('[data-preview]').innerHTML=temporaryDaysHtml(candidate,selectedRecordDate);
+    var revisionPanel=dialog.querySelector('.ai-revision');if(revisionPanel)dialog.querySelector('[data-preview]').before(revisionPanel);
     addTemporaryClose(dialog);
     dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.addEventListener('close',function(){dialog.remove();});dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
+    var revise=dialog.querySelector('[data-revise]');
+    if(revise)revise.onclick=async function(){
+      var request=dialog.querySelector('#aiRevisionRequest').value.trim(),hint=dialog.querySelector('[data-revise-status]');
+      if(!request){hint.textContent='바꾸고 싶은 내용을 적어주세요.';dialog.querySelector('#aiRevisionRequest').focus();return;}
+      var context,fingerprint,inputStamp;
+      try{
+        if(owner!==activeProfile || meta.asOf!==todayStr() || meta.fingerprint!==adjustmentFingerprint())throw new Error('기록이나 루틴이 바뀌었어요. 설문에서 다시 추천받아주세요.');
+        context=buildAiAdjustmentContext(adjustmentState());fingerprint=adjustmentFingerprint();inputStamp=JSON.stringify(context);
+        if(meta.inputStamp!==inputStamp)throw new Error('일정이나 조건이 바뀌었어요. 설문에서 다시 추천받아주세요.');
+      }catch(e){hint.textContent=e.message;return;}
+      if(aiAdjustmentBusy){hint.textContent='이미 추천을 만들고 있어요. 잠시 기다려주세요.';return;}
+      var adjustDates=new Set(context.availability.filter(function(d){return d.mode==='adjust';}).map(function(d){return d.date;}));
+      context.revision={request:request,previousDays:candidate.days.filter(function(d){return adjustDates.has(d.date);}).map(function(d){return {date:d.date,title:d.title,rest:d.rest,exercises:d.exercises};})};
+      var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000);
+      var apply=dialog.querySelector('[data-yes]'),cancel=dialog.querySelector('[data-no]');
+      aiAdjustmentBusy=true;revise.disabled=true;apply.disabled=true;cancel.disabled=true;revise.textContent='제안 조정 중…';hint.dataset.kind='loading';hint.textContent='요청사항을 반영하고 있어요. 최대 약 80초 걸릴 수 있어요.';
+      try{
+        var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'});
+        var result=await response.json();if(!dialog.isConnected || owner!==activeProfile)return;
+        if(!response.ok)throw new Error(result.error||'재조정에 실패했어요.');
+        if(result.protocol!==2)throw new Error('앱과 추천 서버 버전이 맞지 않아요.');
+        if(result.clarification){hint.textContent='조건을 확인해주세요: '+result.clarification;return;}
+        if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('요청 중 기록·일정이 바뀌었어요. 설문에서 다시 추천받아주세요.');
+        var updated=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(updated).inputStamp=inputStamp;
+        lastAiProposals.set(owner+'|'+todayStr(),updated);dialog.close();matchTemporaryExercises(updated,owner);
+      }catch(e){if(dialog.isConnected){hint.dataset.kind='error';hint.textContent=(e.name==='AbortError'?'응답 시간이 지났어요.':e.message||'연결을 확인해주세요.')+' 이전 제안은 유지돼요.';}}
+      finally{clearTimeout(timer);aiAdjustmentBusy=false;if(dialog.isConnected){revise.disabled=false;cancel.disabled=false;apply.disabled=false;revise.textContent='요청대로 다시 제안받기';}}
+    };
     dialog.querySelector('[data-yes]').onclick=function(){try{
       if(owner!==activeProfile)throw new Error('플랜이 바뀌었어요. 파일을 다시 가져와주세요.');
       if(meta.asOf!==todayStr() || meta.fingerprint!==adjustmentFingerprint())throw new Error('추천 이후 날짜·운동 기록·루틴이 바뀌었어요. 닫고 최신 내용으로 다시 조정해주세요.');
@@ -3791,7 +3820,7 @@
         var result;try{result=await response.json();}catch(e){throw new Error('추천 서버 응답을 읽지 못했어요. 잠시 후 다시 시도해주세요.');}
         if(owner!==activeProfile || !root.isConnected)return;
         if(!response.ok)throw new Error(result.error||'AI 요청에 실패했어요.');
-        if(result.protocol!==2)throw new Error('앱과 추천 서버의 버전이 맞지 않아요. Cloudflare Worker v85 배포를 확인해주세요.');
+        if(result.protocol!==2)throw new Error('앱과 추천 서버의 버전이 맞지 않아요. 최신 Worker 배포를 확인해주세요.');
         if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification+' 입력 내용을 수정한 뒤 다시 요청해주세요.';return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(contextNow()))throw new Error('요청 중 기록·루틴·입력 조건이 바뀌었어요. 최신 내용으로 다시 추천받아주세요.');
         requestStage='result';
