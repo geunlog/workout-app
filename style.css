@@ -2420,3 +2420,11 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .ai-supplement select{padding-inline:4px;}
 
 .bulk-app .ai-survey-section:last-of-type{margin-bottom:0;padding-bottom:0;}
+
+/* v85: explain an empty remaining schedule and keep the primary action legible on touch hover. */
+.bulk-app .ai-schedule-guidance{margin:12px 0;padding:12px 14px;border:1px solid #c7d2fe;border-radius:12px;background:#eef2ff;color:#243c85;font-size:14px;line-height:1.55;}
+.bulk-app .ai-adjustment .adjustment-generate,
+.bulk-app .ai-adjustment .adjustment-generate:hover,
+.bulk-app .ai-adjustment .adjustment-generate:active,
+.bulk-app .ai-adjustment .adjustment-generate:focus-visible{color:var(--on-primary);background:var(--primary);border-color:var(--primary);}
+.bulk-app #reopenAiProposal{scroll-margin-bottom:110px;}
