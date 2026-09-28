@@ -3784,16 +3784,19 @@
       if(aiAdjustmentBusy){feedback('이미 AI 제안을 생성하고 있어요. 잠시 기다려주세요.');return;}
       var button=this,owner=activeProfile,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000),inputStamp=JSON.stringify(context);
       aiAdjustmentBusy=true;button.disabled=true;button.textContent='AI 제안 생성 중…';status.dataset.kind='loading';status.textContent='운동 기록과 남은 일정을 바탕으로 추천하고 있어요. 최대 약 80초 걸릴 수 있어요.';
+      var requestStage='request';
       try{
         var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'});
+        requestStage='response';
         var result;try{result=await response.json();}catch(e){throw new Error('추천 서버 응답을 읽지 못했어요. 잠시 후 다시 시도해주세요.');}
         if(owner!==activeProfile || !root.isConnected)return;
         if(!response.ok)throw new Error(result.error||'AI 요청에 실패했어요.');
         if(result.protocol!==2)throw new Error('앱과 추천 서버의 버전이 맞지 않아요. Cloudflare Worker v85 배포를 확인해주세요.');
         if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification+' 입력 내용을 수정한 뒤 다시 요청해주세요.';return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(contextNow()))throw new Error('요청 중 기록·루틴·입력 조건이 바뀌었어요. 최신 내용으로 다시 추천받아주세요.');
-        var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';matchTemporaryExercises(candidate,owner);
-      }catch(e){if(owner===activeProfile && root.isConnected)feedback(e.name==='AbortError'?'응답 시간이 지났어요. 다시 시도하거나 다른 AI로 추천받기를 사용해주세요.':e instanceof TypeError?'추천 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요.':e);}
+        requestStage='result';
+        var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';requestStage='preview';matchTemporaryExercises(candidate,owner);
+      }catch(e){if(owner===activeProfile && root.isConnected)feedback(e.name==='AbortError'?'응답 시간이 지났어요. 입력은 유지돼요. 잠시 후 다시 시도해주세요.':e instanceof TypeError?(requestStage==='request'?'추천 서버에 연결하지 못했어요. 인터넷 연결과 Cloudflare Worker 배포 상태를 확인한 뒤 다시 시도해주세요. (요청 단계)':'AI 응답을 앱에서 처리하는 중 오류가 발생했어요. 이전 루틴은 유지돼요. 새로고침 후 다시 시도해주세요. ('+(requestStage==='response'?'응답 확인':requestStage==='result'?'결과 처리':'미리보기')+' 단계)'):e);}
       finally{clearTimeout(timer);aiAdjustmentBusy=false;if(root.isConnected){button.disabled=false;button.textContent=activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기';}}
     };
     root.querySelector('#btnAdjustmentCopy').onclick=async function(){try{var context=contextNow(),text='아래 구조화된 정보를 바탕으로 남은 운동을 조정해주세요. baseRoutine은 기본 계획, currentRoutine은 임시 변경을 포함한 현재 계획, recentRecords는 실제 수행 세트입니다. supplementalSets는 누락 보완이며 중복 계산하지 마세요. 대표 종목을 우선하고 무리한 보충은 피하세요. availability에서 adjust인 날짜만 빠짐없이 반환하고 keep/rest는 앱에서 처리합니다. 모호하거나 충돌하는 조건은 먼저 질문하세요. 최종 응답은 다음 형식의 JSON 파일로 주세요.\n'+temporaryFormatRules(todayStr())+'\n\n'+JSON.stringify(context,null,2);await copyText(text,'요청을 복사했어요. 다른 AI에 붙여넣고 받은 JSON을 가져오세요.');}catch(e){feedback(e);}};
