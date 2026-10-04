@@ -858,7 +858,9 @@
       }catch(e){hint.textContent=e.message;return;}
       if(aiAdjustmentBusy){hint.textContent='이미 추천을 만들고 있어요. 잠시 기다려주세요.';return;}
       var adjustDates=new Set(context.availability.filter(function(d){return d.mode==='adjust';}).map(function(d){return d.date;}));
-      context.revision={request:request,previousDays:candidate.days.filter(function(d){return adjustDates.has(d.date);}).map(function(d){return {date:d.date,title:d.title,rest:d.rest,exercises:d.exercises};})};
+      var revisionHistory=(meta.revisionHistory||[]).slice();
+      if(revisionHistory.length>=20){hint.textContent='수정 요청이 20회 누적됐어요. 중요한 조건을 추가 요청사항에 정리한 뒤 새로 추천받아주세요.';return;}
+      context.revision={request:request,history:revisionHistory,previousDays:candidate.days.filter(function(d){return adjustDates.has(d.date);}).map(function(d){return {date:d.date,title:d.title,rest:d.rest,exercises:d.exercises};})};
       var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000);
       var apply=dialog.querySelector('[data-yes]'),cancel=dialog.querySelector('[data-no]');
       aiAdjustmentBusy=true;revise.disabled=true;apply.disabled=true;cancel.disabled=true;revise.textContent='제안 조정 중…';hint.dataset.kind='loading';hint.textContent='요청사항을 반영하고 있어요. 최대 약 80초 걸릴 수 있어요.';
@@ -872,7 +874,7 @@
         if(result.protocol!==2)throw aiProtocolError('VERSION');
         if(result.clarification){hint.textContent='조건을 확인해주세요: '+result.clarification;return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('요청 중 기록·일정이 바뀌었어요. 설문에서 다시 추천받아주세요.');
-        var updated=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(updated).inputStamp=inputStamp;aiProposalMeta.get(updated).reasons=result.reasons||{};
+        var updated=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(updated).inputStamp=inputStamp;aiProposalMeta.get(updated).reasons=result.reasons||{};aiProposalMeta.get(updated).revisionHistory=revisionHistory.concat(request);
         saveProposalHistory('week',updated,result.reasons||{},'수정된 이번 주 제안');
         lastAiProposals.set(owner+'|'+todayStr(),updated);dialog.close();matchTemporaryExercises(updated,owner);
       }catch(e){if(dialog.isConnected){hint.dataset.kind='error';hint.textContent=aiFailureText('R',e,requestStage);}}
@@ -3731,6 +3733,8 @@
     error.aiStage='HTTP';error.aiStatus=response.status;
     error.aiCode=result && /^[A-Z0-9_]{1,30}$/.test(result.code||'')?result.code:'';
     error.aiUpstream=result && Number.isInteger(result.upstreamStatus)?result.upstreamStatus:0;
+    var d=result && result.diagnostic;
+    if(d && /^V[0-9]+$/.test(d.worker||'') && /^[a-f0-9-]{36}$/.test(d.requestId||'') && /^[a-z0-9.-]+$/.test(d.model||'') && Number.isInteger(d.attempt))error.aiDiagnostic=d;
     return error;
   }
   function aiFailureText(flow,error,stage){
@@ -3739,7 +3743,8 @@
     if(kind==='HTTP')code+='-'+(error.aiStatus||0)+(error.aiCode?'-'+error.aiCode:'')+(error.aiUpstream?'-G'+error.aiUpstream:'');
     var detail=kind==='NET'?'추천 서버에 연결하지 못했어요. 인터넷 연결과 Worker 배포 상태를 확인해주세요.':kind==='TIME'?'응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.':kind==='PARSE'?'추천 서버가 올바른 응답을 보내지 않았어요.':kind==='VERSION'?'앱과 Worker 버전이 맞지 않아요.':kind==='HTTP'?(error.message||'추천 서버 요청을 확인해주세요.'):'제안 내용을 처리하지 못했어요. 다시 시도해주세요.';
     var preserved=flow==='R'?'이전 제안은 유지돼요.':flow==='B'?'입력은 유지돼요.':'기존 루틴은 유지돼요.';
-    return detail+' '+preserved+'\n오류 코드: '+code;
+    var d=error && error.aiDiagnostic;
+    return detail+' '+preserved+'\n오류 코드: '+code+(d?'\n진단: '+d.worker+' · '+d.model+' · 시도 '+d.attempt+'\n요청 ID: '+d.requestId:'');
   }
   function proposalHistoryKey(){return keyFor('geunlog-ai-proposal-history-v1',activeProfile);}
   function proposalHistory(){var list=readJSON(proposalHistoryKey(),[]);return Array.isArray(list)?list.filter(function(e){return e && (e.kind==='base'||e.kind==='week') && e.routine && Array.isArray(e.routine.days);}).slice(-12):[];}

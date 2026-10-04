@@ -2538,3 +2538,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app .ai-adjustment .adjustment-generate:active,
 .bulk-app .ai-adjustment .adjustment-generate:focus-visible{color:var(--on-primary);background:var(--primary);border-color:var(--primary);}
 .bulk-app #reopenAiProposal{scroll-margin-bottom:110px;}
+
+/* Keep scrollbars clear of editable preview content and fixed actions. */
+.ai-preview-dialog .temporary-dialog-body{scrollbar-gutter:stable;padding-right:14px;scroll-padding-block:12px;}
+.temporary-dialog-layout>.temporary-dialog-header,.temporary-dialog-layout>.data-confirm-actions{flex-shrink:0;}
