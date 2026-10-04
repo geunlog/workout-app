@@ -841,14 +841,14 @@
     var meta=aiProposalMeta.get(candidate)||{fingerprint:adjustmentFingerprint(),asOf:todayStr(),kept:[]};
     var selected=new Set(candidate.days.map(function(day){return day.date;}));
     var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog ai-preview-dialog';dialog.setAttribute('aria-label','이번 주 제안 미리보기');
-    dialog.innerHTML='<h2>이번 주 제안 미리보기</h2><p class="ai-preview-meta">플랜 <strong data-owner></strong> · 아래 날짜만 변경돼요.</p>'+(meta.kept.length?'<p class="ai-kept-note">기존 일정 유지: '+meta.kept.map(adjustmentDayLabel).join(', ')+'</p>':'')+'<div data-preview></div>'+(meta.inputStamp?'<details class="ai-revision"><summary>이 제안 수정 요청</summary><div class="ai-revision-fields"><label for="aiRevisionRequest">바꾸고 싶은 내용</label><textarea id="aiRevisionRequest" rows="2" maxlength="500" placeholder="예: 금요일에는 등 운동을 더 넣어주세요."></textarea><p class="ai-revision-help">운동 날짜와 시간은 앞 화면에서 변경할 수 있어요.</p><button type="button" data-revise>수정 요청 보내기</button><p role="status" data-revise-status></p></div></details>':'')+'<p role="status" data-error></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>이번 주에 적용</button></div>';
+    dialog.innerHTML='<h2>이번 주 제안 미리보기</h2><p class="ai-preview-meta" role="status">제안을 받았어요. 플랜 <strong data-owner></strong> · 아래 날짜만 변경돼요.</p>'+(meta.kept.length?'<p class="ai-kept-note">기존 일정 유지: '+meta.kept.map(adjustmentDayLabel).join(', ')+'</p>':'')+'<div data-preview></div>'+(meta.inputStamp?'<details class="ai-revision"><summary>이 제안 수정 요청</summary><div class="ai-revision-fields"><label for="aiRevisionRequest">바꾸고 싶은 내용</label><textarea id="aiRevisionRequest" rows="2" maxlength="500" placeholder="예: 금요일에는 등 운동을 더 넣어주세요."></textarea><p class="ai-revision-help">운동 날짜와 시간은 앞 화면에서 변경할 수 있어요.</p><button type="button" data-revise>수정 요청 보내기</button><p role="status" data-revise-status></p></div></details>':'')+'<p role="status" data-error></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>이번 주에 적용</button></div>';
     dialog.querySelector('[data-owner]').textContent=owner;editAiProposal(dialog.querySelector('[data-preview]'),candidate,'week',meta.reasons||{},selected);
     var revisionPanel=dialog.querySelector('.ai-revision');if(revisionPanel)dialog.querySelector('[data-preview]').before(revisionPanel);
     addTemporaryClose(dialog);
     dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.addEventListener('close',function(){dialog.remove();});dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
     var revise=dialog.querySelector('[data-revise]');
     if(revise)revise.onclick=async function(){
-      var request=dialog.querySelector('#aiRevisionRequest').value.trim(),hint=dialog.querySelector('[data-revise-status]');
+      var request=dialog.querySelector('#aiRevisionRequest').value.trim(),hint=dialog.querySelector('[data-revise-status]');watchAiFeedback(hint);
       if(!request){hint.textContent='바꾸고 싶은 내용을 적어주세요.';dialog.querySelector('#aiRevisionRequest').focus();return;}
       var context,fingerprint,inputStamp;
       try{
@@ -895,7 +895,7 @@
       dialog.close();var index=(new Date(todayStr()+'T00:00:00Z').getUTCDay()+6)%7;activeIndex=index;selectedRecordDate=todayStr();refreshTemporaryViews();showToast('이번 주 임시 루틴을 적용했어요.');
     }catch(e){dialog.querySelector('[data-error]').textContent=e.message;}};
     if(meta.inputStamp){try{if(meta.fingerprint!==adjustmentFingerprint() || meta.inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('changed');}catch(e){dialog.querySelector('[data-error]').textContent='이전 조건으로 만든 제안이에요. 확인만 가능하며, 적용하려면 최신 조건으로 다시 추천받아주세요.';dialog.querySelector('[data-yes]').disabled=true;}}
-    document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-no]').focus();
+    document.body.appendChild(dialog);dialog.showModal();focusAiFeedback(dialog.querySelector('.ai-preview-meta'));
   }
   function temporaryJsonPrompt(state) {
     return '\n\n[상담부터 최종 파일까지]'+
@@ -3779,18 +3779,32 @@
     var minutes=estimateSession(day);
     return '<p class="ai-reason">가용 '+day.requestedMinutes+'분 · 구성 기준 예상 약 '+minutes+'분'+(minutes>day.requestedMinutes?' · 설정 시간 초과':'')+'<br><small>준비 5분·종목 전환 2분·반복당 3초·세트 간 휴식 90~180초를 가정한 추정이에요.</small></p>'+(day.shortSessionReason?'<p class="ai-reason">AI가 짧게 구성한 이유 · '+statsEscape(day.shortSessionReason)+'</p>':'');
   }
+  function focusAiFeedback(el){
+    if(!el || !el.isConnected || !el.textContent.trim())return;
+    var modal=document.querySelector('dialog[open]');
+    if(modal && !modal.contains(el))return;
+    el.tabIndex=-1;el.focus({preventScroll:true});
+    el.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  }
+  function watchAiFeedback(el){
+    if(!el || el._aiFeedbackObserver)return;
+    var observer=new MutationObserver(function(){focusAiFeedback(el);});
+    observer.observe(el,{childList:true,characterData:true,subtree:true});el._aiFeedbackObserver=observer;
+    var dialog=el.closest('dialog');if(dialog)dialog.addEventListener('close',function(){observer.disconnect();},{once:true});
+  }
+  function aiDaySummary(day){return day.rest?'휴식':day.exercises.length+'종목 · 총 '+day.exercises.reduce(function(n,e){return n+(Number(e.sets)||0);},0)+'세트';}
   function editAiProposal(container,candidate,kind,reasons,selected){
     var rested=new Map(),opened=new Set(),initial=true;
     function render(){
       if(!initial)opened=new Set([...container.querySelectorAll('.ai-edit-day[open]')].map(function(el){return candidate.days[Number(el.dataset.day)].date;}));
       initial=false;
       container.innerHTML='<p class="ai-editor-intro">요일별 제안을 확인하고 종목·순서·세트·횟수·RIR을 수정할 수 있어요.</p>'+
-        candidate.days.map(function(day,di){return '<details class="ai-edit-day" data-day="'+di+'"'+((initial || di===0 && !container.querySelector('.ai-edit-day')) || opened.has(day.date)?' open':'')+'><summary>'+adjustmentDayLabel(day.date)+' · '+statsEscape(day.title)+' <small>'+(day.rest?'휴식':day.exercises.length+'종목')+'</small></summary><div class="ai-edit-day-body"><label class="ai-day-choose"><input type="checkbox" data-day-select'+(selected.has(day.date)?' checked':'')+'> '+(kind==='base'?'이 요일 교체':'이번 주 적용')+'</label><label class="ai-edit-title">요일 제목<input data-day-title maxlength="100" value="'+statsEscape(day.title)+'"></label><label class="ai-day-rest"><input type="checkbox" data-day-rest'+(day.rest?' checked':'')+'> 휴식일</label>'+
+        candidate.days.map(function(day,di){return '<details class="ai-edit-day" data-day="'+di+'"'+((initial || di===0 && !container.querySelector('.ai-edit-day')) || opened.has(day.date)?' open':'')+'><summary>'+adjustmentDayLabel(day.date)+' · '+statsEscape(day.title)+' <small>'+aiDaySummary(day)+'</small></summary><div class="ai-edit-day-body"><label class="ai-day-choose"><input type="checkbox" data-day-select'+(selected.has(day.date)?' checked':'')+'> '+(kind==='base'?'이 요일 교체':'이번 주 적용')+'</label><label class="ai-edit-title">요일 제목<input data-day-title maxlength="100" value="'+statsEscape(day.title)+'"></label><label class="ai-day-rest"><input type="checkbox" data-day-rest'+(day.rest?' checked':'')+'> 휴식일</label>'+
           '<div data-timing>'+aiTimingHtml(day)+'</div>'+
           (reasons && reasons[day.date]?'<p class="ai-reason">AI의 원래 추천 이유 · '+statsEscape(reasons[day.date])+'</p>':'')+
           '<div class="ai-edit-exercises"'+(day.rest?' hidden':'')+'>'+day.exercises.map(function(e,ei){return '<div class="ai-edit-exercise" data-ex="'+ei+'"><div class="ai-edit-pair"><label>부위<select data-ex-muscle>'+MUSCLES.map(function(m){return '<option'+(m===e.muscle?' selected':'')+'>'+m+'</option>';}).join('')+'</select></label><label>운동<select data-ex-name>'+(catalog[e.muscle]||[]).map(function(item){return '<option'+(item.n===e.name?' selected':'')+'>'+statsEscape(item.n)+'</option>';}).join('')+'</select></label></div><div class="ai-edit-spec"><label>세트<input data-ex-sets type="number" inputmode="numeric" min="1" max="20" value="'+statsEscape(e.sets)+'"></label><label>횟수<input data-ex-reps maxlength="30" value="'+statsEscape(e.reps)+'"></label><label>RIR<input data-ex-rir maxlength="20" value="'+statsEscape(e.rir)+'"></label></div><div class="ai-edit-row-actions"><button type="button" data-ex-up aria-label="종목 위로">↑</button><button type="button" data-ex-down aria-label="종목 아래로">↓</button><button type="button" data-ex-remove>삭제</button></div></div>';}).join('')+'<button type="button" data-ex-add>+ 종목 추가</button></div></div></details>';}).join('')+'<div data-compare>'+proposalComparison(candidate,kind,selected)+'</div>';
     }
-    function compare(){container.querySelectorAll('[data-day]').forEach(function(section){section.querySelector('[data-timing]').innerHTML=aiTimingHtml(candidate.days[Number(section.dataset.day)]);});var el=container.querySelector('[data-compare]');if(el)el.innerHTML=proposalComparison(candidate,kind,selected);}
+    function compare(){container.querySelectorAll('[data-day]').forEach(function(section){section.querySelector('summary small').textContent=aiDaySummary(candidate.days[Number(section.dataset.day)]);section.querySelector('[data-timing]').innerHTML=aiTimingHtml(candidate.days[Number(section.dataset.day)]);});var el=container.querySelector('[data-compare]');if(el)el.innerHTML=proposalComparison(candidate,kind,selected);}
     container.onchange=function(event){var target=event.target,section=target.closest('[data-day]');if(!section)return;var day=candidate.days[Number(section.dataset.day)],row=target.closest('[data-ex]'),e=row&&day.exercises[Number(row.dataset.ex)];
       if(target.matches('[data-day-select]')){if(target.checked)selected.add(day.date);else selected.delete(day.date);compare();return;}
       if(target.matches('[data-day-title]'))day.title=target.value;
@@ -3815,7 +3829,7 @@
   function previewBasePlan(candidate,reasons,fingerprint){
     var owner=activeProfile,selected=new Set(candidate.days.map(function(d){return d.date;}));
     var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog ai-preview-dialog ai-base-preview';dialog.setAttribute('aria-label','기본 루틴 제안 미리보기');
-    dialog.innerHTML='<h2>기본 루틴 제안</h2><p class="ai-preview-meta">선택한 요일만 매주 반복할 기본 루틴으로 교체해요. 기존 기록과 이번 주 임시 루틴은 유지돼요.</p><div data-preview></div><p data-error role="status"></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>선택한 요일 저장</button></div>';
+    dialog.innerHTML='<h2>기본 루틴 제안</h2><p class="ai-preview-meta" role="status">제안을 받았어요. 선택한 요일만 매주 반복할 기본 루틴으로 교체해요. 기존 기록과 이번 주 임시 루틴은 유지돼요.</p><div data-preview></div><p data-error role="status"></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>선택한 요일 저장</button></div>';
     editAiProposal(dialog.querySelector('[data-preview]'),candidate,'base',reasons,selected);
     addTemporaryClose(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
     dialog.querySelector('[data-yes]').onclick=function(){try{
@@ -3833,7 +3847,7 @@
       if(!storageTransaction([{key:STORAGE_KEY,value:next},{key:routinePendingKey(),remove:true},{key:proposalHistoryKey(),value:boundedProposalHistory(history)}]))throw new Error('저장하지 못했어요. 이전 기본 루틴은 유지돼요.');
       days=ensureRoutineIds(next);routineOrderPending=false;dialog.close();renderTabs();renderPanel();renderReport();refreshBackupStatus();showToast(selected.size+'개 요일의 기본 루틴을 저장했어요.');
     }catch(e){dialog.querySelector('[data-error]').textContent=e.message;}};
-    document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-no]').focus();
+    document.body.appendChild(dialog);dialog.showModal();focusAiFeedback(dialog.querySelector('.ai-preview-meta'));
   }
   function openBasePlanSurvey(){
     if(hasRoutineDraft()){showToast('수정 중인 루틴을 먼저 저장하거나 취소해주세요.','pending');return;}
@@ -3851,7 +3865,7 @@
     dialog.querySelectorAll('[data-day-chip]').forEach(function(chip){chip.onclick=function(){var select=dialog.querySelector('[data-base-day="'+chip.dataset.dayChip+'"]').querySelector('[data-base-mode]');select.value=select.value==='generate'?'keep':'generate';syncBaseDayPicker();};});
     addTemporaryClose(dialog);dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
     dialog.querySelector('[data-generate]').onclick=async function(){
-      var goal=dialog.querySelector('[data-goal]').value,experience=dialog.querySelector('[data-experience]').value,status=dialog.querySelector('[data-status]');
+      var goal=dialog.querySelector('[data-goal]').value,experience=dialog.querySelector('[data-experience]').value,status=dialog.querySelector('[data-status]');watchAiFeedback(status);
       if(!goal || !experience){status.textContent='운동 목표와 경력을 선택해주세요.';return;}
       if(owner!==activeProfile || week.from!==adjustmentWeek(todayStr()).from){status.textContent='날짜나 플랜이 바뀌었어요. 화면을 다시 열어주세요.';return;}
       if(hasRoutineDraft()){status.textContent='수정 중인 루틴을 먼저 저장하거나 취소해주세요.';return;}
@@ -3945,7 +3959,7 @@
   }
   function bindAdjustment(){
     var root=document.getElementById('weekAdjustment'),state=adjustmentState(),renderedOn=todayStr();if(!root)return;
-    var status=root.querySelector('#adjustmentStatus'),fallback=root.querySelector('#adjustmentFallback');
+    var status=root.querySelector('#adjustmentStatus'),fallback=root.querySelector('#adjustmentFallback');watchAiFeedback(status);
     function save(){persistAdjustment(state);syncToday();}
     function syncToday(){
       var el=root.querySelector('#aiTodayStatus'),hint=root.querySelector('#aiTodayHint');
