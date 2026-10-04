@@ -674,7 +674,7 @@
       '각 날짜: date, title(공백 제외 1~100자), rest(boolean), exercises(array) 필수.',
       '운동일은 rest:false와 1~30개 종목, 휴식일은 rest:true와 종목 0개.',
       '각 종목: name(공백 제외 1~200자), muscle, sets, reps, rir 필수. 이름은 기존 등록 명칭을 가능한 한 그대로 사용.',
-      'muscle은 가슴/등/어깨/하체/삼두/이두 중 하나. 유산소·복근은 사용자가 별도로 판단하므로 포함하지 않음.',
+      'muscle은 가슴/등/어깨/하체/삼두/이두/복근 중 하나. 유산소는 제외하며 복근은 명시적으로 요청하면 포함.',
       'sets는 숫자형 정수 1~20. reps는 문자열로 1~100의 정수 또는 오름차순 범위(예: "8~12"). rir은 문자열로 0~9 또는 오름차순 범위(예: "1~2"). 범위 구분자는 ~, -, – 중 하나.',
       'title/name/reps/rir에 < 또는 > 문자는 금지. profile, 기본 routine, 저장 운동 기록, 메모, 설명용 필드를 추가하지 말 것.',
       '출력 전 문법·필수 필드·자료형·날짜·범위를 자체 점검. 다운로드 가능한 UTF-8 .json 파일로 제공하고, 파일 본문은 설명이나 코드블록 없이 JSON 객체 하나만 포함.',
@@ -744,7 +744,7 @@
         var ep=path+'.exercises['+i+']';
         if(!e || typeof e!=='object')fail(ep,'종목 객체가 필요해요.');
         if(!textOK(e.name,200))fail(ep+'.name','1~200자 종목명이 필요해요. < > 문자는 제외해주세요.');
-        if(!MUSCLES.includes(e.muscle) || e.muscle==='복근')fail(ep+'.muscle','가슴·등·어깨·하체·삼두·이두 중 하나여야 해요.');
+        if(!MUSCLES.includes(e.muscle))fail(ep+'.muscle','등록된 운동 부위여야 해요.');
         if(!Number.isInteger(e.sets) || e.sets<1 || e.sets>20)fail(ep+'.sets','숫자형 정수 1~20이어야 해요.');
         if(!textOK(e.reps,30) || !/^\d{1,3}(?:[~–-]\d{1,3})?$/.test(e.reps))fail(ep+'.reps','"8" 또는 "8~12" 같은 문자열이 필요해요.');
         if(!textOK(e.rir,20) || !/^\d(?:[~–-]\d)?$/.test(e.rir))fail(ep+'.rir','"2" 또는 "1~2" 같은 문자열이 필요해요.');
@@ -753,7 +753,7 @@
         if(rir[0]>rir[rir.length-1])fail(ep+'.rir','0~9 이내의 오름차순 범위여야 해요.');
         return Object.assign({name:e.name.trim(),muscle:e.muscle,sets:e.sets,reps:e.reps,rir:e.rir},typeof e.uid==='string' && /^[a-zA-Z0-9_-]{1,120}$/.test(e.uid)?{uid:e.uid}:{});
       });
-      clean.days.push({date:day.date,title:day.title.trim(),rest:day.rest,exercises:exercises});
+      clean.days.push({date:day.date,title:day.title.trim(),rest:day.rest,exercises:exercises,...(Number.isFinite(day.estimatedMinutes)?{estimatedMinutes:day.estimatedMinutes}:{}),...(Number.isFinite(day.requestedMinutes)?{requestedMinutes:day.requestedMinutes}:{}),...(typeof day.shortSessionReason==='string'?{shortSessionReason:day.shortSessionReason.slice(0,350)}:{})});
     });
     clean.days.sort(function(a,b){return a.date.localeCompare(b.date);});return clean;
   }
@@ -821,7 +821,7 @@
 
     renderTabs();renderPanel();renderReport();renderPrinciples();refreshBackupStatus();
   }
-  function registeredExerciseText(){return '\n\n[사용 가능한 등록 종목 — 이름과 부위를 그대로 사용]\n'+MUSCLES.filter(function(m){return m!=='복근';}).map(function(m){return m+': '+(catalog[m]||[]).map(function(e){return e.n;}).join(', ');}).join('\n')+'\n목록에 없는 이름을 만들거나 장비·그립을 바꿔 표기하지 마세요.';}
+  function registeredExerciseText(){return '\n\n[사용 가능한 등록 종목 — 이름과 부위를 그대로 사용]\n'+MUSCLES.map(function(m){return m+': '+(catalog[m]||[]).map(function(e){return e.n;}).join(', ');}).join('\n')+'\n목록에 없는 이름을 만들거나 장비·그립을 바꿔 표기하지 마세요.';}
   function matchTemporaryExercises(candidate,owner){
     var unmatched=[];candidate.days.forEach(function(day){day.exercises.forEach(function(e){if(!(catalog[e.muscle]||[]).some(function(c){return c.n===e.name;}))unmatched.push(e);});});
     if(!unmatched.length){previewTemporaryFile(candidate,owner);return;}
@@ -831,7 +831,7 @@
       var row=document.createElement('section');row.className='match-row';var label=document.createElement('strong');label.textContent=e.name+' · '+e.muscle;row.appendChild(label);
       var filter=makeMuscleSelect(),input=document.createElement('input'),select=document.createElement('select');input.type='search';input.placeholder='연결할 종목 검색';input.setAttribute('aria-label',e.name+' 연결할 종목 검색');select.setAttribute('aria-label',e.name+' 등록 종목 선택');
       filter.value=e.muscle;var search=document.createElement('div');search.className='muscle-search';search.append(filter,input);row.append(search,select);
-      function results(){var matches=searchExerciseCatalog(input.value,filter.value).filter(function(x){return x.muscle!=='복근';});select.replaceChildren(new Option('종목을 선택해주세요',''));matches.forEach(function(x){select.add(new Option(x.exercise.n+' · '+x.muscle,JSON.stringify([x.muscle,x.exercise.n])));});selections.delete(index);}
+      function results(){var matches=searchExerciseCatalog(input.value,filter.value);select.replaceChildren(new Option('종목을 선택해주세요',''));matches.forEach(function(x){select.add(new Option(x.exercise.n+' · '+x.muscle,JSON.stringify([x.muscle,x.exercise.n])));});selections.delete(index);}
       input.oninput=filter.onchange=results;select.onchange=function(){if(select.value)selections.set(index,JSON.parse(select.value));else selections.delete(index);};results();dialog.querySelector('[data-matches]').appendChild(row);
     });
     dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();};dialog.querySelector('[data-next]').onclick=function(){if(owner!==activeProfile){dialog.close();return;}if(selections.size!==unmatched.length){dialog.querySelector('[data-error]').textContent='모든 종목을 연결해주세요.';return;}unmatched.forEach(function(e,i){var pair=selections.get(i);e.muscle=pair[0];e.name=pair[1];});dialog.close();previewTemporaryFile(candidate,owner);};
@@ -1531,7 +1531,7 @@
       }
     }
     function renderResults() {
-      results.replaceChildren();var matches=searchExerciseCatalog(input.value,filter.value).filter(function(match){return !day.temporary || match.muscle!=='복근';});count.textContent=matches.length+'개 종목';
+      results.replaceChildren();var matches=searchExerciseCatalog(input.value,filter.value);count.textContent=matches.length+'개 종목';
       if(!matches.length){var empty=document.createElement('p');empty.textContent='일치하는 종목이 없어요. 다른 이름으로 검색하거나 운동 관리에서 종목을 등록해주세요.';results.appendChild(empty);}
       matches.forEach(function(match){
         var button=document.createElement('button');button.type='button';button.className='exercise-search-result';
@@ -1731,7 +1731,7 @@
       var mSel = document.createElement('select');
       mSel.className = 'in-muscle';
       mSel.setAttribute('aria-label', '부위');
-      MUSCLES.filter(function(m){return !d.temporary || m!=='복근';}).forEach(function (m) {
+      MUSCLES.forEach(function (m) {
         var opt = document.createElement('option');
         opt.value = m; opt.textContent = m;
         if (m === ex.m) opt.selected = true;
@@ -3619,7 +3619,7 @@
     var coverage={unknown:'미확인 — 기록 외에 수행한 세트가 있을 수 있음',all:'사용자 확인: 오늘 현재까지 수행한 모든 세트를 기록함',some:'일부 세트만 기록함'};
     var lines=['[이번 주 남은 운동 루틴 조정 요청]','플랜: '+profile,'오늘: '+asOf,'대상 기간: '+week.from+' ~ '+week.to,
       '남은 운동 가능일: '+available.map(function(d){return d+' ('+labels[week.dates.indexOf(d)]+'요일)';}).join(', '),
-      '1회 웨이트 가능 시간 (유산소·복근 제외): '+(options.minutes?options.minutes==='unlimited'?'제한 없음':options.minutes+'분':'미입력'),
+      '1회 웨이트 가능 시간 (유산소 제외, 요청한 복근 포함): '+(options.minutes?options.minutes==='unlimited'?'제한 없음':options.minutes+'분':'미입력'),
       '기록 범위: '+(coverage[options.coverage] || coverage.unknown),'추가 조건: '+(options.notes.trim() || '없음'),'',
       '[현재 주간 루틴 — 실제 수행 내역과 별개]'];
     routine.forEach(function(day){lines.push(day.letter+'요일 · '+(day.title || '제목 없음'));(day.ex || []).forEach(function(e){lines.push('- '+e.n+' ['+e.m+']: '+e.s+'세트 · '+(e.r || '미설정')+'회 · RIR '+(e.rir || '미설정'));});if(!(day.ex || []).length)lines.push('- 계획 종목 없음');if(day.cardio)lines.push('- 유산소 계획 있음');if(day.note)lines.push('- 메모: '+day.note);});
@@ -3633,7 +3633,7 @@
     });
     lines.push('','[부위별 저장 세트]');var muscles=Array.from(new Set(MUSCLES.concat(Object.keys(totals))));lines.push(muscles.map(function(m){return m+' '+(totals[m] || 0)+'세트';}).join(' · '));
     lines.push('','[추천 조건]',
-      '- 선택 시간은 웨이트 준비·세트 간 휴식·이동을 포함한 시간입니다. 유산소·복근은 사용자가 따로 판단하므로 추천에서 제외해주세요.',
+      '- 선택 시간은 웨이트 준비·세트 간 휴식·이동을 포함한 시간입니다. 유산소는 제외하고 복근은 명시적으로 요청하면 포함해주세요.',
       '- 저장 기록 1개는 기록한 1세트입니다. 계획 세트나 전체 실제 수행 세트와 혼동하지 마세요.',
       '- 기록 범위가 일부 또는 미확인이면 빠진 부위·남은 세트 수를 단정하지 말고 실제 수행 내역을 먼저 확인해주세요.',
       '- 기록 없음은 미실시를 뜻하지 않습니다. 무게·횟수만으로 실제 RIR이나 피로도를 단정하지 마세요.',
@@ -3744,7 +3744,7 @@
     var detail=kind==='NET'?'추천 서버에 연결하지 못했어요. 인터넷 연결과 Worker 배포 상태를 확인해주세요.':kind==='TIME'?'응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.':kind==='PARSE'?'추천 서버가 올바른 응답을 보내지 않았어요.':kind==='VERSION'?'앱과 Worker 버전이 맞지 않아요.':kind==='HTTP'?(error.message||'추천 서버 요청을 확인해주세요.'):'제안 내용을 처리하지 못했어요. 다시 시도해주세요.';
     var preserved=flow==='R'?'이전 제안은 유지돼요.':flow==='B'?'입력은 유지돼요.':'기존 루틴은 유지돼요.';
     var d=error && error.aiDiagnostic;
-    return detail+' '+preserved+'\n오류 코드: '+code+(d?'\n진단: '+d.worker+' · '+d.model+' · 시도 '+d.attempt+'\n요청 ID: '+d.requestId:'');
+    return detail+' '+preserved+'\n오류 코드: '+code+(d?'\n진단: '+d.worker+' · '+d.model+' · 시도 '+d.attempt+(d.validation && /^[A-Z_]{1,40}$/.test(d.validation)?'\n검증 코드: '+d.validation:'')+'\n요청 ID: '+d.requestId:'');
   }
   function proposalHistoryKey(){return keyFor('geunlog-ai-proposal-history-v1',activeProfile);}
   function proposalHistory(){var list=readJSON(proposalHistoryKey(),[]);return Array.isArray(list)?list.filter(function(e){return e && (e.kind==='base'||e.kind==='week') && e.routine && Array.isArray(e.routine.days);}).slice(-12):[];}
@@ -3754,23 +3754,30 @@
     if(!writeJSON(proposalHistoryKey(),boundedProposalHistory(list)))showToast('제안 이력을 저장하지 못했어요. 현재 제안은 사용할 수 있어요.','pending');
   }
   function baseSnapshot(){var week=adjustmentWeek(todayStr()),saved=loadSavedRoutine();return {format:'workout-temporary-routine',version:1,weekStart:week.from,weekEnd:week.to,days:saved.map(function(d,i){return {date:week.dates[i],title:d.title||(d.ex.length?'루틴':'휴식'),rest:!d.ex.length,exercises:d.ex.map(function(e){return {name:e.n,muscle:e.m,sets:Number(e.s),reps:e.r,rir:e.rir};})};})};}
-  function validateBaseCandidate(candidate){
-    // Existing basic routines may contain abs. AI proposals never create abs,
-    // but restoring a previous basic routine must preserve them exactly.
-    var transformed={...candidate,days:candidate.days.map(function(day){return {...day,exercises:day.exercises.map(function(e){return {...e,muscle:e.muscle==='복근'?'가슴':e.muscle};})};})};
-    var validated=validateTemporary(transformed,todayStr(),true);
-    validated.days.forEach(function(day){var original=candidate.days.find(function(d){return d.date===day.date;});day.exercises.forEach(function(e,i){if(original.exercises[i].muscle==='복근')e.muscle='복근';});});
-    return validated;
-  }
+  function validateBaseCandidate(candidate){return validateTemporary(candidate,todayStr(),true);}
   function proposalComparison(candidate,kind,selected){
     var source=kind==='base'?loadSavedRoutine():effectiveWeek(),week=adjustmentWeek(todayStr()),byMuscle={};
-    (kind==='base'?MUSCLES:VOLUME_MUSCLES).forEach(function(m){byMuscle[m]={before:0,after:0,done:0};});
+    MUSCLES.forEach(function(m){byMuscle[m]={before:0,after:0,done:0};});
     week.dates.forEach(function(date,i){var replaced=selected.has(date)?candidate.days.find(function(d){return d.date===date;}):null;
       (source[i].ex||[]).forEach(function(e){if(byMuscle[e.m])byMuscle[e.m].before+=Number(e.s)||0;});
       (replaced?replaced.exercises.map(function(e){return {m:e.muscle,s:e.sets};}):(source[i].ex||[])).forEach(function(e){if(byMuscle[e.m])byMuscle[e.m].after+=Number(e.s)||0;});
     });
     if(kind==='week')adjustmentRecords(todayStr()).filter(function(e){return e.date>=week.from;}).forEach(function(e){if(byMuscle[e.muscle])byMuscle[e.muscle].done++;});
-    return '<section class="ai-compare"><h3>부위별 세트 비교</h3><p>'+(kind==='week'?'계획과 이번 주 저장 기록은 별개예요.':'반복 주간 계획의 변경 전후예요.')+'</p><div class="ai-compare-grid"><strong>부위</strong><strong>기존</strong>'+(kind==='week'?'<strong>수행</strong>':'')+'<strong>제안</strong>'+(kind==='base'?MUSCLES:VOLUME_MUSCLES).map(function(m){var v=byMuscle[m];return '<span>'+m+'</span><span>'+v.before+'</span>'+(kind==='week'?'<span>'+v.done+'</span>':'')+'<strong>'+v.after+'</strong>';}).join('')+'</div></section>';
+    return '<section class="ai-compare"><h3>부위별 세트 비교</h3><p>'+(kind==='week'?'계획과 이번 주 저장 기록은 별개예요.':'반복 주간 계획의 변경 전후예요.')+'</p><div class="ai-compare-grid"><strong>부위</strong><strong>기존</strong>'+(kind==='week'?'<strong>수행</strong>':'')+'<strong>제안</strong>'+MUSCLES.map(function(m){var v=byMuscle[m];return '<span>'+m+'</span><span>'+v.before+'</span>'+(kind==='week'?'<span>'+v.done+'</span>':'')+'<strong>'+v.after+'</strong>';}).join('')+'</div></section>';
+  }
+  function estimateSession(day) {
+ if(day.rest)return 0;
+ return Math.ceil(5+day.exercises.reduce((sum,e)=>{
+  const reps=Number(String(e.reps).split(/[~–-]/).pop())||10;
+  const rest=/프레스|스쿼트|데드리프트|로우|풀업|딥스/.test(e.name)?180:90;
+  return sum+2+e.sets*reps*3/60+Math.max(0,e.sets-1)*rest/60;
+ },0));
+}
+
+  function aiTimingHtml(day){
+    if(!Number.isFinite(day.requestedMinutes))return '';
+    var minutes=estimateSession(day);
+    return '<p class="ai-reason">가용 '+day.requestedMinutes+'분 · 구성 기준 예상 약 '+minutes+'분'+(minutes>day.requestedMinutes?' · 설정 시간 초과':'')+'<br><small>준비 5분·종목 전환 2분·반복당 3초·세트 간 휴식 90~180초를 가정한 추정이에요.</small></p>'+(day.shortSessionReason?'<p class="ai-reason">AI가 짧게 구성한 이유 · '+statsEscape(day.shortSessionReason)+'</p>':'');
   }
   function editAiProposal(container,candidate,kind,reasons,selected){
     var rested=new Map(),opened=new Set(),initial=true;
@@ -3779,10 +3786,11 @@
       initial=false;
       container.innerHTML='<p class="ai-editor-intro">요일별 제안을 확인하고 종목·순서·세트·횟수·RIR을 수정할 수 있어요.</p>'+
         candidate.days.map(function(day,di){return '<details class="ai-edit-day" data-day="'+di+'"'+((initial || di===0 && !container.querySelector('.ai-edit-day')) || opened.has(day.date)?' open':'')+'><summary>'+adjustmentDayLabel(day.date)+' · '+statsEscape(day.title)+' <small>'+(day.rest?'휴식':day.exercises.length+'종목')+'</small></summary><div class="ai-edit-day-body"><label class="ai-day-choose"><input type="checkbox" data-day-select'+(selected.has(day.date)?' checked':'')+'> '+(kind==='base'?'이 요일 교체':'이번 주 적용')+'</label><label class="ai-edit-title">요일 제목<input data-day-title maxlength="100" value="'+statsEscape(day.title)+'"></label><label class="ai-day-rest"><input type="checkbox" data-day-rest'+(day.rest?' checked':'')+'> 휴식일</label>'+
+          '<div data-timing>'+aiTimingHtml(day)+'</div>'+
           (reasons && reasons[day.date]?'<p class="ai-reason">AI의 원래 추천 이유 · '+statsEscape(reasons[day.date])+'</p>':'')+
-          '<div class="ai-edit-exercises"'+(day.rest?' hidden':'')+'>'+day.exercises.map(function(e,ei){return '<div class="ai-edit-exercise" data-ex="'+ei+'"><div class="ai-edit-pair"><label>부위<select data-ex-muscle>'+(kind==='base'?MUSCLES:VOLUME_MUSCLES).map(function(m){return '<option'+(m===e.muscle?' selected':'')+'>'+m+'</option>';}).join('')+'</select></label><label>운동<select data-ex-name>'+(catalog[e.muscle]||[]).map(function(item){return '<option'+(item.n===e.name?' selected':'')+'>'+statsEscape(item.n)+'</option>';}).join('')+'</select></label></div><div class="ai-edit-spec"><label>세트<input data-ex-sets type="number" inputmode="numeric" min="1" max="20" value="'+statsEscape(e.sets)+'"></label><label>횟수<input data-ex-reps maxlength="30" value="'+statsEscape(e.reps)+'"></label><label>RIR<input data-ex-rir maxlength="20" value="'+statsEscape(e.rir)+'"></label></div><div class="ai-edit-row-actions"><button type="button" data-ex-up aria-label="종목 위로">↑</button><button type="button" data-ex-down aria-label="종목 아래로">↓</button><button type="button" data-ex-remove>삭제</button></div></div>';}).join('')+'<button type="button" data-ex-add>+ 종목 추가</button></div></div></details>';}).join('')+'<div data-compare>'+proposalComparison(candidate,kind,selected)+'</div>';
+          '<div class="ai-edit-exercises"'+(day.rest?' hidden':'')+'>'+day.exercises.map(function(e,ei){return '<div class="ai-edit-exercise" data-ex="'+ei+'"><div class="ai-edit-pair"><label>부위<select data-ex-muscle>'+MUSCLES.map(function(m){return '<option'+(m===e.muscle?' selected':'')+'>'+m+'</option>';}).join('')+'</select></label><label>운동<select data-ex-name>'+(catalog[e.muscle]||[]).map(function(item){return '<option'+(item.n===e.name?' selected':'')+'>'+statsEscape(item.n)+'</option>';}).join('')+'</select></label></div><div class="ai-edit-spec"><label>세트<input data-ex-sets type="number" inputmode="numeric" min="1" max="20" value="'+statsEscape(e.sets)+'"></label><label>횟수<input data-ex-reps maxlength="30" value="'+statsEscape(e.reps)+'"></label><label>RIR<input data-ex-rir maxlength="20" value="'+statsEscape(e.rir)+'"></label></div><div class="ai-edit-row-actions"><button type="button" data-ex-up aria-label="종목 위로">↑</button><button type="button" data-ex-down aria-label="종목 아래로">↓</button><button type="button" data-ex-remove>삭제</button></div></div>';}).join('')+'<button type="button" data-ex-add>+ 종목 추가</button></div></div></details>';}).join('')+'<div data-compare>'+proposalComparison(candidate,kind,selected)+'</div>';
     }
-    function compare(){var el=container.querySelector('[data-compare]');if(el)el.innerHTML=proposalComparison(candidate,kind,selected);}
+    function compare(){container.querySelectorAll('[data-day]').forEach(function(section){section.querySelector('[data-timing]').innerHTML=aiTimingHtml(candidate.days[Number(section.dataset.day)]);});var el=container.querySelector('[data-compare]');if(el)el.innerHTML=proposalComparison(candidate,kind,selected);}
     container.onchange=function(event){var target=event.target,section=target.closest('[data-day]');if(!section)return;var day=candidate.days[Number(section.dataset.day)],row=target.closest('[data-ex]'),e=row&&day.exercises[Number(row.dataset.ex)];
       if(target.matches('[data-day-select]')){if(target.checked)selected.add(day.date);else selected.delete(day.date);compare();return;}
       if(target.matches('[data-day-title]'))day.title=target.value;
@@ -3850,7 +3858,7 @@
       var rows=[...dialog.querySelectorAll('[data-base-day]')],planDays=rows.map(function(row,i){var mode=row.querySelector('[data-base-mode]').value;return {date:week.dates[i],mode:mode,minutes:mode==='generate'?Number(row.querySelector('[data-base-time]').value):null};});
       if(!planDays.some(function(day){return day.mode==='generate';})){status.textContent='AI가 만들 요일을 한 개 이상 선택해주세요.';return;}
       if(planDays.some(function(day){return day.mode==='generate' && ![30,45,60,75,90,120].includes(day.minutes);})){status.textContent='AI 생성 요일의 운동 시간을 선택해주세요.';return;}
-      var fingerprint=basePlanFingerprint(),payload={plan:{schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:{goal:goal,experience:experience,preferences:'',excluded:'',equipment:''},notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),registeredExercises:VOLUME_MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
+      var fingerprint=basePlanFingerprint(),payload={plan:{schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:{goal:goal,experience:experience,preferences:'',excluded:'',equipment:''},notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),registeredExercises:MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
       var button=this,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000);button.disabled=true;status.dataset.kind='loading';status.textContent='매주 반복할 루틴을 제안하고 있어요. 최대 약 80초 걸릴 수 있어요.';
       var requestStage='NET';
       try{var response=await fetch(BASE_PLAN_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal,cache:'no-store'}),result;
@@ -3921,7 +3929,7 @@
     });
     if(state.todayStatus==='before' && (thisWeek.some(function(e){return e.date===asOf;}) || supplements.some(function(e){return e.date===asOf;})))throw new Error('오늘 수행한 운동이 있어요. 오늘 운동 상태를 ‘일부 진행’ 또는 ‘완료’로 바꿔주세요.');
     if(!availability.some(function(d){return d.mode==='adjust';}))throw new Error('AI가 조정할 날짜를 하나 이상 선택해주세요.');
-    return {schemaVersion:2,asOf:asOf,weekStart:week.from,weekEnd:week.to,athlete:Object.assign({},info,{goal:state.goal||info.goal}),baseRoutine:planForAi(base,week),currentRoutine:planForAi(current,week),temporaryRoutine:activeTemporary(),recentRecords:records,recordCoverage:state.coverage,supplementalSets:supplements.map(function(e){return {date:e.date,muscle:e.muscle,sets:Number(e.sets)};}),availability:availability,todayStatus:state.todayStatus||'unspecified',special:'none',notes:state.notes||'',representativeExercises:representativeCatalog(),registeredExercises:VOLUME_MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});})};
+    return {schemaVersion:2,asOf:asOf,weekStart:week.from,weekEnd:week.to,athlete:Object.assign({},info,{goal:state.goal||info.goal}),baseRoutine:planForAi(base,week),currentRoutine:planForAi(current,week),temporaryRoutine:activeTemporary(),recentRecords:records,recordCoverage:state.coverage,supplementalSets:supplements.map(function(e){return {date:e.date,muscle:e.muscle,sets:Number(e.sets)};}),availability:availability,todayStatus:state.todayStatus||'unspecified',special:'none',notes:state.notes||'',representativeExercises:representativeCatalog(),registeredExercises:MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});})};
   }
   function mergeTemporaryDays(previous,candidate){
     var replaced=new Set(candidate.days.map(function(d){return d.date;}));
@@ -4007,7 +4015,7 @@
         requestStage='RESULT';
         if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification+' 입력 내용을 수정한 뒤 다시 요청해주세요.';return;}
         if(fingerprint!==adjustmentFingerprint() || inputStamp!==JSON.stringify(contextNow()))throw new Error('요청 중 기록·루틴·입력 조건이 바뀌었어요. 최신 내용으로 다시 추천받아주세요.');
-        var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;aiProposalMeta.get(candidate).reasons=result.reasons||{};lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='일정 유지·휴식일을 반영했어요. 미리보기에서 확인해주세요.';requestStage='PREVIEW';saveProposalHistory('week',candidate,result.reasons||{},'이번 주 AI 제안');matchTemporaryExercises(candidate,owner);
+        var candidate=prepareAiCandidate(result.routine,context,fingerprint);aiProposalMeta.get(candidate).inputStamp=inputStamp;aiProposalMeta.get(candidate).reasons=result.reasons||{};lastAiProposals.set(proposalKey,candidate);reopen.hidden=false;status.dataset.kind='success';status.textContent='제안을 받았어요. 요청한 종목과 예상 시간을 미리보기에서 확인해주세요.';requestStage='PREVIEW';saveProposalHistory('week',candidate,result.reasons||{},'이번 주 AI 제안');matchTemporaryExercises(candidate,owner);
       }catch(e){if(owner===activeProfile && root.isConnected)feedback(aiFailureText('W',e,requestStage));}
       finally{clearTimeout(timer);aiAdjustmentBusy=false;if(root.isConnected){button.disabled=false;button.textContent=activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기';}}
     };
