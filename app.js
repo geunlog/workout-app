@@ -3742,9 +3742,10 @@
     var code='AI-'+flow+'-'+kind;
     if(kind==='HTTP')code+='-'+(error.aiStatus||0)+(error.aiCode?'-'+error.aiCode:'')+(error.aiUpstream?'-G'+error.aiUpstream:'');
     var detail=kind==='NET'?'추천 서버에 연결하지 못했어요. 인터넷 연결과 Worker 배포 상태를 확인해주세요.':kind==='TIME'?'응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.':kind==='PARSE'?'추천 서버가 올바른 응답을 보내지 않았어요.':kind==='VERSION'?'앱과 Worker 버전이 맞지 않아요.':kind==='HTTP'?(error.message||'추천 서버 요청을 확인해주세요.'):'제안 내용을 처리하지 못했어요. 다시 시도해주세요.';
+    if(kind==='HTTP' && error.aiCode==='UPSTREAM_CONFIG')detail='추천 서비스의 요청 설정에 문제가 있어요. 앱 수정이 필요해요.';
     var preserved=flow==='R'?'이전 제안은 유지돼요.':flow==='B'?'입력은 유지돼요.':'기존 루틴은 유지돼요.';
     var d=error && error.aiDiagnostic;
-    return detail+' '+preserved+'\n오류 코드: '+code+(d?'\n진단: '+d.worker+' · '+d.model+' · 시도 '+d.attempt+(d.validation && /^[A-Z_]{1,40}$/.test(d.validation)?'\n검증 코드: '+d.validation:'')+'\n요청 ID: '+d.requestId:'');
+    return detail+(detail.includes(preserved)?'':' '+preserved)+'\n오류 코드: '+code+(d?'\n진단: '+d.worker+' · '+d.model+' · 시도 '+d.attempt+(d.validation && /^[A-Z_]{1,40}$/.test(d.validation)?'\n검증 코드: '+d.validation:'')+'\n요청 ID: '+d.requestId:'');
   }
   function proposalHistoryKey(){return keyFor('geunlog-ai-proposal-history-v1',activeProfile);}
   function proposalHistory(){var list=readJSON(proposalHistoryKey(),[]);return Array.isArray(list)?list.filter(function(e){return e && (e.kind==='base'||e.kind==='week') && e.routine && Array.isArray(e.routine.days);}).slice(-12):[];}
@@ -3786,9 +3787,18 @@
     el.tabIndex=-1;el.focus({preventScroll:true});
     el.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }
+  function formatAiFeedback(el){
+    var text=el.textContent,split=text.indexOf('\n오류 코드:');
+    el.classList.toggle('ai-feedback-error',split>=0);
+    if(split<0 || el.querySelector('.ai-feedback-message'))return;
+    var message=document.createElement('span');message.className='ai-feedback-message';message.textContent=text.slice(0,split);
+    var diagnostics=document.createElement('span');diagnostics.className='ai-feedback-diagnostics';
+    text.slice(split+1).split('\n').forEach(function(line){var row=document.createElement('span');row.textContent=line;diagnostics.appendChild(row);});
+    el.replaceChildren(message,document.createTextNode('\n'),diagnostics);
+  }
   function watchAiFeedback(el){
     if(!el || el._aiFeedbackObserver)return;
-    var observer=new MutationObserver(function(){focusAiFeedback(el);});
+    var observer=new MutationObserver(function(){observer.disconnect();formatAiFeedback(el);observer.observe(el,{childList:true,characterData:true,subtree:true});focusAiFeedback(el);});
     observer.observe(el,{childList:true,characterData:true,subtree:true});el._aiFeedbackObserver=observer;
     var dialog=el.closest('dialog');if(dialog)dialog.addEventListener('close',function(){observer.disconnect();},{once:true});
   }

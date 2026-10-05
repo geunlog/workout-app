@@ -2542,3 +2542,12 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 /* Keep scrollbars clear of editable preview content and fixed actions. */
 .ai-preview-dialog .temporary-dialog-body{scrollbar-gutter:stable;padding-right:14px;scroll-padding-block:12px;}
 .temporary-dialog-layout>.temporary-dialog-header,.temporary-dialog-layout>.data-confirm-actions{flex-shrink:0;}
+
+/* v97: separate readable AI guidance from support diagnostics. */
+.ai-base-survey [data-status].ai-feedback-error,
+.ai-preview-dialog [data-revise-status].ai-feedback-error,
+.bulk-app #adjustmentStatus.ai-feedback-error{padding:14px 16px;border:1px solid #ecd6c7;border-radius:12px;background:#fff7f0;color:#783c22;font-weight:400;white-space:normal;scroll-margin-block:20px;}
+.ai-feedback-error .ai-feedback-message{display:block;font-size:14px;font-weight:500;line-height:1.6;word-break:keep-all;overflow-wrap:anywhere;}
+.ai-feedback-error .ai-feedback-diagnostics{display:block;margin-top:10px;padding-top:10px;border-top:1px solid #eadacf;font-size:11px;line-height:1.65;font-weight:400;color:#715c50;overflow-wrap:anywhere;word-break:break-word;}
+.ai-feedback-diagnostics>span{display:block;}
+.ai-base-survey .temporary-dialog-body,.ai-preview-dialog .temporary-dialog-body{padding-block:12px 20px;scroll-padding-block:20px;}
