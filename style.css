@@ -2554,3 +2554,13 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 
 /* v98: prevent short/resized AI notes fields from hiding the first line. */
 .ai-base-survey .ai-base-notes textarea,.ai-preview-dialog .ai-revision textarea{box-sizing:border-box;display:block;min-height:108px;height:108px;max-height:240px;line-height:1.6;padding:12px;resize:vertical;overflow-y:auto;}
+
+/* v99: show fixed and proposed volume separately in a compact readable table. */
+.ai-allocation{margin:16px 0;padding:16px;border:1px solid #e1e5ed;border-radius:16px;background:#fff;}
+.ai-allocation h3{margin:0 0 10px;font-size:16px;}
+.ai-allocation p{font-size:13px;line-height:1.65;margin:8px 0;}
+.ai-allocation-help{color:#697386;}
+.ai-allocation table{width:100%;border-collapse:collapse;font-size:13px;text-align:center;}
+.ai-allocation th,.ai-allocation td{padding:10px 4px;border-bottom:1px solid #e8ebf1;}
+.ai-allocation tbody th{font-weight:500;}
+.ai-allocation-warning{padding:10px 12px;background:#fff6ec;border-radius:10px;color:#78451f;}

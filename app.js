@@ -755,6 +755,7 @@
       });
       clean.days.push({date:day.date,title:day.title.trim(),rest:day.rest,exercises:exercises,...(Number.isFinite(day.estimatedMinutes)?{estimatedMinutes:day.estimatedMinutes}:{}),...(Number.isFinite(day.requestedMinutes)?{requestedMinutes:day.requestedMinutes}:{}),...(typeof day.shortSessionReason==='string'?{shortSessionReason:day.shortSessionReason.slice(0,350)}:{})});
     });
+    if(Array.isArray(data.reviewNotes))clean.reviewNotes=data.reviewNotes.filter(function(t){return textOK(t,500);}).slice(0,3);
     clean.days.sort(function(a,b){return a.date.localeCompare(b.date);});return clean;
   }
   function temporaryRoutine() {
@@ -3756,7 +3757,18 @@
   }
   function baseSnapshot(){var week=adjustmentWeek(todayStr()),saved=loadSavedRoutine();return {format:'workout-temporary-routine',version:1,weekStart:week.from,weekEnd:week.to,days:saved.map(function(d,i){return {date:week.dates[i],title:d.title||(d.ex.length?'루틴':'휴식'),rest:!d.ex.length,exercises:d.ex.map(function(e){return {name:e.n,muscle:e.m,sets:Number(e.s),reps:e.r,rir:e.rir};})};})};}
   function validateBaseCandidate(candidate){return validateTemporary(candidate,todayStr(),true);}
+  function baseAllocationHtml(candidate,selected){
+    var saved=loadSavedRoutine(),week=adjustmentWeek(todayStr()),kept=[],changed=[],totals={};
+    MUSCLES.forEach(function(m){totals[m]={fixed:0,added:0};});
+    week.dates.forEach(function(date,i){
+      var replacement=selected.has(date)&&candidate.days.find(function(d){return d.date===date;});
+      (replacement?changed:kept).push(['월','화','수','목','금','토','일'][i]);
+      (replacement?replacement.exercises:(saved[i].ex||[]).map(function(e){return {muscle:e.m,sets:e.s};})).forEach(function(e){if(totals[e.muscle])totals[e.muscle][replacement?'added':'fixed']+=Number(e.sets)||0;});
+    });
+    return '<section class="ai-allocation"><h3>주간 배분 확인</h3><p><strong>변경</strong> '+changed.join('·')+' <br><strong>유지</strong> '+(kept.join('·')||'없음')+'</p><p class="ai-allocation-help">유지 요일의 운동은 그대로 남아요. 아래 합계는 저장할 기본 루틴이며 실제 수행량과는 별개예요.</p><table><thead><tr><th>부위</th><th>유지분</th><th>변경분</th><th>주간 합계</th></tr></thead><tbody>'+MUSCLES.map(function(m){var t=totals[m];return '<tr><th>'+m+'</th><td>'+t.fixed+'</td><td>'+t.added+'</td><td><strong>'+(t.fixed+t.added)+'</strong></td></tr>';}).join('')+'</tbody></table>'+(candidate.reviewNotes||[]).map(function(t){return '<p class="ai-allocation-warning">생성 시 확인 사항 · '+statsEscape(t)+' 편집 후에는 위 합계를 다시 확인해주세요.</p>';}).join('')+'</section>';
+  }
   function proposalComparison(candidate,kind,selected){
+    if(kind==='base')return baseAllocationHtml(candidate,selected);
     var source=kind==='base'?loadSavedRoutine():effectiveWeek(),week=adjustmentWeek(todayStr()),byMuscle={};
     MUSCLES.forEach(function(m){byMuscle[m]={before:0,after:0,done:0};});
     week.dates.forEach(function(date,i){var replaced=selected.has(date)?candidate.days.find(function(d){return d.date===date;}):null;
@@ -3767,18 +3779,22 @@
     return '<section class="ai-compare"><h3>부위별 세트 비교</h3><p>'+(kind==='week'?'계획과 이번 주 저장 기록은 별개예요.':'반복 주간 계획의 변경 전후예요.')+'</p><div class="ai-compare-grid"><strong>부위</strong><strong>기존</strong>'+(kind==='week'?'<strong>수행</strong>':'')+'<strong>제안</strong>'+MUSCLES.map(function(m){var v=byMuscle[m];return '<span>'+m+'</span><span>'+v.before+'</span>'+(kind==='week'?'<span>'+v.done+'</span>':'')+'<strong>'+v.after+'</strong>';}).join('')+'</div></section>';
   }
   function estimateSession(day) {
- if(day.rest)return 0;
- return Math.ceil(5+day.exercises.reduce((sum,e)=>{
+ if(day.rest || !day.exercises.length)return 0;
+ let compoundCount=0;
+ const work=day.exercises.reduce((sum,e)=>{
   const reps=Number(String(e.reps).split(/[~–-]/).pop())||10;
-  const rest=/프레스|스쿼트|데드리프트|로우|풀업|딥스/.test(e.name)?180:90;
-  return sum+2+e.sets*reps*3/60+Math.max(0,e.sets-1)*rest/60;
- },0));
+  const compound=/프레스|스쿼트|데드리프트|로우|풀업|랫풀|딥스/.test(e.name);
+  const warmup=compound?(compoundCount++===0?4:2):0;
+  const rest=compound?180:90;
+  return sum+2+warmup+e.sets*reps*3/60+Math.max(0,e.sets-1)*rest/60;
+ },0);
+ return Math.ceil(5+work+5);
 }
 
   function aiTimingHtml(day){
     if(!Number.isFinite(day.requestedMinutes))return '';
     var minutes=estimateSession(day);
-    return '<p class="ai-reason">가용 '+day.requestedMinutes+'분 · 구성 기준 예상 약 '+minutes+'분'+(minutes>day.requestedMinutes?' · 설정 시간 초과':'')+'<br><small>준비 5분·종목 전환 2분·반복당 3초·세트 간 휴식 90~180초를 가정한 추정이에요.</small></p>'+(day.shortSessionReason?'<p class="ai-reason">AI가 짧게 구성한 이유 · '+statsEscape(day.shortSessionReason)+'</p>':'');
+    return '<p class="ai-reason">가용 '+day.requestedMinutes+'분 · 구성 기준 예상 약 '+minutes+'분'+(minutes>day.requestedMinutes?' · 설정 시간 초과':'')+'<br><small>준비·여유 각 5분, 주축 준비 세트 4분/2분, 종목 전환 2분, 세트 휴식 90~180초를 포함한 추정이에요. 기구 대기에 따라 더 걸릴 수 있어요.</small></p>'+(day.shortSessionReason?'<p class="ai-reason">짧은 구성 안내 · '+statsEscape(day.shortSessionReason)+'</p>':'');
   }
   function focusAiFeedback(el){
     if(!el || !el.isConnected || !el.textContent.trim())return;
