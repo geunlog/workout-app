@@ -1,3 +1,57 @@
+/* Body measurements belong to the person, independently of workout plans. */
+window.BodyTracker=(function(){
+'use strict';
+const KEY='geunlog-body-v1',fields={weight:['체중','kg',1,500],muscle:['골격근량','kg',1,200],fatPercent:['체지방률','%',0.1,80],fatMass:['체지방량','kg',0.1,300],waist:['허리둘레','cm',10,300]};
+let metric='weight',period='90',device='',from='',to='',comparison='previous';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const localNow=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
+function validate(data){
+ if(!data||data.version!==1||!Array.isArray(data.records)||data.records.length>20000)throw Error('체형 기록 형식을 확인해주세요.');
+ const ids=new Set();const records=data.records.map(r=>{
+  if(!r||typeof r.id!=='string'||r.id.length>100||!/^[-a-zA-Z0-9_]+$/.test(r.id)||ids.has(r.id)||!/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(r.at)||!Number.isFinite(Date.parse(r.at)))throw Error('측정 날짜 또는 기록 ID가 올바르지 않아요.');
+  const [yy,mm,dd,hh,mi]=r.at.split(/[-T:]/).map(Number);const day=new Date(Date.UTC(yy,mm-1,dd));if(day.toISOString().slice(0,10)!==r.at.slice(0,10)||hh>23||mi>59)throw Error('측정 날짜를 확인해주세요.');
+  ids.add(r.id);let n=0;const clean={id:r.id,at:r.at,device:String(r.device||'').slice(0,100),note:String(r.note||'').slice(0,500),waistUnit:r.waistUnit==='inch'?'inch':'cm',createdAt:r.createdAt,updatedAt:r.updatedAt};
+  if(!Number.isFinite(Date.parse(clean.createdAt))||!Number.isFinite(Date.parse(clean.updatedAt)))throw Error('기록 수정 시각이 올바르지 않아요.');
+  for(const [key,f] of Object.entries(fields)){let v=r[key];if(v==null){clean[key]=null;continue;}if(typeof v!=='number'||!Number.isFinite(v)||v<f[2]||v>f[3])throw Error(f[0]+' 입력 범위를 확인해주세요.');clean[key]=v;n++;}
+  if(!n)throw Error('측정값을 하나 이상 입력해주세요.');if(clean.weight!=null&&((clean.muscle||0)>clean.weight||(clean.fatMass||0)>clean.weight))throw Error('골격근량·체지방량이 체중보다 큰지 확인해주세요.');
+  return clean;
+ });
+ return {version:1,records,baseline:ids.has(data.baseline)?data.baseline:null};
+}
+function read(){const raw=localStorage.getItem(KEY);return raw?validate(JSON.parse(raw)):{version:1,records:[],baseline:null};}
+function write(d){localStorage.setItem(KEY,JSON.stringify(validate(d)));}
+function merge(incoming){const next=validate(incoming),current=read(),map=new Map(current.records.map(r=>[r.id,r]));for(const r of next.records){const old=map.get(r.id);if(!old||Date.parse(r.updatedAt)>Date.parse(old.updatedAt))map.set(r.id,r);}return validate({version:1,records:[...map.values()],baseline:current.baseline||next.baseline});}
+function value(r,k){if(r[k]!=null)return r[k];if(k==='fatMass'&&r.weight!=null&&r.fatPercent!=null)return r.weight*r.fatPercent/100;return null;}
+function fmt(v,k){if(v==null)return '미측정';return k==='waist'?v.toFixed(1)+' cm · '+(v/2.54).toFixed(2)+' inch':v.toFixed(1)+' '+fields[k][1];}
+function delta(v,k){return (v>0?'+':'')+v.toFixed(1)+(k==='fatPercent'?' %p':' '+fields[k][1])+(k==='waist'?' / '+(v>0?'+':'')+(v/2.54).toFixed(2)+' inch':'');}
+function download(){const blob=new Blob([JSON.stringify({format:'geunlog-body',...read()},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='체형기록_'+localNow().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function editor(root,record){
+ const data=read(),dialog=document.createElement('dialog');dialog.className='body-dialog';const existing=record||{};
+ dialog.innerHTML='<form><header><h2>'+(record?'측정 기록 수정':'측정 기록 추가')+'</h2><button type="button" data-close aria-label="닫기">×</button></header><div class="body-form-scroll"><label>측정 날짜·시간<input name="at" type="datetime-local" required value="'+esc(existing.at||localNow())+'"></label><label>입력 방식<select data-entry-mode><option value="quick">간편 기록 · 체중·허리둘레</option><option value="inbody">인바디 기록 · 전체 항목</option></select></label><p>측정한 항목만 입력하세요. 빈 항목은 미측정으로 저장돼요.</p><div class="body-inputs">'+Object.entries(fields).map(([k,f])=>'<label'+(['muscle','fatPercent','fatMass'].includes(k)?' data-body-extra':'')+'>'+f[0]+(k==='waist'?'<select name="waistUnit" aria-label="허리둘레 입력 단위"><option value="cm">cm</option><option value="inch">inch</option></select>':' <span>'+f[1]+'</span>')+'<input type="number" step="any" inputmode="decimal" name="'+k+'" value="'+(existing[k]==null?'':k==='waist'&&existing.waistUnit==='inch'?(existing[k]/2.54).toFixed(4):existing[k])+'"></label>').join('')+'</div><p data-waist-preview></p><details '+(record?'open':'')+'><summary>측정 기기·조건 메모</summary><label>장소·기기<input name="device" maxlength="100" list="body-devices" placeholder="예: 집 체중계, A헬스장 인바디" value="'+esc(existing.device||'')+'"></label><datalist id="body-devices">'+[...new Set(data.records.map(r=>r.device).filter(Boolean))].map(d=>'<option value="'+esc(d)+'">').join('')+'</datalist><label>측정 조건·메모<textarea name="note" maxlength="500" placeholder="예: 아침 공복 / 허리 배꼽 높이">'+esc(existing.note||'')+'</textarea></label></details><p role="alert" data-error></p></div><footer><button type="button" data-close>취소</button><button class="body-primary" type="submit">저장</button></footer></form>';
+ const entryMode=dialog.querySelector('[data-entry-mode]');entryMode.value=record?'inbody':'quick';const updateMode=()=>dialog.querySelectorAll('[data-body-extra]').forEach(el=>el.hidden=entryMode.value==='quick');entryMode.onchange=updateMode;updateMode();
+ const form=dialog.querySelector('form'),unit=form.elements.waistUnit,waist=form.elements.waist;unit.value=existing.waistUnit||'cm';let previousUnit=unit.value;
+ const preview=()=>{const v=Number(waist.value);dialog.querySelector('[data-waist-preview]').textContent=waist.value&&v>0?fmt(unit.value==='inch'?v*2.54:v,'waist'):'';};unit.onchange=()=>{if(waist.value!==''){const v=Number(waist.value);waist.value=String(Number((previousUnit==='cm'?v/2.54:v*2.54).toFixed(6)));}previousUnit=unit.value;preview();};waist.oninput=preview;preview();
+ dialog.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>dialog.close());dialog.onclose=()=>dialog.remove();
+ form.onsubmit=e=>{e.preventDefault();try{const now=new Date().toISOString(),r={id:existing.id||crypto.randomUUID(),at:form.elements.at.value,device:form.elements.device.value.trim(),note:form.elements.note.value.trim(),waistUnit:unit.value,createdAt:existing.createdAt||now,updatedAt:now};for(const k of Object.keys(fields))r[k]=form.elements[k].value===''?null:Number(form.elements[k].value);if(r.waist!=null&&unit.value==='inch')r.waist*=2.54;if(r.at>localNow())throw Error('미래 측정은 저장할 수 없어요.');const current=read();current.records=current.records.filter(x=>x.id!==r.id).concat(r);write(current);dialog.close();mount(root,Object.keys(fields).filter(k=>r[k]!=null).map(k=>fields[k][0]+' '+fmt(r[k],k)).join(' · ')+' 저장했어요.');}catch(err){dialog.querySelector('[data-error]').textContent=err.message;}};
+ document.body.append(dialog);dialog.showModal();
+}
+function graph(points){if(!points.length)return '<p>이 기간에 측정값이 없어요.</p>';const vals=points.map(r=>value(r,metric)),min=Math.min(...vals),max=Math.max(...vals),pad=Math.max((max-min)*.15,.5),low=min-pad,high=max+pad;const first=Date.parse(points[0].at),last=Date.parse(points.at(-1).at),xy=points.map((r,i)=>[first===last?175:45+(Date.parse(r.at)-first)/(last-first)*275,155-(vals[i]-low)/(high-low)*120]);return '<svg viewBox="0 0 350 190" role="img" aria-label="'+fields[metric][0]+' 변화 그래프"><text x="4" y="20">'+fields[metric][1]+'</text>'+[low,(low+high)/2,high].map(v=>{const y=155-(v-low)/(high-low)*120;return '<line x1="45" x2="320" y1="'+y+'" y2="'+y+'" stroke="#e2e8f0"/><text x="2" y="'+(y+4)+'">'+v.toFixed(1)+'</text>';}).join('')+'<polyline fill="none" stroke="#315bea" stroke-width="2.5" points="'+xy.map(p=>p.join(',')).join(' ')+'"/>'+points.map((r,i)=>'<circle tabindex="0" role="button" aria-label="'+esc(r.at+' '+fmt(vals[i],metric))+'" data-point="'+r.id+'" cx="'+xy[i][0]+'" cy="'+xy[i][1]+'" r="6" fill="#315bea"><title>'+esc(r.at+' '+fmt(vals[i],metric))+'</title></circle>').join('')+'<text x="45" y="180">'+points[0].at.slice(0,10)+'</text><text x="320" y="180" text-anchor="end">'+points.at(-1).at.slice(0,10)+'</text></svg><p class="body-muted">점을 누르면 기록을 수정할 수 있어요. 세로축은 변화에 맞춰 확대해요.</p>';}
+function mount(root,notice=''){
+ let data;try{data=read();}catch(e){root.innerHTML='<p role="alert">체형 기록을 읽지 못했어요. 원본 데이터를 유지했어요.</p>';return;}
+ const all=data.records.slice().sort((a,b)=>a.at.localeCompare(b.at)||a.id.localeCompare(b.id));const filtered=all.filter(r=>!device||r.device===device);const baseline=filtered.find(r=>r.id===data.baseline);
+ root.innerHTML='<section class="body-tracker"><div class="body-heading"><div><h2>체형 변화</h2><p>모든 운동 플랜에서 함께 보는 나의 기록</p></div><button class="body-primary" data-add>측정 기록 추가</button></div><p role="status">'+esc(notice)+'</p><div class="body-filters"><label>측정 기기<select data-device><option value="">전체 기기</option>'+[...new Set(all.map(r=>r.device).filter(Boolean))].map(d=>'<option '+(device===d?'selected':'')+' value="'+esc(d)+'">'+esc(d)+'</option>').join('')+'</select></label><label>비교 기준<select data-compare><option value="previous">이전 측정</option><option value="baseline" '+(comparison==='baseline'?'selected':'')+'>설정한 기준 기록</option></select></label></div><div class="body-cards">'+['weight','muscle','fatPercent','waist'].map(k=>{const list=filtered.filter(r=>value(r,k)!=null),latest=list.at(-1),ref=comparison==='baseline'?baseline:list.at(-2);return '<article><span>'+fields[k][0]+'</span><strong>'+fmt(latest?value(latest,k):null,k)+'</strong><small>'+(latest?esc(latest.at.replace('T',' ')):'기록 없음')+'</small><p>'+(latest&&ref&&value(ref,k)!=null&&ref.id!==latest.id?esc(delta(value(latest,k)-value(ref,k),k))+'<br><small>'+esc(ref.at.replace('T',' '))+' 대비</small>':'비교할 기록 없음')+'</p></article>';}).join('')+'</div><section class="body-chart"><div class="body-filters"><label>지표<select data-metric>'+Object.entries(fields).map(([k,f])=>'<option value="'+k+'" '+(metric===k?'selected':'')+'>'+f[0]+'</option>').join('')+'</select></label><label>기간<select data-period>'+[['30','1개월'],['90','3개월'],['180','6개월'],['all','전체'],['custom','직접 설정']].map(([k,l])=>'<option value="'+k+'" '+(period===k?'selected':'')+'>'+l+'</option>').join('')+'</select></label></div>'+(period==='custom'?'<div class="body-filters"><label>시작일<input type="date" data-from value="'+esc(from)+'"></label><label>종료일<input type="date" data-to value="'+esc(to)+'"></label></div>':'')+'<div data-graph></div></section><h3>측정 이력</h3><p class="body-muted">허리둘레는 cm와 inch를 함께 표시해요. 체지방량 계산값은 체중 × 체지방률 기준이에요.</p><div class="body-history">'+filtered.slice().reverse().map(r=>'<article><header><strong>'+esc(r.at.replace('T',' '))+'</strong><span>'+esc(r.device||'기기 미지정')+'</span></header><p>'+Object.keys(fields).filter(k=>value(r,k)!=null).map(k=>fields[k][0]+' '+fmt(value(r,k),k)+(k==='fatMass'&&r.fatMass==null?' (계산값)':'')).join('<br>')+'</p><p>'+esc(r.note)+'</p><div class="body-actions"><button data-edit="'+r.id+'">수정</button><button data-base="'+r.id+'">'+(data.baseline===r.id?'기준 해제':'비교 기준 설정')+'</button><button data-delete="'+r.id+'">삭제</button></div></article>').join('')+(filtered.length?'':'<p>아직 기록이 없어요. 체중 하나부터 입력해보세요.</p>')+'</div><details><summary>체형 기록 백업</summary><p>이 기기에 저장돼요. 전체 플랜 백업에도 포함되며, 아래에서 체형 기록만 내보낼 수 있어요.</p><button data-export>JSON 내보내기</button><label>JSON 가져오기<input type="file" data-import accept="application/json,.json"></label></details></section>';
+ const draw=()=>{let cutoff='';if(period!=='all'&&period!=='custom'){const d=new Date();d.setDate(d.getDate()-Number(period));cutoff=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}const points=filtered.filter(r=>value(r,metric)!=null&&(period==='custom'?(!from||r.at.slice(0,10)>=from)&&(!to||r.at.slice(0,10)<=to):!cutoff||r.at.slice(0,10)>=cutoff));root.querySelector('[data-graph]').innerHTML=from&&to&&period==='custom'&&from>to?'<p>시작일이 종료일보다 늦어요.</p>':graph(points);root.querySelectorAll('[data-point]').forEach(p=>{const open=()=>editor(root,all.find(r=>r.id===p.dataset.point));p.onclick=open;p.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}};});};draw();
+ root.querySelector('[data-add]').onclick=()=>editor(root);
+ for(const [name,set] of [['device',v=>device=v],['compare',v=>comparison=v],['metric',v=>metric=v],['period',v=>period=v],['from',v=>from=v],['to',v=>to=v]]){const e=root.querySelector('[data-'+name+']');if(e)e.onchange=()=>{set(e.value);mount(root);};}
+ root.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editor(root,all.find(r=>r.id===b.dataset.edit)));
+ root.querySelectorAll('[data-base]').forEach(b=>b.onclick=()=>{try{const d=read();d.baseline=d.baseline===b.dataset.base?null:b.dataset.base;write(d);comparison='baseline';mount(root,'비교 기준을 변경했어요.');}catch(e){alert('저장 실패: '+e.message);}});
+ root.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{if(!confirm('이 측정 기록을 삭제할까요?'))return;try{const d=read();d.records=d.records.filter(r=>r.id!==b.dataset.delete);if(d.baseline===b.dataset.delete)d.baseline=null;write(d);mount(root,'삭제했어요.');}catch(e){alert('삭제 실패: '+e.message);}});
+ root.querySelector('[data-export]').onclick=()=>{try{download();}catch(e){alert(e.message);}};
+ root.querySelector('[data-import]').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10000000)throw Error('10MB 이하 파일을 선택해주세요.');const imported=JSON.parse(await file.text());if(imported.format!=='geunlog-body')throw Error('체형 기록 백업 파일을 선택해주세요.');validate(imported);if(!confirm('체형 기록을 합칠까요? 같은 ID는 더 최근에 수정한 기록을 유지해요.'))return;write(merge(imported));mount(root,'체형 기록을 가져왔어요.');}catch(err){alert(err.message);}};
+}
+return {key:KEY,read,validate,merge,mount,fmt,value};
+})();
+
 // ==== 원본 script 블록 1/2 (메인 앱 로직) ====
 
 (function () {
@@ -3185,7 +3239,14 @@
     var choices=statsRecordedExerciseNames(pinMuscleQuery).map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');
     return '<details class="stats-card stats-section" data-stats-panel="pins"><summary><span>관심 종목 · <small>'+pins.length+'/5</small></span></summary><p class="stats-note">전체 기간 기록</p><div class="muscle-search pin-search">'+muscleSelectHtml('pinMuscleSelect',pinMuscleQuery)+'<input type="search" id="pinExerciseInput" list="pinExerciseChoices" placeholder="종목 검색" aria-label="고정할 종목" style="min-width:0;flex:1;width:100%;font-size:16px"><datalist id="pinExerciseChoices">'+choices+'</datalist><button type="button" class="btn-reset" data-pin-add>추가</button></div><p class="stats-note" id="pinSearchCount" role="status"></p>'+pins.map(function(n){var g=all.exercises.find(function(e){return e.name===n;});var recent=g?g.latest:null;return '<details class="stats-exercise" data-stats-key="pin:'+statsEscape(n)+'"><summary><span class="stats-exercise-title">'+statsEscape(n)+'<small>'+(recent?statsEscape(recent.date+' · '+recent.w+'kg × '+recent.reps+'회'):'기록 없음')+'</small></span></summary><div class="stats-exercise-body">'+(g?statsExerciseMetricsHtml(g,true):'')+'<div class="pin-remove-row"><button class="btn-reset" type="button" data-pin-remove="'+statsEscape(n)+'">관심 해제</button></div></div></details>';}).join('')+(!pins.length?'<p class="stats-note">자주 보는 종목을 추가하세요.</p>':'')+'</details>';
   }
+  var bodyStatsOpen=false;
   function renderStats() {
+    var nav=document.getElementById('bodyStatsNav');
+    if(!nav){nav=document.createElement('div');nav.id='bodyStatsNav';nav.className='body-stats-nav';statsViewEl.parentNode.insertBefore(nav,statsViewEl);}
+    nav.innerHTML='<button type="button" aria-pressed="'+(!bodyStatsOpen)+'">운동 통계</button><button type="button" aria-pressed="'+bodyStatsOpen+'">체형 변화</button>';
+    nav.children[0].onclick=function(){bodyStatsOpen=false;renderStats();};nav.children[1].onclick=function(){bodyStatsOpen=true;renderStats();};
+    if(bodyStatsOpen){BodyTracker.mount(statsViewEl);return;}
+
     var panelKey=keyFor('bulk-workout-panels-v1',activeProfile),panelPrefs=readJSON(panelKey,{});
     if(!panelPrefs || typeof panelPrefs!=='object' || Array.isArray(panelPrefs))panelPrefs={};
     statsViewEl.querySelectorAll('[data-stats-panel]').forEach(function(el){if(el.dataset.owner===activeProfile)panelPrefs[el.dataset.statsPanel]=el.open;});
@@ -5012,6 +5073,7 @@
     if(!data || data.format!=='workout-routine-transfer')fail();
     // v2(전체 플랜)는 프로필 배열을 담는다. 각 프로필은 v1과 동일한 규칙으로 검증한다.
     if(data.version===2){
+      if(data.bodyMeasurements!==undefined)BodyTracker.validate(data.bodyMeasurements);
       if(!Array.isArray(data.profiles) || !data.profiles.length || data.profiles.length>50)fail();
       var names=new Set();
       data.profiles.forEach(function(one){
@@ -5080,7 +5142,7 @@
   }
   function allProfilesSnapshot(){
     return {format:'workout-routine-transfer',version:2,exportedAt:new Date().toISOString(),
-      activeProfile:activeProfile,
+      activeProfile:activeProfile,bodyMeasurements:BodyTracker.read(),
       profiles:profiles.map(profileSnapshotFor)};
   }
   function backupFingerprint(profile){
@@ -5375,6 +5437,7 @@
   // v2(전체 플랜) 파일은 담긴 플랜을 모두 새 플랜으로 추가한다.
   function importAllProfiles(data){
     var next=profiles.slice(),operations=[],added=[];
+    if(data.bodyMeasurements!==undefined)operations.push({key:BodyTracker.key,value:BodyTracker.merge(data.bodyMeasurements)});
     data.profiles.forEach(function(p){
       var name=p.name+' (가져옴)',suffix=2;
       while(next.includes(name)){name=p.name+' (가져옴 '+suffix+')';suffix++;}
@@ -5418,6 +5481,7 @@
     if (old) old.remove();
 
     var isAll = data.version === 2;
+    if(isAll && data.bodyMeasurements!==undefined && !confirm('전체 백업의 체형 기록도 현재 기록에 합쳐집니다. 계속할까요?'))return;
     var p = isAll ? {name: data.profiles.length + '개 플랜'} : data.profile;
     var overlay = document.createElement('div');
     overlay.id = 'importChoiceOverlay';
