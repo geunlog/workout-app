@@ -3798,7 +3798,7 @@
   }
   function watchAiFeedback(el){
     if(!el || el._aiFeedbackObserver)return;
-    var observer=new MutationObserver(function(){observer.disconnect();formatAiFeedback(el);observer.observe(el,{childList:true,characterData:true,subtree:true});focusAiFeedback(el);});
+    var observer=new MutationObserver(function(){observer.disconnect();var dialog=el.closest('dialog');if(dialog)dialog.querySelectorAll('textarea').forEach(function(input){if(!input.value)input.scrollTop=0;});formatAiFeedback(el);observer.observe(el,{childList:true,characterData:true,subtree:true});focusAiFeedback(el);});
     observer.observe(el,{childList:true,characterData:true,subtree:true});el._aiFeedbackObserver=observer;
     var dialog=el.closest('dialog');if(dialog)dialog.addEventListener('close',function(){observer.disconnect();},{once:true});
   }

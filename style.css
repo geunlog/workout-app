@@ -2551,3 +2551,6 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .ai-feedback-error .ai-feedback-diagnostics{display:block;margin-top:10px;padding-top:10px;border-top:1px solid #eadacf;font-size:11px;line-height:1.65;font-weight:400;color:#715c50;overflow-wrap:anywhere;word-break:break-word;}
 .ai-feedback-diagnostics>span{display:block;}
 .ai-base-survey .temporary-dialog-body,.ai-preview-dialog .temporary-dialog-body{padding-block:12px 20px;scroll-padding-block:20px;}
+
+/* v98: prevent short/resized AI notes fields from hiding the first line. */
+.ai-base-survey .ai-base-notes textarea,.ai-preview-dialog .ai-revision textarea{box-sizing:border-box;display:block;min-height:108px;height:108px;max-height:240px;line-height:1.6;padding:12px;resize:vertical;overflow-y:auto;}
