@@ -3758,14 +3758,18 @@
   function baseSnapshot(){var week=adjustmentWeek(todayStr()),saved=loadSavedRoutine();return {format:'workout-temporary-routine',version:1,weekStart:week.from,weekEnd:week.to,days:saved.map(function(d,i){return {date:week.dates[i],title:d.title||(d.ex.length?'루틴':'휴식'),rest:!d.ex.length,exercises:d.ex.map(function(e){return {name:e.n,muscle:e.m,sets:Number(e.s),reps:e.r,rir:e.rir};})};})};}
   function validateBaseCandidate(candidate){return validateTemporary(candidate,todayStr(),true);}
   function baseAllocationHtml(candidate,selected){
-    var saved=loadSavedRoutine(),week=adjustmentWeek(todayStr()),kept=[],changed=[],totals={};
+    var saved=loadSavedRoutine(),week=adjustmentWeek(todayStr()),kept=[],changed=[],totals={},schedule=[];
     MUSCLES.forEach(function(m){totals[m]={fixed:0,added:0};});
     week.dates.forEach(function(date,i){
       var replacement=selected.has(date)&&candidate.days.find(function(d){return d.date===date;});
       (replacement?changed:kept).push(['월','화','수','목','금','토','일'][i]);
+      var dayExercises=replacement?replacement.exercises:(saved[i].ex||[]).map(function(e){return {muscle:e.m,sets:e.s};});
+      var daySets={};dayExercises.forEach(function(e){daySets[e.muscle]=(daySets[e.muscle]||0)+(Number(e.sets)||0);});
+      schedule.push({label:['월','화','수','목','금','토','일'][i],changed:!!replacement,sets:daySets});
       (replacement?replacement.exercises:(saved[i].ex||[]).map(function(e){return {muscle:e.m,sets:e.s};})).forEach(function(e){if(totals[e.muscle])totals[e.muscle][replacement?'added':'fixed']+=Number(e.sets)||0;});
     });
-    return '<section class="ai-allocation"><h3>주간 배분 확인</h3><p><strong>변경</strong> '+changed.join('·')+' <br><strong>유지</strong> '+(kept.join('·')||'없음')+'</p><p class="ai-allocation-help">유지 요일의 운동은 그대로 남아요. 아래 합계는 저장할 기본 루틴이며 실제 수행량과는 별개예요.</p><table><thead><tr><th>부위</th><th>유지분</th><th>변경분</th><th>주간 합계</th></tr></thead><tbody>'+MUSCLES.map(function(m){var t=totals[m];return '<tr><th>'+m+'</th><td>'+t.fixed+'</td><td>'+t.added+'</td><td><strong>'+(t.fixed+t.added)+'</strong></td></tr>';}).join('')+'</tbody></table>'+(candidate.reviewNotes||[]).map(function(t){return '<p class="ai-allocation-warning">생성 시 확인 사항 · '+statsEscape(t)+' 편집 후에는 위 합계를 다시 확인해주세요.</p>';}).join('')+'</section>';
+    var scheduleHtml='<div class="ai-week-schedule"><h3>저장 후 일주일</h3>'+schedule.map(function(d,i){var next=schedule[(i+1)%7],overlap=MUSCLES.filter(function(m){return d.sets[m]>=3&&next.sets[m]>=3;});return '<div class="ai-week-row"><strong>'+d.label+'</strong><span>'+(d.changed?'변경':'유지')+'</span><p>'+statsEscape(MUSCLES.filter(function(m){return d.sets[m]>0;}).map(function(m){return m+' '+d.sets[m]+'세트';}).join(' · ')||'휴식')+'</p>'+(overlap.length?'<small>'+statsEscape(next.label+'요일과 '+overlap.join('·')+' 직접 세트가 연속 배치돼요.')+'</small>':'')+'</div>';}).join('')+'</div>';
+    return '<section class="ai-allocation">'+scheduleHtml+'<h3>주간 배분 확인</h3><p><strong>변경</strong> '+changed.join('·')+' <br><strong>유지</strong> '+(kept.join('·')||'없음')+'</p><p class="ai-allocation-help">유지 요일의 운동은 그대로 남아요. 아래 합계는 저장할 기본 루틴이며 실제 수행량과는 별개예요.</p><table><thead><tr><th>부위</th><th>유지분</th><th>변경분</th><th>주간 합계</th></tr></thead><tbody>'+MUSCLES.map(function(m){var t=totals[m];return '<tr><th>'+m+'</th><td>'+t.fixed+'</td><td>'+t.added+'</td><td><strong>'+(t.fixed+t.added)+'</strong></td></tr>';}).join('')+'</tbody></table>'+(candidate.reviewNotes||[]).map(function(t){return '<p class="ai-allocation-warning">생성 시 확인 사항 · '+statsEscape(t)+' 편집 후에는 위 합계를 다시 확인해주세요.</p>';}).join('')+'</section>';
   }
   function proposalComparison(candidate,kind,selected){
     if(kind==='base')return baseAllocationHtml(candidate,selected);
