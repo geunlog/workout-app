@@ -38,7 +38,8 @@ function calendar(input,max=''){
  function draw(){
   const first=new Date(year,month,1).getDay(),count=monthDays(year,month),prefix=year+'-'+String(month+1).padStart(2,'0')+'-';
   dialog.innerHTML='<header><h2>날짜 선택</h2><button type="button" data-close aria-label="닫기">×</button></header><div class="body-cal-month"><button type="button" data-prev aria-label="이전 달">‹</button><label><span class="body-sr">연도</span><select data-year>'+Array.from({length:Math.max(101,year-1900+1)},(_,i)=>1900+i).map(y=>'<option '+(y===year?'selected':'')+'>'+y+'</option>').join('')+'</select></label><label><span class="body-sr">월</span><select data-month>'+Array.from({length:12},(_,m)=>'<option value="'+m+'" '+(m===month?'selected':'')+'>'+(m+1)+'월</option>').join('')+'</select></label><button type="button" data-next aria-label="다음 달">›</button></div><div class="body-cal-grid">'+[...'일월화수목금토'].map(d=>'<span>'+d+'</span>').join('')+Array.from({length:first},()=>'<span></span>').join('')+Array.from({length:count},(_,i)=>{const day=prefix+String(i+1).padStart(2,'0');return '<button type="button" data-day="'+day+'" aria-label="'+day+'" aria-pressed="'+(day===selected)+'" '+(day===today?'aria-current="date" ':'')+(max&&day>max?'disabled':'')+'>'+(i+1)+'</button>';}).join('')+'</div><footer><button type="button" data-today>오늘</button><button type="button" data-apply class="body-primary">선택 완료</button></footer>';
-  dialog.querySelectorAll('[data-close]').forEach(b=>b.onclick=close);
+  for(const name of ['weight','waist']){const input=form.elements[name];let edited=false;input.addEventListener('input',()=>edited=true);input.addEventListener('blur',()=>{if(!edited)return;input.value=autoDecimal(input.value);edited=false;if(name==='waist')input.oninput();});}
+ dialog.querySelectorAll('[data-close]').forEach(b=>b.onclick=close);
   const move=n=>{const d=new Date(year,month+n,1);if(d.getFullYear()<1900)return;year=d.getFullYear();month=d.getMonth();draw();};
   dialog.querySelector('[data-prev]').onclick=()=>move(-1);dialog.querySelector('[data-next]').disabled=!!max&&year+'-'+String(month+1).padStart(2,'0')>=max.slice(0,7);dialog.querySelector('[data-prev]').disabled=year===1900&&month===0;dialog.querySelector('[data-next]').onclick=()=>move(1);
   dialog.querySelector('[data-year]').onchange=e=>{year=Number(e.target.value);draw();};dialog.querySelector('[data-month]').onchange=e=>{month=Number(e.target.value);draw();};
@@ -73,7 +74,7 @@ function historyView(root,data){
 
 function editor(root,record){
  const data=read(),dialog=document.createElement('dialog');dialog.className='body-dialog';dialog.setAttribute('aria-label',record?'측정 기록 수정':'측정 기록 추가');const trigger=document.activeElement,existing=record||{};
- dialog.innerHTML='<form novalidate><header><h2>'+(record?'측정 기록 수정':'측정 기록 추가')+'</h2><button type="button" data-close aria-label="닫기">×</button></header><div class="body-form-scroll"><div class="body-datetime"><label>측정 날짜<input name="date" type="date" required value="'+esc((existing.at||localNow()).slice(0,10))+'"></label><label>시간 · 24시간제<input name="time" type="text" inputmode="numeric" placeholder="09:30" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" required value="'+esc((existing.at||localNow()).slice(11,16))+'" aria-describedby="body-time-error"></label><span id="body-time-error" class="body-field-error" role="alert" hidden></span></div><p class="body-form-hint">측정한 항목만 입력하세요. 빈 항목은 미측정으로 표시돼요.</p><div class="body-inputs">'+Object.entries(fields).map(([k,f])=>'<div class="body-measure-row"><label for="body-measure-'+k+'">'+f[0]+'</label><input id="body-measure-'+k+'" type="number" step="any" inputmode="decimal" name="'+k+'" placeholder="미입력" value="'+(existing[k]==null?'':k==='waist'?waistInput(existing[k],existing.waistUnit):existing[k])+'">'+(k==='waist'?'<select name="waistUnit" aria-label="허리둘레 입력 단위"><option value="cm">cm</option><option value="inch">inch</option></select>':'<span class="body-measure-unit">'+f[1]+'</span>')+'</div>').join('')+'</div><p data-waist-preview></p><details><summary>기기·메모 <span class="body-optional">선택</span></summary><label>장소·기기<input name="device" maxlength="100" list="body-devices" placeholder="예: 집 체중계, A헬스장 인바디" value="'+esc(existing.device||'')+'"></label><datalist id="body-devices">'+[...new Set(data.records.map(r=>r.device).filter(Boolean))].map(d=>'<option value="'+esc(d)+'">').join('')+'</datalist><label>측정 조건·메모<textarea name="note" maxlength="500" placeholder="예: 아침 공복 / 허리 배꼽 높이">'+esc(existing.note||'')+'</textarea></label></details><p role="alert" data-error></p></div><footer><button type="button" data-close>취소</button><button class="body-primary" type="submit">저장</button></footer></form>';
+ dialog.innerHTML='<form novalidate><header><h2>'+(record?'측정 기록 수정':'측정 기록 추가')+'</h2><button type="button" data-close aria-label="닫기">×</button></header><div class="body-form-scroll"><div class="body-datetime"><label>측정 날짜<input name="date" type="date" required value="'+esc((existing.at||localNow()).slice(0,10))+'"></label><label>시간 · 24시간제<input name="time" type="text" inputmode="numeric" placeholder="09:30" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" required value="'+esc((existing.at||localNow()).slice(11,16))+'" aria-describedby="body-time-error"></label><span id="body-time-error" class="body-field-error" role="alert" hidden></span></div><p class="body-form-hint">측정한 항목만 입력하세요. 빈 항목은 미측정으로 표시돼요. 체중·허리는 소수점 없이 869 → 86.9로 입력할 수 있어요. 입력칸을 나가면 변환돼요.</p><div class="body-inputs">'+Object.entries(fields).map(([k,f])=>'<div class="body-measure-row"><label for="body-measure-'+k+'">'+f[0]+'</label><input id="body-measure-'+k+'" type="number" step="any" inputmode="decimal" name="'+k+'" placeholder="미입력" value="'+(existing[k]==null?'':k==='waist'?waistInput(existing[k],existing.waistUnit):existing[k])+'">'+(k==='waist'?'<select name="waistUnit" aria-label="허리둘레 입력 단위"><option value="cm">cm</option><option value="inch">inch</option></select>':'<span class="body-measure-unit">'+f[1]+'</span>')+'</div>').join('')+'</div><p data-waist-preview></p><details><summary>기기·메모 <span class="body-optional">선택</span></summary><label>장소·기기<input name="device" maxlength="100" list="body-devices" placeholder="예: 집 체중계, A헬스장 인바디" value="'+esc(existing.device||'')+'"></label><datalist id="body-devices">'+[...new Set(data.records.map(r=>r.device).filter(Boolean))].map(d=>'<option value="'+esc(d)+'">').join('')+'</datalist><label>측정 조건·메모<textarea name="note" maxlength="500" placeholder="예: 아침 공복 / 허리 배꼽 높이">'+esc(existing.note||'')+'</textarea></label></details><p role="alert" data-error></p></div><footer><button type="button" data-close>취소</button><button class="body-primary" type="submit">저장</button></footer></form>';
 
  const form=dialog.querySelector('form'),unit=form.elements.waistUnit,waist=form.elements.waist;unit.value=existing.waistUnit||'cm';let waistCm=existing.waist??null;
  form.elements.time.addEventListener('input',e=>{dialog.querySelector('#body-time-error').hidden=true;e.target.removeAttribute('aria-invalid');const digits=e.target.value.replace(/[^0-9]/g,'').slice(0,4);e.target.value=digits.length>2?digits.slice(0,2)+':'+digits.slice(2):digits;});
@@ -83,6 +84,7 @@ function editor(root,record){
  dateControls(dialog,localNow().slice(0,10));document.body.append(dialog);dialog.showModal();
 }
 function missingSummary(r){const missing=Object.keys(fields).filter(k=>value(r,k)==null);return missing.length?'<p class="body-missing-summary">미측정 · '+missing.map(k=>fields[k][0]).join('·')+'</p>':'';}
+function autoDecimal(v){return /^\d{3,}$/.test(v)?(Number(v)/10).toFixed(1):v;}
 function waistInput(cm,unit){return cm==null?'':String(Number((unit==='inch'?cm/2.54:cm).toFixed(2)));}
 function dayRecords(records,at){return records.filter(r=>r.at.slice(0,10)===at.slice(0,10)).sort((a,b)=>a.at.localeCompare(b.at)||a.id.localeCompare(b.id));}
 function dayDetail(records,selected){
@@ -2605,7 +2607,21 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     row.insertAdjacentElement('afterend',form);
     (trigger.classList.contains('record-card-date')?dateButton:weight).focus();
   }
+  var recordsScope='current';
+  function recordsSource(){
+    if(recordsScope==='current')return logs;
+    return profiles.flatMap(function(profile){
+      var source=profile===activeProfile?logs:readJSON(keyFor('bulk-routine-log-v1',profile),[]);
+      return Array.isArray(source)?source.filter(function(r){return r&&Array.isArray(r.entries);}).map(function(r){return Object.assign({},r,{entries:r.entries.map(function(e){return Object.assign({},e,{_profile:profile});})});}):[];
+    });
+  }
   function renderRecords() {
+    var scope=document.getElementById('recordsScope');
+    if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
+    scope.innerHTML='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?'플랜: '+activeProfile:'모든 플랜의 기록 · 다른 플랜 기록은 해당 플랜으로 이동해 수정해요.')+'</p>';
+    scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;renderRecords();};});
+    document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'각 세트에 소속 플랜을 표시해요.':'현재 플랜의 기록을 표시해요.';
+    var sourceRecords=recordsSource();
     refreshRecordFilterOptions();
     syncRecordFilterUI();
     var opened = {};
@@ -2616,7 +2632,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var recordSearchEmpty = document.getElementById('recordSearchEmpty');
     var recordedNames = [];
     var recordedNameSeen = new Set();
-    logs.forEach(function(record){
+    sourceRecords.forEach(function(record){
       (record.entries || []).forEach(function(entry){
         if(recordMuscleQuery && entryMuscle(entry)!==recordMuscleQuery)return;
         var name=String(entry && entry.n || '').trim();
@@ -2644,7 +2660,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       sections.set(m,{section:section,body:body,count:count});
     });
     var groups = new Map();
-    logs.forEach(function (record) {
+    sourceRecords.forEach(function (record) {
       (record.entries || []).forEach(function (entry) {
         var key=JSON.stringify([muscleFor(entry),entry.n]);
         if (!groups.has(key)) groups.set(key, []);
@@ -2720,20 +2736,20 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         daySummary.appendChild(dayDateEl);daySummary.appendChild(dayCount);daySummary.appendChild(bestValue);daySummary.appendChild(dayArrow);dayGroup.appendChild(daySummary);
         dayEntries.forEach(function(entry){
           var row=document.createElement('div');row.className='rec-item';
-          var setBadge=document.createElement('span');setBadge.className='record-set-badge';setBadge.textContent=entry._setNo+'세트';
+          var setBadge=document.createElement('span');setBadge.className='record-set-badge';setBadge.textContent=entry._setNo+'세트'+(recordsScope==='all'?' · '+entry._profile:'');
           setBadge.setAttribute('aria-label',entry._setNo+'세트');
           var value=document.createElement('button');value.type='button';value.className='record-card-value record-edit-trigger';value.textContent=(entry.w === '-' ? '무게 미입력' : entry.w + 'kg') + ' × ' + (entry.reps === '-' ? '횟수 미입력' : entry.reps + '회');
           value.setAttribute('aria-label',name+' '+entry.date+' '+entry._setNo+'세트 무게·횟수 수정');
-          value.addEventListener('click',function(){openRecordEditor(row,entry,value);});
+          value.addEventListener('click',function(){if(entry._profile&&entry._profile!==activeProfile){switchProfile(entry._profile);return;}openRecordEditor(row,entry,value);});
           var remove=document.createElement('button');remove.type='button';remove.className='btn-hist-del';remove.innerHTML=deleteIcon();remove.setAttribute('aria-label',name+' '+entry.date+' '+entry._setNo+'세트 기록 삭제');
           remove.addEventListener('click',function(){requireSecondClick(remove,'확인',function(){deleteRecords(function(e){return e.id===entry.id;},true);});});
-          row.appendChild(setBadge);row.appendChild(value);row.appendChild(remove);dayGroup.appendChild(row);
+          row.appendChild(setBadge);row.appendChild(value);if(!entry._profile||entry._profile===activeProfile)row.appendChild(remove);dayGroup.appendChild(row);
         });
         var duplicate=document.createElement('button');duplicate.type='button';duplicate.className='btn-reset record-duplicate';duplicate.textContent='마지막 세트와 같은 기록 추가';
-        duplicate.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}var last=dayEntries[dayEntries.length-1];requireSecondClick(duplicate,'1세트 추가 확인',function(){try{saveDirectRecord(last.n,entryMuscle(last),last.date,last.w==='-'?'':last.w,last.reps==='-'?'':last.reps);renderRecords();renderPanel();showToast('같은 내용으로 1세트 추가했어요.');}catch(error){showToast(error.message,'error');}});};dayGroup.appendChild(duplicate);
+        duplicate.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}var last=dayEntries[dayEntries.length-1];requireSecondClick(duplicate,'1세트 추가 확인',function(){try{saveDirectRecord(last.n,entryMuscle(last),last.date,last.w==='-'?'':last.w,last.reps==='-'?'':last.reps);renderRecords();renderPanel();showToast('같은 내용으로 1세트 추가했어요.');}catch(error){showToast(error.message,'error');}});};if(recordsScope==='current')dayGroup.appendChild(duplicate);
         card.appendChild(dayGroup);
       });
-      var footer=document.createElement('div');footer.className='record-delete-footer';footer.appendChild(del);
+      var footer=document.createElement('div');footer.className='record-delete-footer';if(recordsScope==='current')footer.appendChild(del);
       var collapse=document.createElement('button');collapse.type='button';collapse.className='btn-reset record-collapse';collapse.textContent='접기';collapse.setAttribute('aria-label',name+' 기록 접기');
       collapse.onclick=function(){if(card.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}card.open=false;head.focus({preventScroll:true});head.scrollIntoView({block:'center',behavior:'smooth'});};
       footer.appendChild(collapse);card.appendChild(footer);
@@ -4230,7 +4246,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
             var isLastMuscle = idx === d.ex.length - 1 || d.ex[idx + 1].m !== e.m;
             return '<li style="--muscle-color:' + color + '" class="' + (isNewMuscle ? 'rep-muscle-start ' : '') + (isLastMuscle ? 'rep-muscle-end' : '') + '">' +
               (isNewMuscle ? '<span class="rep-muscle-tag" style="color:' + color + '">' + statsEscape(e.m) + ' · '+groupSets+'세트</span>' : '') +
-              '<span class="rep-ex-name">' + statsEscape(e.n) + '</span>' +
+              '<button type="button" class="rep-ex-name rep-record-link" data-record-day="'+week.indexOf(d)+'" data-record-ex="'+idx+'">' + statsEscape(e.n) + '</button>' +
               '<span class="rep-ex-spec">' +
                 '<span class="rep-chip rep-chip-set">' + statsEscape(e.s) + '세트</span>' +
                 '<span class="rep-chip">' + statsEscape(e.r) + '회</span>' +
@@ -4261,6 +4277,13 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         '<p class="bar-legend">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +
       '</div>' +
       adjustmentHtml();
+    reportViewEl.querySelectorAll('[data-record-ex]').forEach(function(button){button.onclick=function(){
+      activeIndex=Number(button.dataset.recordDay);
+      selectedRecordDate=adjustmentWeek(todayStr()).dates[activeIndex];
+      routineEditing=false;mode='day';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();renderTabs();renderPanel();renderPrinciples();
+      var target=panelEl.querySelectorAll('.ex-row')[Number(button.dataset.recordEx)];
+      if(target){target.scrollIntoView({block:'center',behavior:'smooth'});var input=target.querySelector('.in-weight');if(input&&selectedRecordDate<=todayStr())input.focus({preventScroll:true});}
+    };});
     bindAdjustment();bindTemporaryCancel(reportViewEl);
 
     reportViewEl.querySelectorAll('[data-report-day]').forEach(function (btn) {

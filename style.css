@@ -2639,3 +2639,10 @@ dialog.body-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;bloc
 .body-graph-detail .body-day-record[data-selected]+.body-day-record{border-top:1px solid #dce3ef}
 .body-dialog .body-inputs .body-measure-row{padding-block:7px}
 .body-dialog .body-datetime+.body-form-hint{margin-top:10px}
+
+/* v114 aligned filter summaries and routine links */
+.body-tracker .body-history-tools summary{display:flex!important;align-items:center;justify-content:space-between;gap:12px;list-style:none}
+.body-tracker .body-history-tools summary::after{position:static!important;float:none!important;flex:0 0 8px;margin:0 3px 0 auto!important;align-self:center}
+.body-history-tools summary::-webkit-details-marker{display:none}
+.rep-record-link{display:block;text-align:left;background:none;border:0;padding:6px 0;min-height:44px;color:inherit;font:inherit;font-weight:700;cursor:pointer}
+.rep-record-link:focus-visible{outline:2px solid #315bea;outline-offset:3px}
