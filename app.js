@@ -2704,8 +2704,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       head.appendChild(title);head.appendChild(count);head.appendChild(arrow);card.appendChild(head);
       var setSeen={};
       all.forEach(function(entry){
-        setSeen[entry.date]=(setSeen[entry.date]||0)+1;
-        entry._setNo=setSeen[entry.date];
+        var setKey=JSON.stringify([entry.date,entry._profile||activeProfile]);
+        setSeen[setKey]=(setSeen[setKey]||0)+1;
+        entry._setNo=setSeen[setKey];
       });
       var visibleByDate=new Map();
       visible.forEach(function(entry){
@@ -2736,13 +2737,14 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         daySummary.appendChild(dayDateEl);daySummary.appendChild(dayCount);daySummary.appendChild(bestValue);daySummary.appendChild(dayArrow);dayGroup.appendChild(daySummary);
         dayEntries.forEach(function(entry){
           var row=document.createElement('div');row.className='rec-item';
-          var setBadge=document.createElement('span');setBadge.className='record-set-badge';setBadge.textContent=entry._setNo+'세트'+(recordsScope==='all'?' · '+entry._profile:'');
+          var setBadge=document.createElement('span');setBadge.className='record-set-badge';setBadge.textContent=entry._setNo+'세트';
           setBadge.setAttribute('aria-label',entry._setNo+'세트');
           var value=document.createElement('button');value.type='button';value.className='record-card-value record-edit-trigger';value.textContent=(entry.w === '-' ? '무게 미입력' : entry.w + 'kg') + ' × ' + (entry.reps === '-' ? '횟수 미입력' : entry.reps + '회');
           value.setAttribute('aria-label',name+' '+entry.date+' '+entry._setNo+'세트 무게·횟수 수정');
           value.addEventListener('click',function(){if(entry._profile&&entry._profile!==activeProfile){switchProfile(entry._profile);return;}openRecordEditor(row,entry,value);});
           var remove=document.createElement('button');remove.type='button';remove.className='btn-hist-del';remove.innerHTML=deleteIcon();remove.setAttribute('aria-label',name+' '+entry.date+' '+entry._setNo+'세트 기록 삭제');
           remove.addEventListener('click',function(){requireSecondClick(remove,'확인',function(){deleteRecords(function(e){return e.id===entry.id;},true);});});
+          if(recordsScope==='all'){row.classList.add('record-with-profile');var profileLabel=document.createElement('span');profileLabel.className='record-profile-label';profileLabel.textContent='플랜 · '+entry._profile;row.appendChild(profileLabel);}
           row.appendChild(setBadge);row.appendChild(value);if(!entry._profile||entry._profile===activeProfile)row.appendChild(remove);dayGroup.appendChild(row);
         });
         var duplicate=document.createElement('button');duplicate.type='button';duplicate.className='btn-reset record-duplicate';duplicate.textContent='마지막 세트와 같은 기록 추가';
@@ -4282,7 +4284,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       selectedRecordDate=adjustmentWeek(todayStr()).dates[activeIndex];
       routineEditing=false;mode='day';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();renderTabs();renderPanel();renderPrinciples();
       var target=panelEl.querySelectorAll('.ex-row')[Number(button.dataset.recordEx)];
-      if(target){target.scrollIntoView({block:'center',behavior:'smooth'});var input=target.querySelector('.in-weight');if(input&&selectedRecordDate<=todayStr())input.focus({preventScroll:true});}
+      if(target){target.tabIndex=-1;target.focus({preventScroll:true});requestAnimationFrame(function(){target.scrollIntoView({block:'start',behavior:'smooth'});});}
     };});
     bindAdjustment();bindTemporaryCancel(reportViewEl);
 

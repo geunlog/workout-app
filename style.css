@@ -2646,3 +2646,11 @@ dialog.body-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;bloc
 .body-history-tools summary::-webkit-details-marker{display:none}
 .rep-record-link{display:block;text-align:left;background:none;border:0;padding:6px 0;min-height:44px;color:inherit;font:inherit;font-weight:700;cursor:pointer}
 .rep-record-link:focus-visible{outline:2px solid #315bea;outline-offset:3px}
+
+/* v115 routine landing and long profile names */
+.bulk-app .exercise-list .ex-row{scroll-margin-top:16px}
+.bulk-app .ex-row[tabindex="-1"]:focus{outline:2px solid #315bea;outline-offset:2px}
+.bulk-app .record-day-group .rec-item.record-with-profile{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center}
+.bulk-app .record-with-profile>.record-profile-label{grid-column:1/-1;display:block;min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:12px;line-height:1.45;color:var(--muted);padding-top:2px}
+.bulk-app .record-with-profile>.record-card-value{min-width:0;white-space:normal;text-align:left;overflow-wrap:anywhere}
+.bulk-app .record-with-profile>.record-edit-form{grid-column:1/-1;min-width:0}
