@@ -2620,7 +2620,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
     scope.innerHTML='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?'플랜: '+activeProfile:'모든 플랜의 기록 · 다른 플랜 기록은 해당 플랜으로 이동해 수정해요.')+'</p>';
     scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;renderRecords();};});
-    document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'플랜명을 누르면 전체 이름을 확인할 수 있어요.':'현재 플랜의 기록을 표시해요.';
+    document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'날짜 옆에 소속 플랜을 표시해요.':'현재 플랜의 기록을 표시해요.';
     var sourceRecords=recordsSource();
     refreshRecordFilterOptions();
     syncRecordFilterUI();
@@ -2717,6 +2717,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         var dayGroup=document.createElement('details');dayGroup.className='record-day-group';
         dayGroup.dataset.recordKey='day:'+key+'|'+dayDate;
         dayGroup.open=!!opened[dayGroup.dataset.recordKey];
+        var dayProfiles=Array.from(new Set(dayEntries.map(function(e){return e._profile||activeProfile;})));
         var daySummary=document.createElement('summary');
         var dayDateEl=document.createElement('span');dayDateEl.className='record-day-summary-date';dayDateEl.textContent=dayDate;
         var dayCount=document.createElement('span');dayCount.className='record-set-badge';dayCount.textContent=dayEntries.length+'세트';
@@ -2734,7 +2735,10 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         if(best){var numberGroup=document.createElement('span');numberGroup.className='record-number-group';numberGroup.textContent=best.w+'kg × '+(best.reps==='-'?'횟수 미입력':best.reps+'회');bestValue.appendChild(numberGroup);}
         var dayArrow=document.createElement('span');dayArrow.className='record-day-chevron';
         daySummary.setAttribute('aria-label',name+' '+dayDate+' '+dayEntries.length+'세트, '+bestValue.textContent+', 세트 상세 보기');
-        daySummary.appendChild(dayDateEl);daySummary.appendChild(dayCount);daySummary.appendChild(bestValue);daySummary.appendChild(dayArrow);dayGroup.appendChild(daySummary);
+        daySummary.appendChild(dayDateEl);daySummary.appendChild(dayCount);
+        if(recordsScope==='all'&&dayProfiles.length===1){var dayPlan=document.createElement('span');dayPlan.className='record-day-plan';dayPlan.textContent=dayProfiles[0];dayPlan.title=dayProfiles[0];dayPlan.tabIndex=0;dayPlan.setAttribute('role','button');dayPlan.setAttribute('aria-label','플랜 '+dayProfiles[0]+' 전체 이름 보기');
+          var showPlan=function(event){event.preventDefault();event.stopPropagation();var dialog=document.createElement('dialog');dialog.className='record-plan-dialog';var title=document.createElement('h3');title.textContent='소속 플랜';var text=document.createElement('p');text.textContent=dayProfiles[0];var close=document.createElement('button');close.className='btn-reset';close.textContent='닫기';close.onclick=function(){dialog.close();};dialog.append(title,text,close);dialog.onclose=function(){dialog.remove();dayPlan.focus({preventScroll:true});};document.body.appendChild(dialog);dialog.showModal();};dayPlan.onclick=showPlan;dayPlan.onkeydown=function(event){if(event.key==='Enter'||event.key===' ')showPlan(event);};daySummary.appendChild(dayPlan);daySummary.setAttribute('aria-label',daySummary.getAttribute('aria-label')+', 플랜 '+dayProfiles[0]);}
+        daySummary.appendChild(bestValue);daySummary.appendChild(dayArrow);dayGroup.appendChild(daySummary);
         var orderedDayEntries=dayEntries;
         if(recordsScope==='all'){
           var byProfile=new Map();
@@ -2745,7 +2749,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
           var row=document.createElement('div');row.className='rec-item';
           var setBadge=document.createElement('span');setBadge.className='record-set-badge';setBadge.textContent=entry._setNo+'세트';
           setBadge.setAttribute('aria-label',entry._setNo+'세트');
-          if(recordsScope==='all'){
+          if(recordsScope==='all'&&dayProfiles.length>1){
             var profileBadge=document.createElement('button');profileBadge.type='button';profileBadge.className='record-plan-inline';
             var setText=document.createElement('span');setText.textContent=entry._setNo+'세트';
             var planText=document.createElement('span');planText.className='record-plan-short';planText.textContent=entry._profile;

@@ -2671,3 +2671,12 @@ dialog.body-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;bloc
 .record-plan-dialog h3{margin:0 0 12px;font-size:18px}
 .record-plan-dialog p{overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.6}
 .record-plan-dialog>button{width:100%;min-height:44px}
+
+/* v118 prioritize measurement values over plan metadata */
+.bulk-app .record-day-summary-date{flex-shrink:0}
+.bulk-app .record-day-plan{display:block;min-width:0;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:400;color:var(--muted);cursor:pointer}
+.bulk-app .record-plan-inline{border:0;background:none;border-radius:0;padding:0 3px;min-height:32px;width:82px;flex-basis:82px;max-width:30%;font-weight:400}
+.bulk-app .record-day-group .rec-item>.record-set-badge{background:none;border:0;border-radius:0;padding:0 4px;min-width:34px;font-weight:400}
+.bulk-app .record-day-group .rec-item{min-height:44px;padding-block:4px;border-bottom:0}
+.bulk-app .record-day-group .rec-item+.rec-item{border-top:1px solid #e8ebf2}
+.bulk-app .record-delete-footer{padding-top:8px;margin-top:0}
