@@ -2620,7 +2620,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
     scope.innerHTML='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?'플랜: '+activeProfile:'모든 플랜의 기록 · 다른 플랜 기록은 해당 플랜으로 이동해 수정해요.')+'</p>';
     scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;renderRecords();};});
-    document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'각 세트에 소속 플랜을 표시해요.':'현재 플랜의 기록을 표시해요.';
+    document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'날짜 안에서 플랜별로 묶어 표시해요.':'현재 플랜의 기록을 표시해요.';
     var sourceRecords=recordsSource();
     refreshRecordFilterOptions();
     syncRecordFilterUI();
@@ -2735,7 +2735,19 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         var dayArrow=document.createElement('span');dayArrow.className='record-day-chevron';
         daySummary.setAttribute('aria-label',name+' '+dayDate+' '+dayEntries.length+'세트, '+bestValue.textContent+', 세트 상세 보기');
         daySummary.appendChild(dayDateEl);daySummary.appendChild(dayCount);daySummary.appendChild(bestValue);daySummary.appendChild(dayArrow);dayGroup.appendChild(daySummary);
-        dayEntries.forEach(function(entry){
+        var orderedDayEntries=dayEntries;
+        if(recordsScope==='all'){
+          var byProfile=new Map();
+          dayEntries.forEach(function(entry){var owner=entry._profile||activeProfile;if(!byProfile.has(owner))byProfile.set(owner,[]);byProfile.get(owner).push(entry);});
+          orderedDayEntries=Array.from(byProfile.values()).flat();
+        }
+        var lastProfile=null;
+        orderedDayEntries.forEach(function(entry){
+          if(recordsScope==='all'&&lastProfile!==entry._profile){
+            lastProfile=entry._profile;
+            var profileHeading=document.createElement('div');profileHeading.className='record-profile-heading';
+            profileHeading.textContent='플랜 · '+entry._profile;dayGroup.appendChild(profileHeading);
+          }
           var row=document.createElement('div');row.className='rec-item';
           var setBadge=document.createElement('span');setBadge.className='record-set-badge';setBadge.textContent=entry._setNo+'세트';
           setBadge.setAttribute('aria-label',entry._setNo+'세트');
@@ -2744,7 +2756,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
           value.addEventListener('click',function(){if(entry._profile&&entry._profile!==activeProfile){switchProfile(entry._profile);return;}openRecordEditor(row,entry,value);});
           var remove=document.createElement('button');remove.type='button';remove.className='btn-hist-del';remove.innerHTML=deleteIcon();remove.setAttribute('aria-label',name+' '+entry.date+' '+entry._setNo+'세트 기록 삭제');
           remove.addEventListener('click',function(){requireSecondClick(remove,'확인',function(){deleteRecords(function(e){return e.id===entry.id;},true);});});
-          if(recordsScope==='all'){row.classList.add('record-with-profile');var profileLabel=document.createElement('span');profileLabel.className='record-profile-label';profileLabel.textContent='플랜 · '+entry._profile;row.appendChild(profileLabel);}
+          
           row.appendChild(setBadge);row.appendChild(value);if(!entry._profile||entry._profile===activeProfile)row.appendChild(remove);dayGroup.appendChild(row);
         });
         var duplicate=document.createElement('button');duplicate.type='button';duplicate.className='btn-reset record-duplicate';duplicate.textContent='마지막 세트와 같은 기록 추가';

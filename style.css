@@ -2654,3 +2654,8 @@ dialog.body-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;bloc
 .bulk-app .record-with-profile>.record-profile-label{grid-column:1/-1;display:block;min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:12px;line-height:1.45;color:var(--muted);padding-top:2px}
 .bulk-app .record-with-profile>.record-card-value{min-width:0;white-space:normal;text-align:left;overflow-wrap:anywhere}
 .bulk-app .record-with-profile>.record-edit-form{grid-column:1/-1;min-width:0}
+
+/* v116 show the plan once per group, keep sets compact */
+.bulk-app .record-profile-heading{padding:10px 4px 3px;font-size:12px;line-height:1.4;color:var(--muted);overflow-wrap:anywhere}
+.bulk-app .record-day-group .record-profile-heading+.rec-item{border-top:0}
+.bulk-app .record-day-group .rec-item{min-height:44px;padding-block:6px}
