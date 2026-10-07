@@ -2680,3 +2680,20 @@ dialog.body-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;bloc
 .bulk-app .record-day-group .rec-item{min-height:44px;padding-block:4px;border-bottom:0}
 .bulk-app .record-day-group .rec-item+.rec-item{border-top:1px solid #e8ebf2}
 .bulk-app .record-delete-footer{padding-top:8px;margin-top:0}
+
+/* v119 measurement input assistance */
+.body-dialog .body-decimal-tools{display:flex;align-items:center;gap:10px;margin:5px 0}
+.body-dialog .body-decimal-tools>label{display:flex;align-items:center;gap:7px;margin:0}
+.body-dialog .body-decimal-tools input[type=checkbox]{appearance:auto;width:18px;height:18px;min-height:0;margin:0;padding:0}
+.body-dialog .body-decimal-tools details{position:relative;border:0;margin:0}
+.body-dialog .body-decimal-tools summary{padding:4px 8px;min-height:28px}
+.body-dialog .body-decimal-tools summary::after{display:none}
+.body-decimal-tools details p{font-size:12px;line-height:1.5;max-width:220px}
+.body-dialog .body-conversion-hint,.body-dialog .body-metric-error{grid-column:2/-1;font-size:12px;line-height:1.4}
+.body-conversion-hint{color:#315bea}
+.body-conversion-hint:empty{display:none}
+.body-metric-error{color:#a13d32}
+.body-dialog input[aria-invalid=true]{border-color:#a13d32;background:#fff8f6}
+.body-quick-period{display:flex;gap:6px;margin:10px 0}
+.body-quick-period button{min-height:36px;padding:6px 14px;font-size:12px}
+.body-quick-period button[aria-pressed=true]{background:#e9eeff;border-color:#c3d0ff;color:#244bbd}
