@@ -2686,7 +2686,6 @@ dialog.body-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;bloc
 .body-dialog .body-decimal-tools{display:flex;align-items:center;gap:8px;margin:0 0 10px;min-height:40px;flex-wrap:wrap}
 .body-dialog .body-decimal-tools>label{display:flex;align-items:center;gap:7px;margin:0;font-size:13px;white-space:nowrap}
 .body-dialog .body-decimal-tools input[type=checkbox]{appearance:auto;width:18px!important;height:18px!important;min-height:18px;flex:0 0 18px;margin:0;padding:0;accent-color:#315bea}
-.body-dialog .body-decimal-example{font-size:12px;color:#637087;white-space:nowrap}
 .body-dialog [data-decimal-help]{margin:0 0 0 auto;padding:8px;min-height:40px;font-size:12px;border:0;background:transparent;color:#315bea;box-shadow:none}
 .body-dialog .body-decimal-help{margin:0 0 12px;padding:10px 12px;background:#f4f6fc;border-radius:8px;color:#596579;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
 .body-dialog .body-decimal-help[hidden]{display:none!important}
@@ -2700,3 +2699,14 @@ dialog.body-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;bloc
 .bulk-app .body-tracker .body-history-tools .body-history-dates{margin:12px 0;gap:10px}
 .body-history-dates>label{min-width:0}
 .body-history-tools .body-active-filter{overflow-wrap:anywhere}
+
+/* v121 compact, aligned full-day measurements */
+.body-graph-detail .body-day-heading{margin-bottom:4px}
+.body-graph-detail .body-day-record{padding:10px 0}
+.body-graph-detail .body-day-record dl{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin:6px 0 0}
+.body-graph-detail .body-day-record dl>div{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:5px 0;min-width:0}
+.body-graph-detail .body-day-record dt{flex-shrink:0;margin:0;font-size:12px}
+.body-graph-detail .body-day-record dd{min-width:0;text-align:right;font-size:14px;line-height:1.5}
+.body-graph-detail .body-day-record dd small{display:inline;margin:0 0 0 6px;font-size:11px;white-space:nowrap}
+.body-graph-detail .body-day-record dd.body-unmeasured{font-size:12px}
+.body-graph-detail .body-day-record>p{margin-top:6px}
