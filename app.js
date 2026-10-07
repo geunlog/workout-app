@@ -2620,7 +2620,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
     scope.innerHTML='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?'플랜: '+activeProfile:'모든 플랜의 기록 · 다른 플랜 기록은 해당 플랜으로 이동해 수정해요.')+'</p>';
     scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;renderRecords();};});
-    document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'날짜 안에서 플랜별로 묶어 표시해요.':'현재 플랜의 기록을 표시해요.';
+    document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'플랜명을 누르면 전체 이름을 확인할 수 있어요.':'현재 플랜의 기록을 표시해요.';
     var sourceRecords=recordsSource();
     refreshRecordFilterOptions();
     syncRecordFilterUI();
@@ -2741,16 +2741,26 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
           dayEntries.forEach(function(entry){var owner=entry._profile||activeProfile;if(!byProfile.has(owner))byProfile.set(owner,[]);byProfile.get(owner).push(entry);});
           orderedDayEntries=Array.from(byProfile.values()).flat();
         }
-        var lastProfile=null;
         orderedDayEntries.forEach(function(entry){
-          if(recordsScope==='all'&&lastProfile!==entry._profile){
-            lastProfile=entry._profile;
-            var profileHeading=document.createElement('div');profileHeading.className='record-profile-heading';
-            profileHeading.textContent='플랜 · '+entry._profile;dayGroup.appendChild(profileHeading);
-          }
           var row=document.createElement('div');row.className='rec-item';
           var setBadge=document.createElement('span');setBadge.className='record-set-badge';setBadge.textContent=entry._setNo+'세트';
           setBadge.setAttribute('aria-label',entry._setNo+'세트');
+          if(recordsScope==='all'){
+            var profileBadge=document.createElement('button');profileBadge.type='button';profileBadge.className='record-plan-inline';
+            var setText=document.createElement('span');setText.textContent=entry._setNo+'세트';
+            var planText=document.createElement('span');planText.className='record-plan-short';planText.textContent=entry._profile;
+            profileBadge.append(setText,planText);profileBadge.setAttribute('aria-label',entry._setNo+'세트, 플랜 '+entry._profile+' 전체 이름 보기');
+            profileBadge.onclick=function(){
+              var dialog=document.createElement('dialog');dialog.className='record-plan-dialog';
+              var heading=document.createElement('h3');heading.textContent='소속 플랜';
+              var fullName=document.createElement('p');fullName.textContent=entry._profile;
+              var close=document.createElement('button');close.type='button';close.className='btn-reset';close.textContent='닫기';close.onclick=function(){dialog.close();};
+              dialog.append(heading,fullName,close);dialog.setAttribute('aria-label','소속 플랜');dialog.onclose=function(){dialog.remove();profileBadge.focus({preventScroll:true});};
+              document.body.appendChild(dialog);dialog.showModal();
+            };
+            setBadge=profileBadge;
+          }
+
           var value=document.createElement('button');value.type='button';value.className='record-card-value record-edit-trigger';value.textContent=(entry.w === '-' ? '무게 미입력' : entry.w + 'kg') + ' × ' + (entry.reps === '-' ? '횟수 미입력' : entry.reps + '회');
           value.setAttribute('aria-label',name+' '+entry.date+' '+entry._setNo+'세트 무게·횟수 수정');
           value.addEventListener('click',function(){if(entry._profile&&entry._profile!==activeProfile){switchProfile(entry._profile);return;}openRecordEditor(row,entry,value);});
