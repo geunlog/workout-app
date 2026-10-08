@@ -2734,3 +2734,7 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .body-confirm footer{display:flex;gap:10px;margin-top:22px}
 .body-confirm button{flex:1;min-height:44px;padding:10px;border:1px solid #dbe2f0;border-radius:10px;background:white;color:#263451;font:inherit;font-size:14px}
 .body-confirm [data-confirm]{background:#b4453b;border-color:#b4453b;color:white}
+
+.body-confirm[data-danger="false"] [data-confirm]{background:#315bea;border-color:#315bea}
+.body-confirm button[hidden]{display:none}
+.body-confirm p{word-break:keep-all}
