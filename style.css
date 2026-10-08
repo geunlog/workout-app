@@ -2716,3 +2716,9 @@ dialog.body-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;bloc
 .body-day-record>header>.body-day-actions{display:flex;flex-wrap:nowrap;gap:6px;flex-shrink:0}
 .body-graph-detail .body-day-actions button{min-height:40px;padding:8px 10px}
 .body-graph-detail [data-graph-delete]{color:#a13d32;background:transparent}
+
+/* Keep editor header and footer outside the only scrolling region. */
+.body-dialog>form>header,.body-dialog>form>footer{position:static;transform:none}
+.body-dialog .body-form-scroll{scroll-padding-block:16px;overflow-anchor:none}
+.body-dialog .body-measure-row{scroll-margin-block:16px}
+.body-dialog .body-metric-error{grid-column:1/-1;word-break:keep-all;overflow-wrap:anywhere}

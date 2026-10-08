@@ -45,7 +45,7 @@ function calendar(input,max=''){
   const choose=day=>{input.value=day;input.dispatchEvent(new Event('change',{bubbles:true}));close();};
   dialog.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{selected=b.dataset.day;draw();dialog.querySelector('[data-day="'+selected+'"]').focus();});dialog.querySelector('[data-today]').onclick=()=>{selected=today;[year,month]=today.split('-').map(Number);month--;draw();};dialog.querySelector('[data-apply]').onclick=()=>choose(selected);
  }
- draw();document.body.append(dialog);dialog.showModal();
+ draw();document.body.append(dialog);dialog.showModal();dialog.querySelector('[data-close]').focus({preventScroll:true});dialog.querySelector('.body-form-scroll').scrollTop=0;
 }
 function dateControls(root,max=''){
  root.querySelectorAll('input[type="date"]').forEach(input=>{input.type='hidden';const b=document.createElement('button');b.type='button';b.className='body-date-button';b.setAttribute('aria-haspopup','dialog');const sync=()=>{b.innerHTML='<span>'+(input.value?esc(input.value.replaceAll('-','.')):'날짜 선택')+'</span>'+calendarIcon;b.setAttribute('aria-label',(input.parentElement.firstChild.textContent||'날짜')+': '+(input.value||'선택 안 함'));};sync();input.after(b);input.addEventListener('change',sync);b.onclick=()=>calendar(input,max);});
@@ -97,9 +97,14 @@ function editor(root,record){
  dateControls(dialog,localNow().slice(0,10));document.body.append(dialog);dialog.showModal();
 }
 function measurementIssue(r){
+ for(const [key,f] of Object.entries(fields)){
+  const v=r[key];if(v==null)continue;
+  if(typeof v!=='number'||!Number.isFinite(v)||v<f[2]||v>f[3])return {field:key,message:f[0]+'은 '+f[2]+'~'+f[3]+' '+f[1]+' 범위로 입력해주세요.'};
+ }
+ if(r.weight!=null&&r.fatMass!=null&&r.fatMass>r.weight)return {field:'fatMass',message:'체지방량은 체중보다 클 수 없어요. 두 입력값을 확인해주세요.'};
  if(r.weight!=null&&r.muscle!=null&&r.muscle>=r.weight)return {field:'muscle',message:'골격근량은 체중보다 작아야 해요. 입력값을 확인해주세요.'};
  const fat=r.fatMass!=null?r.fatMass:r.weight!=null&&r.fatPercent!=null?r.weight*r.fatPercent/100:null;
- if(r.weight!=null&&r.muscle!=null&&fat!=null&&r.muscle+fat>r.weight+0.2)return {field:'muscle',message:'골격근량과 체지방량의 합이 체중을 넘어요. 세 항목을 확인해주세요.'};
+ if(r.weight!=null&&r.muscle!=null&&fat!=null&&r.muscle+fat>r.weight+0.2)return r.fatMass!=null?{field:'fatMass',message:'입력한 골격근량과 체지방량의 합이 체중을 넘어요. 세 값을 확인해주세요.'}:{field:'fatPercent',message:'체중·체지방률로 계산한 체지방량은 '+fat.toFixed(1)+' kg이에요. 골격근량과 더하면 체중을 넘어, 체중·골격근량·체지방률을 확인해주세요.'};
  if(r.weight!=null&&r.fatPercent!=null&&r.fatMass!=null&&Math.abs(r.fatMass-r.weight*r.fatPercent/100)>0.5)return {field:'fatMass',message:'체중·체지방률로 계산한 값과 0.5kg 넘게 차이 나요. 같은 측정 결과인지 확인하거나 빈칸으로 두세요.'};
  return null;
 }
