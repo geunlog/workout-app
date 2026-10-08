@@ -2722,3 +2722,15 @@ dialog.body-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;bloc
 .body-dialog .body-form-scroll{scroll-padding-block:16px;overflow-anchor:none}
 .body-dialog .body-measure-row{scroll-margin-block:16px}
 .body-dialog .body-metric-error{grid-column:1/-1;word-break:keep-all;overflow-wrap:anywhere}
+
+/* v124 keyboard-aware dialog with a single bounded scrolling body. */
+dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!important;transform:translateY(-50%);margin:0 auto!important;max-height:var(--body-dialog-height,calc(100dvh - 24px))!important;max-block-size:var(--body-dialog-height,calc(100dvh - 24px))!important}
+.body-dialog>form{display:grid!important;grid-template-rows:auto minmax(0,1fr) auto;max-height:var(--body-dialog-height,calc(100dvh - 24px))!important;max-block-size:var(--body-dialog-height,calc(100dvh - 24px))!important;overflow:hidden}
+.body-dialog .body-form-scroll{min-height:0;overflow-y:auto!important;touch-action:pan-y;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+.body-confirm{box-sizing:border-box;width:min(360px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:22px;border:0;border-radius:20px;background:#fff;color:#263451;font-family:var(--ui,sans-serif);overflow:auto}
+.body-confirm::backdrop{background:#17233888}
+.body-confirm h2{margin:0 0 12px;font-size:19px}
+.body-confirm p{margin:0;font-size:14px;line-height:1.65;white-space:pre-line;overflow-wrap:anywhere}
+.body-confirm footer{display:flex;gap:10px;margin-top:22px}
+.body-confirm button{flex:1;min-height:44px;padding:10px;border:1px solid #dbe2f0;border-radius:10px;background:white;color:#263451;font:inherit;font-size:14px}
+.body-confirm [data-confirm]{background:#b4453b;border-color:#b4453b;color:white}
