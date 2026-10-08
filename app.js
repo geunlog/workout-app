@@ -6075,7 +6075,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
 // ==== 원본 script 블록 2/2 (업데이트 배너 + 키보드 뷰포트 보정) ====
 
   (function(){
-    var registration=null,applying=false,remoteAvailable=false;
+    var registration=null,applying=false,remoteAvailable=false,applyTimer=null,reloading=false;
     var status=document.getElementById('updateStatus'),banner=document.getElementById('updateBanner');
     function reportClientRelease(){if(navigator.serviceWorker && navigator.serviceWorker.controller)navigator.serviceWorker.controller.postMessage({type:'CLIENT_RELEASE',version:document.querySelector('meta[name="workout-app-version"]').content});}
     function showAvailable(){banner.hidden=false;status.textContent='새 버전 사용 가능 · 입력을 마친 뒤 새 버전 적용을 눌러주세요.';}
@@ -6094,14 +6094,15 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     }
     document.getElementById('btnCheckUpdate').onclick=check;
     document.getElementById('btnApplyUpdate').onclick=function(){
-      if(document.querySelector('[role="dialog"]') || document.querySelector('.record-edit-form')){status.textContent='열린 입력창을 저장하거나 닫은 뒤 적용해주세요.';return;}
+      if(applying)return;
+      if(document.querySelector('dialog[open], [role="dialog"], .record-edit-form')){status.textContent='열린 입력창을 저장하거나 닫은 뒤 적용해주세요.';return;}
       var ready=new Event('workout-before-update',{cancelable:true});if(!window.dispatchEvent(ready))return;
-      if(registration && registration.waiting){applying=true;registration.waiting.postMessage({type:'SKIP_WAITING'});status.textContent='새 버전 적용 중…';}
+      if(registration && registration.waiting){applying=true;document.getElementById('btnApplyUpdate').disabled=true;applyTimer=setTimeout(function(){applying=false;document.getElementById('btnApplyUpdate').disabled=false;status.textContent='업데이트 전환이 지연돼요. 현재 앱은 계속 사용할 수 있어요. 잠시 후 다시 적용해주세요.';},12000);registration.waiting.postMessage({type:'SKIP_WAITING'});status.textContent='새 버전 적용 중…';}
       else if('serviceWorker' in navigator){status.textContent='새 버전 파일이 아직 준비되지 않았어요. 연결 후 업데이트 확인을 다시 눌러주세요.';if(registration)registration.update().catch(function(){});}
       else location.reload();
     };
     if('serviceWorker' in navigator){
-      navigator.serviceWorker.addEventListener('controllerchange',function(){if(applying)location.reload();else reportClientRelease();});
+      navigator.serviceWorker.addEventListener('controllerchange',function(){if(applying){clearTimeout(applyTimer);applying=false;document.getElementById('btnApplyUpdate').disabled=false;if(document.querySelector('dialog[open], [role="dialog"], .record-edit-form')){status.textContent='새 버전이 준비됐어요. 입력을 저장한 뒤 앱을 다시 열어주세요.';reportClientRelease();return;}if(!reloading){reloading=true;location.reload();}}else reportClientRelease();});
       window.addEventListener('load',function(){
         navigator.serviceWorker.register('/workout-app/sw.js',{scope:'/workout-app/',updateViaCache:'none'}).then(function(r){
           registration=r;
