@@ -2743,3 +2743,14 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .body-selection [data-selection-summary]{grid-column:1/-1;margin:0;font-size:12px;color:#536178}
 .body-point-picker{margin:10px 0 0;color:#637087}
 .body-point-picker select{margin-bottom:4px!important}
+
+/* Compact, fully visible daily measurement details. */
+.body-graph-detail .body-day-record dl{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;margin-top:8px}
+.body-graph-detail .body-day-record dl>div{display:block;padding:0}
+.body-graph-detail .body-day-record dt{font-size:11px;line-height:1.5;margin-bottom:1px}
+.body-graph-detail .body-day-record dd{text-align:left;font-size:14px;line-height:1.5}
+.body-graph-detail .body-day-record dd small{display:block;margin:0;font-size:11px}
+.body-graph-detail .body-day-record .body-missing-summary{font-size:11px;line-height:1.5;color:#798497;margin-top:8px}
+.body-graph-detail .body-day-record>header{gap:6px}
+.body-graph-detail .body-day-record>header>.body-day-actions{gap:4px}
+.body-graph-detail .body-day-actions button{border:0;background:transparent;min-width:44px;min-height:44px;padding:8px 6px}
