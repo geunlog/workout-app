@@ -2738,3 +2738,8 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .body-confirm[data-danger="false"] [data-confirm]{background:#315bea;border-color:#315bea}
 .body-confirm button[hidden]{display:none}
 .body-confirm p{word-break:keep-all}
+
+.body-save-toast{position:fixed;bottom:calc(100px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:10000;max-width:calc(100vw - 40px);box-sizing:border-box;background:#263451;color:white;border-radius:12px;padding:12px 20px;font:14px/1.5 var(--ui,sans-serif);box-shadow:0 4px 18px #17233830;pointer-events:none}
+.body-selection [data-selection-summary]{grid-column:1/-1;margin:0;font-size:12px;color:#536178}
+.body-point-picker{margin:10px 0 0;color:#637087}
+.body-point-picker select{margin-bottom:4px!important}
