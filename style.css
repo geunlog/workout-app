@@ -2753,4 +2753,12 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .body-graph-detail .body-day-record .body-missing-summary{font-size:11px;line-height:1.5;color:#798497;margin-top:8px}
 .body-graph-detail .body-day-record>header{gap:6px}
 .body-graph-detail .body-day-record>header>.body-day-actions{gap:4px}
-.body-graph-detail .body-day-actions button{border:0;background:transparent;min-width:44px;min-height:44px;padding:8px 6px}
+.body-graph-detail .body-day-actions button{border:1px solid #cbd5e5;border-radius:10px;background:#fff;min-width:44px;min-height:44px;padding:8px 10px}
+.body-graph-detail .body-day-actions [data-graph-delete]{border-color:#e5ccc9;color:#a13d32}
+
+.body-graph-detail .body-day-record dl{gap:6px 16px}
+.body-graph-detail .body-day-record .body-day-waist{grid-column:1/-1}
+.body-graph-detail .body-day-record .body-day-waist dd small{display:inline;margin-left:7px}
+.body-graph-detail .body-day-record dd.body-unmeasured{font-size:14px;line-height:1.5}
+.body-graph-detail .body-day-record{padding:10px 0 12px 10px;border-left:3px solid transparent}
+.body-graph-detail .body-day-record[data-selected]{padding-left:10px}
