@@ -2778,3 +2778,9 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .ai-feedback-diagnostics>span{font-size:11px;}
 .ai-preview-dialog [data-error]:not(:empty){scroll-margin-block:20px;}
 .ai-base-survey select:disabled{opacity:.6;}
+/* Keep the weekly overview readable without expanding its footprint. */
+.ai-preview-dialog .ai-week-row{padding-block:8px;}
+.ai-preview-dialog .ai-allocation table{width:100%;table-layout:fixed;font-variant-numeric:tabular-nums;}
+.ai-preview-dialog .ai-allocation table th,.ai-preview-dialog .ai-allocation table td{padding:8px 4px;text-align:center;}
+.ai-preview-dialog .ai-allocation table th:first-child{text-align:left;}
+.ai-preview-dialog .ai-allocation-help{font-size:12px;line-height:1.55;word-break:keep-all;overflow-wrap:anywhere;}
