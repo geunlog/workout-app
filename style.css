@@ -2762,3 +2762,19 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .body-graph-detail .body-day-record dd.body-unmeasured{font-size:14px;line-height:1.5}
 .body-graph-detail .body-day-record{padding:10px 0 12px 10px;border-left:3px solid transparent}
 .body-graph-detail .body-day-record[data-selected]{padding-left:10px}
+
+/* AI proposal: readable names, compact controls and optional diagnostics. */
+.ai-preview-dialog .ai-edit-pair{grid-template-columns:minmax(0,1fr);}
+.ai-preview-dialog .ai-edit-pair>label:first-child{flex-direction:row;align-items:center;gap:8px;}
+.ai-preview-dialog .ai-edit-pair>label:first-child select{width:110px;}
+.ai-preview-dialog .ai-edit-exercise{position:relative;padding:12px;background:#fff;border-radius:12px;}
+.ai-preview-dialog .ai-edit-row-actions{gap:6px;margin-top:8px;}
+.ai-preview-dialog .ai-edit-row-actions button{min-width:44px;min-height:44px;}
+.ai-preview-dialog .ai-edit-row-actions button:disabled{opacity:.35;}
+.ai-preview-dialog .ai-reason{margin:8px 0;padding:8px 10px;font-size:13px;line-height:1.55;}
+.ai-preview-dialog .ai-edit-day>summary{font-size:14px;flex-wrap:wrap;justify-content:flex-start;}
+.ai-preview-dialog .ai-edit-day>summary small{margin-left:auto;font-size:12px;}
+.ai-feedback-diagnostics>summary{cursor:pointer;min-height:32px;display:list-item;font-size:12px;font-weight:600;}
+.ai-feedback-diagnostics>span{font-size:11px;}
+.ai-preview-dialog [data-error]:not(:empty){scroll-margin-block:20px;}
+.ai-base-survey select:disabled{opacity:.6;}
