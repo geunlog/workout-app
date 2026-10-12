@@ -1059,7 +1059,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if(meta.inputStamp && meta.inputStamp!==JSON.stringify(buildAiAdjustmentContext(adjustmentState())))throw new Error('입력 조건이 바뀐 이전 제안이에요. 최신 조건으로 다시 추천받아주세요.');
       if(hasRoutineDraft())throw new Error('수정 중인 루틴을 먼저 저장하거나 취소해주세요.');
       if(!selected.size)throw new Error('적용할 날짜를 하나 이상 선택해주세요.');
-      var next=validateTemporary({...candidate,days:candidate.days.filter(function(d){return selected.has(d.date);})},todayStr(),false);if(next.days.some(function(day){return day.exercises.some(function(e){return !(catalog[e.muscle]||[]).some(function(c){return c.n===e.name;});});}))throw new Error('등록 종목이 변경됐어요. 파일을 다시 가져와 연결해주세요.');next.revision=genId();
+      var next=validateAiEditable(validateTemporary({...candidate,days:candidate.days.filter(function(d){return selected.has(d.date);})},todayStr(),false));if(next.days.some(function(day){return day.exercises.some(function(e){return !(catalog[e.muscle]||[]).some(function(c){return c.n===e.name;});});}))throw new Error('등록 종목이 변경됐어요. 파일을 다시 가져와 연결해주세요.');next.revision=genId();
       var previous=activeTemporary();next.days=mergeTemporaryDays(previous,next);
       var history=proposalHistory();
       if(previous)history.push({kind:'week',routine:previous,reasons:{},label:'교체 전 임시 루틴',savedAt:new Date().toISOString()});
@@ -3981,7 +3981,30 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     if(!writeJSON(proposalHistoryKey(),boundedProposalHistory(list)))showToast('제안 이력을 저장하지 못했어요. 현재 제안은 사용할 수 있어요.','pending');
   }
   function baseSnapshot(){var week=adjustmentWeek(todayStr()),saved=loadSavedRoutine();return {format:'workout-temporary-routine',version:1,weekStart:week.from,weekEnd:week.to,days:saved.map(function(d,i){return {date:week.dates[i],title:d.title||(d.ex.length?'루틴':'휴식'),rest:!d.ex.length,exercises:d.ex.map(function(e){return {name:e.n,muscle:e.m,sets:Number(e.s),reps:e.r,rir:e.rir};})};})};}
-  function validateBaseCandidate(candidate){return validateTemporary(candidate,todayStr(),true);}
+  function validateAiEditable(candidate){
+    candidate.days.forEach(function(day){
+      var seen=new Set();
+      day.exercises.forEach(function(e){
+        var key=e.muscle+'\n'+e.name;
+        if(seen.has(key))throw new Error(day.date+' · '+e.name+'이 중복돼요. 한 항목으로 합쳐주세요.');
+        seen.add(key);
+        if(!(catalog[e.muscle]||[]).some(function(item){return item.n===e.name;}))throw new Error(day.date+' · 등록 종목이 바뀌었어요. 종목을 다시 선택해주세요.');
+      });
+      var limit=day.requestedMinutes;
+      if(limit!=null && ![30,45,60,75,90,120].includes(limit))throw new Error(day.date+' · 운동 시간 조건을 확인해주세요.');
+      day.estimatedMinutes=estimateSession(day);
+      if(limit!=null && day.estimatedMinutes>limit)throw new Error(day.date+' · 예상 '+day.estimatedMinutes+'분으로 설정한 '+limit+'분을 넘어요. 종목이나 세트 수를 줄여주세요.');
+    });
+    return candidate;
+  }
+  function validateAiResponse(raw,weekStart,weekEnd,slots,asOf,restore){
+    if(!raw || raw.weekStart!==weekStart || raw.weekEnd!==weekEnd)throw new Error('추천 주차가 요청한 주차와 달라요. 다시 추천받아주세요.');
+    var clean=validateTemporary(raw,asOf,restore);
+    if(clean.days.length!==slots.length || clean.days.some(function(day){return !slots.some(function(slot){return slot.date===day.date;});}))throw new Error('추천 날짜가 요청한 날짜와 달라요. 다시 추천받아주세요.');
+    clean.days.forEach(function(day){day.requestedMinutes=slots.find(function(slot){return slot.date===day.date;}).minutes;});
+    return validateAiEditable(clean);
+  }
+  function validateBaseCandidate(candidate){return validateAiEditable(validateTemporary(candidate,todayStr(),true));}
   function baseAllocationHtml(candidate,selected){
     var saved=loadSavedRoutine(),week=adjustmentWeek(todayStr()),kept=[],changed=[],totals={},schedule=[];
     MUSCLES.forEach(function(m){totals[m]={fixed:0,added:0};});
@@ -4144,10 +4167,10 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         requestStage='RESULT';
         if(result.clarification){status.dataset.kind='error';status.textContent='조건 확인이 필요해요: '+result.clarification;return;}
         if(fingerprint!==basePlanFingerprint())throw new Error('요청 중 기본 루틴이나 종목이 바뀌었어요. 다시 추천받아주세요.');
-        var expected=planDays.filter(function(d){return d.mode==='generate';}).map(function(d){return d.date;}),candidate=result.routine;
-        if(!candidate || !Array.isArray(candidate.days) || candidate.days.length!==expected.length || candidate.days.some(function(d){return !expected.includes(d.date);}))throw new Error('추천된 요일이 선택한 요일과 맞지 않아요.');
+        if(week.from!==adjustmentWeek(todayStr()).from)throw new Error('요청 중 주차가 바뀌었어요. 다시 추천받아주세요.');
+        var candidate=validateAiResponse(result.routine,week.from,week.to,planDays.filter(function(d){return d.mode==='generate';}),todayStr(),true);
         candidate.days.push(...planDays.filter(function(d){return d.mode==='rest';}).map(function(d){return {date:d.date,title:'휴식',rest:true,exercises:[]};}));
-        candidate=validateTemporary(candidate,todayStr(),true);
+        candidate=validateBaseCandidate(candidate);
         saveProposalHistory('base',candidate,result.reasons||{},'AI 기본 루틴 제안');dialog.close();previewBasePlan(candidate,result.reasons||{},fingerprint);
       }catch(e){if(dialog.isConnected){status.dataset.kind='error';status.textContent=aiFailureText('B',e,requestStage);}}
       finally{stopBusy();clearTimeout(timer);if(dialog.isConnected)button.disabled=false;}
@@ -4211,8 +4234,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     return (previous?previous.days.filter(function(d){return !replaced.has(d.date);}):[]).concat(candidate.days).sort(function(a,b){return a.date.localeCompare(b.date);});
   }
   function prepareAiCandidate(raw,context,fingerprint){
-    var candidate=validateTemporary(raw,context.asOf,false),adjust=context.availability.filter(function(d){return d.mode==='adjust';}).map(function(d){return d.date;});
-    if(candidate.days.length!==adjust.length || candidate.days.some(function(d){return !adjust.includes(d.date);}))throw new Error('조정할 날짜가 빠졌거나 다른 날짜가 포함됐어요. 다시 추천받아주세요.');
+    var candidate=validateAiResponse(raw,context.weekStart,context.weekEnd,context.availability.filter(function(d){return d.mode==='adjust';}),context.asOf,false);
     context.availability.filter(function(d){return d.mode==='rest';}).forEach(function(d){candidate.days.push({date:d.date,title:'휴식',rest:true,exercises:[]});});
     candidate=validateTemporary(candidate,context.asOf,false);
     aiProposalMeta.set(candidate,{fingerprint:fingerprint,asOf:context.asOf,kept:context.availability.filter(function(d){return d.mode==='keep';}).map(function(d){return d.date;})});
