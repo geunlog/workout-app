@@ -1039,7 +1039,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       aiAdjustmentBusy=true;revise.disabled=true;apply.disabled=true;cancel.disabled=true;revise.textContent='제안 조정 중…';hint.dataset.kind='loading';hint.textContent='요청사항을 반영하고 있어요. 최대 약 80초 걸릴 수 있어요.';var stopBusy=startAiBusy(hint,revise);
       var requestStage='NET';
       try{
-        var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'});
+        var response=await fetchAiRequest(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'});
         requestStage='PARSE';
         var result;try{result=await response.json();}catch(parseError){throw aiProtocolError('PARSE');}if(!dialog.isConnected || owner!==activeProfile)return;
         requestStage='RESULT';
@@ -3953,6 +3953,19 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   var BASE_PLAN_ENDPOINT='https://ai.geunlog.workers.dev/plan';
   // AI error codes: B=base plan, W=week adjustment, R=revision.
   // NET/TIME identify transport; HTTP + status + Worker code identify server failures.
+  async function fetchAiRequest(url,options){
+    // One retry only for an early connection failure; share the original deadline.
+    var started=Date.now();
+    for(var attempt=0;attempt<2;attempt++){
+      try{return await fetch(url,options);}catch(error){
+        if(options.signal && options.signal.aborted)throw error;
+        if(!(error instanceof TypeError) || attempt || Date.now()-started>10000)throw error;
+        if(typeof navigator!=='undefined' && navigator.onLine===false)throw error;
+        await new Promise(function(resolve){setTimeout(resolve,700);});
+        if(options.signal && options.signal.aborted)throw new DOMException('Aborted','AbortError');
+      }
+    }
+  }
   function aiProtocolError(stage){var error=new Error(stage);error.aiStage=stage;return error;}
   function aiHttpError(response,result){
     var error=new Error(result && typeof result.error==='string'?result.error:'');
@@ -3967,7 +3980,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var kind=error && error.aiStage || (error && error.name==='AbortError'?'TIME':stage==='NET' && error instanceof TypeError?'NET':stage||'RESULT');
     var code='AI-'+flow+'-'+kind;
     if(kind==='HTTP')code+='-'+(error.aiStatus||0)+(error.aiCode?'-'+error.aiCode:'')+(error.aiUpstream?'-G'+error.aiUpstream:'');
-    var detail=kind==='NET'?'추천 서버에 연결하지 못했어요. 인터넷 연결과 Worker 배포 상태를 확인해주세요.':kind==='TIME'?'응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.':kind==='PARSE'?'추천 서버가 올바른 응답을 보내지 않았어요.':kind==='VERSION'?'앱과 Worker 버전이 맞지 않아요.':kind==='HTTP'?(error.message||'추천 서버 요청을 확인해주세요.'):(error.message||'제안 내용을 처리하지 못했어요. 다시 시도해주세요.');
+    var detail=kind==='NET'?'추천 응답을 받지 못했어요. 연결이 끊겼거나 서버에 일시적인 문제가 있을 수 있어요. 잠시 후 다시 시도해주세요.':kind==='TIME'?'응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.':kind==='PARSE'?'추천 서버가 올바른 응답을 보내지 않았어요.':kind==='VERSION'?'앱과 Worker 버전이 맞지 않아요.':kind==='HTTP'?(error.message||'추천 서버 요청을 확인해주세요.'):(error.message||'제안 내용을 처리하지 못했어요. 다시 시도해주세요.');
     if(kind==='HTTP' && error.aiCode==='UPSTREAM_CONFIG')detail='추천 서비스의 요청 설정에 문제가 있어요. 앱 수정이 필요해요.';
     var preserved=flow==='R'?'이전 제안은 유지돼요.':flow==='B'?'입력은 유지돼요.':'기존 루틴은 유지돼요.';
     var d=error && error.aiDiagnostic;
@@ -4016,8 +4029,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       schedule.push({label:['월','화','수','목','금','토','일'][i],changed:!!replacement,sets:daySets});
       (replacement?replacement.exercises:(saved[i].ex||[]).map(function(e){return {muscle:e.m,sets:e.s};})).forEach(function(e){if(totals[e.muscle])totals[e.muscle][replacement?'added':'fixed']+=Number(e.sets)||0;});
     });
+    var spacing=MUSCLES.map(function(m){var indices=schedule.map(function(d,i){return d.sets[m]>0?i:-1;}).filter(function(i){return i>=0;});if(!indices.length)return '';var gap=Math.min.apply(null,indices.map(function(v,i){return ((indices[(i+1)%indices.length]-v+7)%7)||7;}));return '<span>'+statsEscape(m)+' '+indices.length+'일 · 최소 '+gap+'일 간격</span>';}).filter(Boolean).join('');
     var scheduleHtml='<div class="ai-week-schedule"><h3>적용 후 주간 루틴</h3>'+schedule.map(function(d,i){var next=schedule[(i+1)%7],overlap=MUSCLES.filter(function(m){return d.sets[m]>=3&&next.sets[m]>=3;});return '<div class="ai-week-row"><strong>'+d.label+'</strong><span>'+(d.changed?'변경':'유지')+'</span><p>'+statsEscape(MUSCLES.filter(function(m){return d.sets[m]>0;}).map(function(m){return m+' '+d.sets[m]+'세트';}).join(' · ')||'휴식')+'</p>'+(overlap.length?'<small>'+statsEscape(next.label+'요일과 '+overlap.join('·')+' 직접 세트가 연속 배치돼요.')+'</small>':'')+'</div>';}).join('')+'</div>';
-    return '<section class="ai-allocation">'+scheduleHtml+'<h3>적용 후 직접 세트</h3><p><strong>변경</strong> '+changed.join('·')+' <br><strong>유지</strong> '+(kept.join('·')||'없음')+'</p><p class="ai-allocation-help">선택하지 않은 요일은 그대로예요. 아래는 계획 합계이며 권장량이나 실제 수행량이 아니에요. 프레스·당기기의 팔 보조 자극은 합산하지 않아요.</p><table><thead><tr><th>부위</th><th>유지</th><th>새 제안</th><th>합계</th></tr></thead><tbody>'+MUSCLES.map(function(m){var t=totals[m];return '<tr><th>'+m+'</th><td>'+t.fixed+'</td><td>'+t.added+'</td><td><strong>'+(t.fixed+t.added)+'</strong></td></tr>';}).join('')+'</tbody></table><p class="ai-allocation-help">0은 해당 부위의 직접 운동이 없다는 뜻이에요. 유지 요일이 많으면 전체 주간 배분을 바꾸는 데 제한이 있어요.</p>'+(candidate.reviewNotes||[]).map(function(t){return '<p class="ai-allocation-warning">생성 시 확인 사항 · '+statsEscape(t)+' 편집 후에는 위 합계를 다시 확인해주세요.</p>';}).join('')+'</section>';
+    return '<section class="ai-allocation">'+scheduleHtml+'<h3>적용 후 직접 세트</h3><p><strong>변경</strong> '+changed.join('·')+' <br><strong>유지</strong> '+(kept.join('·')||'없음')+'</p><p class="ai-allocation-help">선택하지 않은 요일은 그대로예요. 아래는 계획 합계이며 권장량이나 실제 수행량이 아니에요. 프레스·당기기의 팔 보조 자극은 합산하지 않아요.</p><table><thead><tr><th>부위</th><th>유지</th><th>새 제안</th><th>합계</th></tr></thead><tbody>'+MUSCLES.map(function(m){var t=totals[m];return '<tr><th>'+m+'</th><td>'+t.fixed+'</td><td>'+t.added+'</td><td><strong>'+(t.fixed+t.added)+'</strong></td></tr>';}).join('')+'</tbody></table><details class="ai-spacing"><summary>부위별 배치 간격</summary><div>'+spacing+'</div><p class="ai-allocation-help">다음 주 연결을 포함한 요일 간격이에요. 실제 운동 시각·수행 강도·보조근 피로와 회복 상태는 반영하지 않아요.</p></details><p class="ai-allocation-help">0은 해당 부위의 직접 운동이 없다는 뜻이에요. 유지 요일이 많으면 전체 주간 배분을 바꾸는 데 제한이 있어요.</p>'+(candidate.reviewNotes||[]).map(function(t){return '<p class="ai-allocation-warning">생성 시 확인 사항 · '+statsEscape(t)+' 편집 후에는 위 합계를 다시 확인해주세요.</p>';}).join('')+'</section>';
   }
   function proposalComparison(candidate,kind,selected){
     if(kind==='base')return baseAllocationHtml(candidate,selected);
@@ -4138,9 +4152,13 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var owner=activeProfile,week=adjustmentWeek(todayStr()),saved=loadSavedRoutine(),info=athleteInfo(),dialog=document.createElement('dialog');
     dialog.className='data-confirm-dialog ai-preview-dialog ai-base-survey';dialog.setAttribute('aria-label','AI 기본 루틴 만들기');
     dialog.innerHTML='<h2>기본 루틴 만들기</h2><p class="ai-preview-meta">매주 반복할 요일을 골라주세요. 적용하기 전에 제안을 확인할 수 있어요.</p>'+
-      '<div class="ai-base-fields"><label>운동 목표<select data-goal>'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>운동 경력<select data-experience>'+adjustmentOptions(AI_EXPERIENCE,info.experience,'경력 선택')+'</select></label></div><div class="ai-day-picker"><strong>AI가 만들 요일</strong><div class="ai-day-chips">'+
-      week.dates.map(function(date,i){return '<button type="button" data-day-chip="'+i+'" aria-pressed="false" aria-label="'+['월','화','수','목','금','토','일'][i]+'요일 AI 루틴 만들기">'+['월','화','수','목','금','토','일'][i]+'</button>';}).join('')+'</div><p>선택한 요일은 60분 기준이에요. 선택하지 않은 요일은 그대로 둬요.</p></div><details class="ai-day-details"><summary>운동 시간·휴식 자세히 설정 <small data-selection-count>선택 0일</small></summary><div class="ai-base-days">'+
+      '<div class="ai-base-fields"><label>운동 목표<select data-goal>'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>운동 경력<select data-experience>'+adjustmentOptions(AI_EXPERIENCE,info.experience,'경력 선택')+'</select></label></div><div class="ai-day-picker"><strong>AI가 바꿀 요일</strong><button type="button" class="ai-select-workdays" data-select-workdays>기존 운동일 모두 선택</button><div class="ai-day-chips">'+
+      week.dates.map(function(date,i){return '<button type="button" data-day-chip="'+i+'" aria-pressed="false" aria-label="'+['월','화','수','목','금','토','일'][i]+'요일 AI 루틴 만들기">'+['월','화','수','목','금','토','일'][i]+'</button>';}).join('')+'</div><p>선택한 요일만 재구성해요. 주간 전체의 부위·운동량을 바꾸려면 기존 운동일을 모두 선택하세요. 시간은 아래에서 조절할 수 있어요.</p></div><details class="ai-day-details"><summary>운동 시간·휴식 자세히 설정 <small data-selection-count>선택 0일</small></summary><div class="ai-base-days">'+
       week.dates.map(function(date,i){var day=['월','화','수','목','금','토','일'][i];return '<div class="ai-base-day" data-base-day="'+i+'"><div class="ai-base-day-label"><strong>'+day+'</strong><small>'+statsEscape(saved[i].title||'일정 없음')+'</small></div><select data-base-mode aria-label="'+day+'요일 변경"><option value="keep">그대로 두기</option><option value="generate">AI로 만들기</option><option value="rest">휴식으로 바꾸기</option></select><select data-base-time disabled aria-label="'+day+'요일 운동 시간">'+adjustmentTimeOptions('60')+'</select></div>';}).join('')+'</div></details><label class="ai-base-notes">추가 요청사항 (선택)<textarea data-notes maxlength="1000" rows="2" placeholder="예: 집에서 덤벨만 사용해요. 무릎 통증으로 런지는 빼주세요."></textarea></label><p class="ai-survey-caption">선호 운동·사용 장비·피할 운동이 있다면 여기에 적어주세요.</p><p role="status" aria-live="polite" data-status></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-generate>제안받기</button></div>';
+    dialog.querySelector('[data-select-workdays]').onclick=function(){
+      dialog.querySelectorAll('[data-base-day]').forEach(function(row,i){if((saved[i].ex||[]).length)row.querySelector('[data-base-mode]').value='generate';});
+      syncBaseDayPicker();dialog.querySelector('.ai-day-details').open=true;
+    };
     function syncBaseDayPicker(){
       var count=0;dialog.querySelectorAll('[data-base-mode]').forEach(function(select,i){var selected=select.value==='generate',chip=dialog.querySelector('[data-day-chip="'+i+'"]');chip.setAttribute('aria-pressed',String(selected));select.closest('.ai-base-day').querySelector('[data-base-time]').disabled=!selected;if(selected)count++;});
       dialog.querySelector('[data-selection-count]').textContent='선택 '+count+'일';
@@ -4158,9 +4176,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if(planDays.some(function(day){return day.mode==='generate' && ![30,45,60,75,90,120].includes(day.minutes);})){status.textContent='AI 생성 요일의 운동 시간을 선택해주세요.';return;}
       var fingerprint=basePlanFingerprint(),payload={plan:{schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:{goal:goal,experience:experience,preferences:'',excluded:'',equipment:''},notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),registeredExercises:MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
       var button=this,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000);button.disabled=true;status.dataset.kind='loading';status.textContent='추천 생성 중이에요. 유지 요일과 입력 조건을 함께 전달했어요. 최대 약 80초 걸릴 수 있어요.';var stopBusy=startAiBusy(status,button);
-      var requestInputs=[...dialog.querySelectorAll('input,select,textarea,[data-day-chip]')].map(function(el){return {el:el,disabled:el.disabled};});requestInputs.forEach(function(x){x.el.disabled=true;});dialog.addEventListener('close',function(){controller.abort();},{once:true});
+      var requestInputs=[...dialog.querySelectorAll('input,select,textarea,[data-day-chip],[data-select-workdays]')].map(function(el){return {el:el,disabled:el.disabled};});requestInputs.forEach(function(x){x.el.disabled=true;});dialog.addEventListener('close',function(){controller.abort();},{once:true});
       var requestStage='NET';
-      try{var response=await fetch(BASE_PLAN_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal,cache:'no-store'}),result;
+      try{var response=await fetchAiRequest(BASE_PLAN_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal,cache:'no-store'}),result;
         requestStage='PARSE';try{result=await response.json();}catch(parseError){throw aiProtocolError('PARSE');}
         if(!dialog.isConnected || owner!==activeProfile)return;
         if(!response.ok)throw aiHttpError(response,result);
@@ -4304,7 +4322,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       aiAdjustmentBusy=true;button.disabled=true;button.textContent='AI 제안 생성 중…';status.dataset.kind='loading';status.textContent='운동 기록과 남은 일정을 바탕으로 추천하고 있어요. 최대 약 80초 걸릴 수 있어요.';var stopBusy=startAiBusy(status,button);
       var requestStage='NET';
       try{
-        var response=await fetch(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'});
+        var response=await fetchAiRequest(AI_ROUTINE_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({context:context}),signal:controller.signal,cache:'no-store'});
         requestStage='PARSE';
         var result;try{result=await response.json();}catch(e){throw aiProtocolError('PARSE');}
         if(owner!==activeProfile || !root.isConnected)return;
