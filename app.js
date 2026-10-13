@@ -4163,7 +4163,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       syncBaseDayPicker();dialog.querySelector('.ai-day-details').open=true;
     };
     function syncBaseDayPicker(){
-      var count=0;dialog.querySelectorAll('[data-base-mode]').forEach(function(select,i){var selected=select.value==='generate',chip=dialog.querySelector('[data-day-chip="'+i+'"]');chip.setAttribute('aria-pressed',String(selected));select.closest('.ai-base-day').querySelector('[data-base-time]').disabled=!selected;if(selected)count++;});
+      var count=0;dialog.querySelectorAll('[data-base-mode]').forEach(function(select,i){var selected=select.value==='generate',chip=dialog.querySelector('[data-day-chip="'+i+'"]');chip.setAttribute('aria-pressed',String(selected));select.closest('.ai-base-day').querySelector('[data-base-time]').disabled=!selected;select.closest('.ai-base-day').querySelector('.ai-base-day-label small').textContent=selected?'새로 구성':select.value==='rest'?'휴식':saved[i].title||'일정 없음';if(selected)count++;});
       dialog.querySelector('[data-selection-count]').textContent='선택 '+count+'일';
     }
     dialog.querySelectorAll('[data-base-mode]').forEach(function(select){select.onchange=syncBaseDayPicker;});
