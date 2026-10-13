@@ -3985,7 +3985,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     if(kind==='HTTP' && error.aiCode==='UPSTREAM_CONFIG')detail='추천 서비스의 요청 설정에 문제가 있어요. 앱 수정이 필요해요.';
     var preserved=flow==='R'?'이전 제안은 유지돼요.':flow==='B'?'입력은 유지돼요.':'기존 루틴은 유지돼요.';
     var d=error && error.aiDiagnostic;
-    return detail+(detail.includes(preserved)?'':' '+preserved)+'\n오류 코드: '+code+(d?'\n진단: '+d.worker+' · '+d.model+' · 시도 '+d.attempt+(error.aiCode==='INVALID_RESULT' && d.validation && /^[A-Z_]{1,40}$/.test(d.validation)?'\n검증 코드: '+d.validation:'')+'\n요청 ID: '+d.requestId:'');
+    return detail+(/(?:입력|루틴|제안)[^.!?\n]*유지돼요/.test(detail)?'':' '+preserved)+'\n오류 코드: '+code+(d?'\n진단: '+d.worker+' · '+d.model+' · 시도 '+d.attempt+(error.aiCode==='INVALID_RESULT' && d.validation && /^[A-Z_]{1,40}$/.test(d.validation)?'\n검증 코드: '+d.validation:'')+'\n요청 ID: '+d.requestId:'');
   }
   function proposalHistoryKey(){return keyFor('geunlog-ai-proposal-history-v1',activeProfile);}
   function proposalHistory(){var list=readJSON(proposalHistoryKey(),[]);return Array.isArray(list)?list.filter(function(e){return e && (e.kind==='base'||e.kind==='week') && e.routine && Array.isArray(e.routine.days);}).slice(-12):[];}
