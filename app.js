@@ -929,9 +929,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     });
     if(data.weekReview && textOK(data.weekReview.summary,250) && textOK(data.weekReview.recovery,250))clean.weekReview={summary:data.weekReview.summary,recovery:data.weekReview.recovery};
     if(data.planExplanation && textOK(data.planExplanation.summary,250) && textOK(data.planExplanation.recovery,250))clean.planExplanation={summary:data.planExplanation.summary,recovery:data.planExplanation.recovery};
-    if(data.weeklyAllocation && data.weeklyAllocation.version===1 && ['balanced','constrained','request'].includes(data.weeklyAllocation.mode) && Array.isArray(data.weeklyAllocation.targets)){
-      var groups=['가슴','수직 당기기','수평 당기기','등 기타','어깨','무릎 중심','힙힌지·둔근','무릎 굽힘','종아리','삼두','이두','복근','하체 기타'],rows=data.weeklyAllocation.targets;
-      if(rows.length===groups.length && new Set(rows.map(function(t){return t.group;})).size===groups.length && rows.every(function(t){return groups.includes(t.group) && ['target','min','max','fixed','remaining','actual'].every(function(k){return Number.isInteger(t[k]) && t[k]>=0 && t[k]<=10000;}) && t.min<=t.target && t.target<=t.max;}))clean.weeklyAllocation={version:1,mode:data.weeklyAllocation.mode,targets:rows.map(function(t){return {...t};})};
+    if(data.designReview && data.designReview.version===1 && ['explained','needs-review'].includes(data.designReview.status)){
+      var dr=data.designReview;
+      clean.designReview={version:1,status:dr.status,volume:Array.isArray(dr.volume)?dr.volume.filter(function(r){return r && MUSCLES.includes(r.muscle) && Number.isInteger(r.sets) && r.sets>=0 && r.sets<=10000 && textOK(r.reason,350);}).slice(0,7):[],issues:Array.isArray(dr.issues)?dr.issues.filter(function(t){return textOK(t,500);}).slice(0,12):[]};
     }
     if(Array.isArray(data.reviewNotes))clean.reviewNotes=data.reviewNotes.filter(function(t){return textOK(t,500);}).slice(0,3);
     clean.days.sort(function(a,b){return a.date.localeCompare(b.date);});return clean;
@@ -4034,6 +4034,16 @@ function allocationGroup(e) {
  return '하체 기타';
 }
 
+function designGroup(e) {
+ if(e.muscle==='어깨'){
+  if(/리어|리버스.*플라이|페이스.?풀|후면/i.test(e.name))return '어깨 후면';
+  if(/레터럴|사이드|측면/i.test(e.name))return '어깨 측면';
+  if(/숄더.?프레스|오버헤드|프론트|전면|밀리터리/i.test(e.name))return '어깨 전면·프레스';
+  return '어깨 기타';
+ }
+ return allocationGroup(e);
+}
+
   function baseAllocationHtml(candidate,selected){
     var saved=loadSavedRoutine(),week=adjustmentWeek(todayStr()),kept=[],changed=[],totals={},schedule=[],groupTotals={};
     MUSCLES.forEach(function(m){totals[m]={fixed:0,added:0};});
@@ -4041,7 +4051,7 @@ function allocationGroup(e) {
       var replacement=selected.has(date)&&candidate.days.find(function(d){return d.date===date;});
       (replacement?changed:kept).push(['월','화','수','목','금','토','일'][i]);
       var dayExercises=replacement?replacement.exercises:(saved[i].ex||[]).map(function(e){return {name:e.n,muscle:e.m,sets:e.s};});
-      dayExercises.forEach(function(e){var group=allocationGroup(e);groupTotals[group]=(groupTotals[group]||0)+(Number(e.sets)||0);});
+      dayExercises.forEach(function(e){var group=designGroup(e);groupTotals[group]=(groupTotals[group]||0)+(Number(e.sets)||0);});
       var daySets={};dayExercises.forEach(function(e){daySets[e.muscle]=(daySets[e.muscle]||0)+(Number(e.sets)||0);});
       schedule.push({label:['월','화','수','목','금','토','일'][i],changed:!!replacement,sets:daySets});
       (replacement?replacement.exercises:(saved[i].ex||[]).map(function(e){return {muscle:e.m,sets:e.s};})).forEach(function(e){if(totals[e.muscle])totals[e.muscle][replacement?'added':'fixed']+=Number(e.sets)||0;});
@@ -4051,11 +4061,9 @@ function allocationGroup(e) {
     var review=explanation?'<div class="ai-plan-explanation"><h3>구성 이유</h3><p>'+statsEscape(explanation.summary)+'</p><p>'+statsEscape(explanation.recovery)+'</p><p class="ai-allocation-help">생성 시 설명이에요. 직접 편집하면 달라질 수 있어요.</p></div>':candidate.weekReview?'<details class="ai-spacing"><summary>생성 시 주간 검토</summary><p>'+statsEscape(candidate.weekReview.summary)+'</p><p>'+statsEscape(candidate.weekReview.recovery)+'</p><p class="ai-allocation-help">AI 검토 설명이며, 직접 편집하거나 적용 요일을 바꾸면 실제 계획과 달라질 수 있어요.</p></details>':'';
     var spacing=MUSCLES.map(function(m){var indices=schedule.map(function(d,i){return d.sets[m]>0?i:-1;}).filter(function(i){return i>=0;});if(!indices.length)return '';var gap=Math.min.apply(null,indices.map(function(v,i){return ((indices[(i+1)%indices.length]-v+7)%7)||7;}));return '<span>'+statsEscape(m)+' '+indices.length+'일 · 최소 '+gap+'일 간격</span>';}).filter(Boolean).join('');
     var scheduleHtml='<div class="ai-week-schedule"><h3>적용 후 주간 루틴</h3>'+schedule.map(function(d,i){var next=schedule[(i+1)%7],overlap=MUSCLES.filter(function(m){return d.sets[m]>=3&&next.sets[m]>=3;});return '<div class="ai-week-row"><strong>'+d.label+'</strong><span>'+(d.changed?'변경':'유지')+'</span><p>'+statsEscape(MUSCLES.filter(function(m){return d.sets[m]>0;}).map(function(m){return m+' '+d.sets[m]+'세트';}).join(' · ')||'휴식')+'</p>'+(overlap.length?'<small>'+statsEscape(next.label+'요일과 '+overlap.join('·')+' 직접 세트가 연속 배치돼요.')+'</small>':'')+'</div>';}).join('')+'</div>';
-    var budget=candidate.weeklyAllocation,budgetHtml='';
-    if(budget){
-      var gaps=budget.targets.filter(function(t){return t.target>0 && (groupTotals[t.group]||0)<t.min;}).map(function(t){return t.group;});
-      budgetHtml='<h3>주간 배분 확인</h3><p class="ai-allocation-help">시작 범위는 목표·경력·시간을 반영한 앱의 계획 기준이에요. 개인별 권장량이나 회복 판정은 아니에요. 적용 후 값은 유지 요일을 포함하며, 편집할 때 다시 계산해요.</p>'+(budget.mode!=='balanced'?'<p class="ai-allocation-help">추가 요청을 우선해 종목과 요일을 유지했어요. '+(budget.mode==='request'?'운동량·우선 부위·컨디션 요청을 보존하기 위해 세트를 자동 배분하지 않았어요.':'세트 수만 조정했어요.')+'</p>':'')+'<table class="ai-budget-table"><thead><tr><th>부위·유형</th><th>시작 범위</th><th>적용 후</th></tr></thead><tbody>'+budget.targets.filter(function(t){return t.target>0 || groupTotals[t.group];}).map(function(t){var actual=groupTotals[t.group]||0,status=t.target===0?'별도 확인':actual<t.min?'범위 미만':actual>t.max?'범위 초과':'범위 내';return '<tr><th>'+statsEscape(t.group)+'</th><td>'+(t.target?t.min+'–'+t.max:'—')+'</td><td><strong>'+actual+'</strong><small class="ai-budget-status">'+status+'</small></td></tr>';}).join('')+'</tbody></table>'+(gaps.length?'<p class="ai-allocation-warning">'+statsEscape(gaps.join('·'))+'는 시작 범위에 못 미쳐요. 시간·유지 일정·추가 요청의 영향을 확인해주세요.</p>':'')+'<p class="ai-allocation-help">하체는 무릎 중심·힙힌지·무릎 굽힘·종아리로 나눠요. 레그 컬은 무릎 굽힘에 포함돼요. 등은 수직·수평 당기기로 나누고, 분류가 불명확한 종목은 기타로 표시해요. 팔의 보조 자극은 직접 세트에 더하지 않아요.</p>';
-    }
+    var budget=true,dr=candidate.designReview;
+    var budgetHtml='<h3>운동 유형별 직접 세트</h3><p class="ai-allocation-help">유지 요일을 포함한 실제 계획 합계예요. 고정 목표에 맞춰 세트를 덮어쓰지 않아요. 보조 자극은 합산하지 않으며 종목 이름으로 구분하기 어려운 운동은 기타로 표시해요.</p><table class="ai-design-table"><thead><tr><th>부위·유형</th><th>주간 세트</th></tr></thead><tbody>'+Object.keys(groupTotals).filter(function(g){return groupTotals[g]>0;}).map(function(g){return '<tr><th>'+statsEscape(g)+'</th><td><strong>'+groupTotals[g]+'</strong></td></tr>';}).join('')+'</tbody></table>';
+    if(dr)budgetHtml+='<div class="ai-plan-explanation"><h3>'+(dr.status==='needs-review'?'추가 확인이 필요한 제안':'운동량을 정한 이유')+'</h3><p class="ai-allocation-help">AI의 설계 설명이에요. 개인별 최적 운동량이나 회복 완료를 보장하는 판정은 아니에요.</p>'+dr.volume.map(function(r){return '<p><strong>'+statsEscape(r.muscle)+' '+r.sets+'세트</strong> · '+statsEscape(r.reason)+'</p>';}).join('')+dr.issues.map(function(t){return '<p class="ai-allocation-warning">'+statsEscape(t)+'</p>';}).join('')+'</div>';
     return '<section class="ai-allocation">'+scheduleHtml+budgetHtml+'<details'+(budget?'':' open')+'><summary>직접 세트 합계</summary><h3>적용 후 직접 세트</h3><p><strong>변경</strong> '+changed.join('·')+' <br><strong>유지</strong> '+(kept.join('·')||'없음')+'</p><p class="ai-allocation-help">선택하지 않은 요일은 그대로예요. 아래는 계획 합계이며 권장량이나 실제 수행량이 아니에요. 프레스·당기기의 팔 보조 자극은 합산하지 않아요.</p><table><thead><tr><th>부위</th>'+(hasFixed?'<th>유지</th><th>새 제안</th>':'')+'<th>합계</th></tr></thead><tbody>'+MUSCLES.map(function(m){var t=totals[m];return '<tr><th>'+m+'</th>'+(hasFixed?'<td>'+t.fixed+'</td><td>'+t.added+'</td>':'')+'<td><strong>'+(t.fixed+t.added)+'</strong></td></tr>';}).join('')+'</tbody></table></details><details class="ai-spacing"><summary>부위별 배치 간격</summary><div>'+spacing+'</div><p class="ai-allocation-help">다음 주 연결을 포함한 요일 간격이에요. 실제 운동 시각·수행 강도·보조근 피로와 회복 상태는 반영하지 않아요.</p></details><p class="ai-allocation-help">0은 해당 부위의 직접 운동이 없다는 뜻이에요. '+(hasFixed?'유지 중인 운동은 재배치되지 않아요.':'이번 합계는 모두 새로 구성한 운동이에요.')+'</p>'+review+(candidate.reviewNotes||[]).map(function(t){return '<p class="ai-allocation-warning">생성 시 확인 사항 · '+statsEscape(t)+' 편집 후에는 위 합계를 다시 확인해주세요.</p>';}).join('')+'</section>';
   }
   function proposalComparison(candidate,kind,selected){
@@ -4067,7 +4075,7 @@ function allocationGroup(e) {
       (replaced?replaced.exercises.map(function(e){return {m:e.muscle,s:e.sets};}):(source[i].ex||[])).forEach(function(e){if(byMuscle[e.m])byMuscle[e.m].after+=Number(e.s)||0;});
     });
     if(kind==='week')adjustmentRecords(todayStr()).filter(function(e){return e.date>=week.from;}).forEach(function(e){if(byMuscle[e.muscle])byMuscle[e.muscle].done++;});
-    return '<section class="ai-compare"><h3>부위별 세트 비교</h3><p>'+(kind==='week'?'계획과 이번 주 저장 기록은 별개예요.':'반복 주간 계획의 변경 전후예요.')+'</p><div class="ai-compare-grid"><strong>부위</strong><strong>기존</strong>'+(kind==='week'?'<strong>수행</strong>':'')+'<strong>제안</strong>'+MUSCLES.map(function(m){var v=byMuscle[m];return '<span>'+m+'</span><span>'+v.before+'</span>'+(kind==='week'?'<span>'+v.done+'</span>':'')+'<strong>'+v.after+'</strong>';}).join('')+'</div></section>';
+    return '<section class="ai-compare"><h3>부위별 세트 비교</h3><p>'+(kind==='week'?'계획과 이번 주 저장 기록은 별개예요.':'반복 주간 계획의 변경 전후예요.')+'</p><div class="ai-compare-grid"><strong>부위</strong><strong>기존</strong>'+(kind==='week'?'<strong>수행</strong>':'')+'<strong>제안</strong>'+MUSCLES.map(function(m){var v=byMuscle[m];return '<span>'+m+'</span><span>'+v.before+'</span>'+(kind==='week'?'<span>'+v.done+'</span>':'')+'<strong>'+v.after+'</strong>';}).join('')+'</div>'+(candidate.planExplanation?'<div class="ai-plan-explanation"><h3>이번 주 구성 이유</h3><p>'+statsEscape(candidate.planExplanation.summary)+'</p><p>'+statsEscape(candidate.planExplanation.recovery)+'</p></div>':'')+'</section>';
   }
   function estimateSession(day) {
  if(day.rest || !day.exercises.length)return 0;
@@ -4117,8 +4125,10 @@ function allocationGroup(e) {
   }
   function aiDaySummary(day){return day.rest?'휴식':day.exercises.length+'종목 · 총 '+day.exercises.reduce(function(n,e){return n+(Number(e.sets)||0);},0)+'세트';}
   function editAiProposal(container,candidate,kind,reasons,selected){
-    var rested=new Map(),opened=new Set(candidate.days.length?[candidate.days[0].date]:[]),initial=true;
+    var rested=new Map(),opened=new Set(candidate.days.length?[candidate.days[0].date]:[]),initial=true,hadDesign=!!candidate.designReview;
+    function refreshMeta(){if(hadDesign && !candidate.designReview){var meta=container.closest?.('dialog')?.querySelector('.ai-preview-meta');if(meta){meta.classList.remove('ai-allocation-warning');meta.textContent='직접 변경한 제안이에요. 합계는 다시 계산했으며 이전 AI 설명과 검토 표시는 숨겼어요.';}}}
     function render(){
+      refreshMeta();
       if(!initial)opened=new Set([...container.querySelectorAll('.ai-edit-day[open]')].map(function(el){return candidate.days[Number(el.dataset.day)].date;}));
       initial=false;
       container.innerHTML='<p class="ai-editor-intro">종목과 운동량을 확인한 뒤 저장하세요. 예상 시간은 준비·휴식·이동을 포함하며 기구 대기에 따라 달라져요.</p>'+
@@ -4127,10 +4137,10 @@ function allocationGroup(e) {
           (reasons && reasons[day.date]?'<p class="ai-reason">생성 시 제안 이유(편집 전) · '+statsEscape(reasons[day.date])+'</p>':'')+
           '<div class="ai-edit-exercises"'+(day.rest?' hidden':'')+'>'+day.exercises.map(function(e,ei){return '<div class="ai-edit-exercise" data-ex="'+ei+'"><div class="ai-edit-pair"><label>부위<select data-ex-muscle>'+MUSCLES.map(function(m){return '<option'+(m===e.muscle?' selected':'')+'>'+m+'</option>';}).join('')+'</select></label><label>운동<select data-ex-name>'+(catalog[e.muscle]||[]).map(function(item){return '<option'+(item.n===e.name?' selected':'')+'>'+statsEscape(item.n)+'</option>';}).join('')+'</select></label></div><div class="ai-edit-spec"><label>세트<input data-ex-sets type="number" inputmode="numeric" min="1" max="20" value="'+statsEscape(e.sets)+'"></label><label>횟수<input data-ex-reps maxlength="30" value="'+statsEscape(e.reps)+'"></label><label>RIR<input data-ex-rir maxlength="20" value="'+statsEscape(e.rir)+'"></label></div><div class="ai-edit-row-actions"><button type="button" data-ex-up'+(ei===0?' disabled':'')+' aria-label="종목 위로">↑</button><button type="button" data-ex-down'+(ei===day.exercises.length-1?' disabled':'')+' aria-label="종목 아래로">↓</button><button type="button" data-ex-remove>삭제</button></div></div>';}).join('')+'<button type="button" data-ex-add>+ 종목 추가</button></div></div></details>';}).join('')+'<div data-compare>'+proposalComparison(candidate,kind,selected)+'</div>';
     }
-    function compare(){container.querySelectorAll('[data-day]').forEach(function(section){section.querySelector('summary small').textContent=aiDaySummary(candidate.days[Number(section.dataset.day)]);section.querySelector('[data-timing]').innerHTML=aiTimingHtml(candidate.days[Number(section.dataset.day)]);});var el=container.querySelector('[data-compare]');if(el)el.innerHTML=proposalComparison(candidate,kind,selected);}
+    function compare(){refreshMeta();container.querySelectorAll('[data-day]').forEach(function(section){section.querySelector('summary small').textContent=aiDaySummary(candidate.days[Number(section.dataset.day)]);section.querySelector('[data-timing]').innerHTML=aiTimingHtml(candidate.days[Number(section.dataset.day)]);});var el=container.querySelector('[data-compare]');if(el)el.innerHTML=proposalComparison(candidate,kind,selected);}
     container.onchange=function(event){var target=event.target,section=target.closest('[data-day]');if(!section)return;var day=candidate.days[Number(section.dataset.day)],row=target.closest('[data-ex]'),e=row&&day.exercises[Number(row.dataset.ex)];
-      if(target.matches('[data-day-select]')){delete candidate.planExplanation;delete candidate.weekReview;candidate.reviewNotes=[];if(target.checked)selected.add(day.date);else selected.delete(day.date);compare();return;}
-      delete candidate.planExplanation;delete candidate.weekReview;candidate.reviewNotes=[];
+      if(target.matches('[data-day-select]')){delete candidate.designReview;delete candidate.planExplanation;delete candidate.weekReview;candidate.reviewNotes=[];if(target.checked)selected.add(day.date);else selected.delete(day.date);compare();return;}
+      delete candidate.designReview;delete candidate.planExplanation;delete candidate.weekReview;candidate.reviewNotes=[];
       if(target.matches('[data-day-title]'))day.title=target.value;
       if(target.matches('[data-day-rest]')){day.rest=target.checked;if(day.rest){rested.set(day.date,day.exercises);day.exercises=[];}else{day.exercises=rested.get(day.date)||[];if(!day.exercises.length){var first=(catalog['가슴']||[])[0];if(first)day.exercises.push({name:first.n,muscle:'가슴',sets:2,reps:'8~12',rir:'2'});}}render();return;}
       if(e){if(target.matches('[data-ex-muscle]')){e.muscle=target.value;e.name=(catalog[e.muscle]||[])[0]?.n||'';render();return;}
@@ -4141,7 +4151,7 @@ function allocationGroup(e) {
       compare();
     };
     container.onclick=function(event){var button=event.target.closest('button');if(!button)return;var section=button.closest('[data-day]');if(!section)return;var day=candidate.days[Number(section.dataset.day)],row=button.closest('[data-ex]'),index=row?Number(row.dataset.ex):-1;
-      delete candidate.planExplanation;delete candidate.weekReview;candidate.reviewNotes=[];
+      delete candidate.designReview;delete candidate.planExplanation;delete candidate.weekReview;candidate.reviewNotes=[];
       if(button.matches('[data-ex-add]')){var m=VOLUME_MUSCLES.find(function(m){return (catalog[m]||[]).length;});if(!m)return;day.exercises.push({name:catalog[m][0].n,muscle:m,sets:2,reps:'8~12',rir:'2'});day.rest=false;}
       else if(button.matches('[data-ex-remove]')){day.exercises.splice(index,1);if(!day.exercises.length)day.rest=true;}
       else if(button.matches('[data-ex-up]') && index>0){var t=day.exercises[index-1];day.exercises[index-1]=day.exercises[index];day.exercises[index]=t;}
@@ -4150,11 +4160,12 @@ function allocationGroup(e) {
     };
     render();
   }
-  function basePlanFingerprint(){return JSON.stringify([activeProfile,loadSavedRoutine(),athleteInfo(),catalog,hasRoutineDraft()]);}
+  function basePlanFingerprint(){return JSON.stringify([activeProfile,loadSavedRoutine(),athleteInfo(),catalog,hasRoutineDraft(),todayStr(),adjustmentRecords(todayStr())]);}
   function previewBasePlan(candidate,reasons,fingerprint){
     var owner=activeProfile,selected=new Set(candidate.days.map(function(d){return d.date;}));
     var dialog=document.createElement('dialog');dialog.className='data-confirm-dialog ai-preview-dialog ai-base-preview';dialog.setAttribute('aria-label','기본 루틴 제안 미리보기');
     dialog.innerHTML='<h2>기본 루틴 제안</h2><p class="ai-preview-meta" role="status">선택한 요일의 기본 루틴을 교체해요. 운동 기록과 이번 주 임시 루틴은 유지돼요.</p><div data-preview></div><p data-error role="status"></p><div class="data-confirm-actions"><button type="button" data-no>취소</button><button type="button" class="btn-save-now" data-yes>선택한 요일 저장</button></div>';
+    if(candidate.designReview?.status==='needs-review'){var meta=dialog.querySelector('.ai-preview-meta');meta.classList.add('ai-allocation-warning');meta.textContent='추가 확인이 필요한 제안이에요. 주간 배분 아래의 확인 사항을 읽고 적용해주세요.';}
     editAiProposal(dialog.querySelector('[data-preview]'),candidate,'base',reasons,selected);
     addTemporaryClose(dialog);watchAiFeedback(dialog.querySelector('[data-error]'));dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
     dialog.querySelector('[data-yes]').onclick=function(){try{
@@ -4201,7 +4212,7 @@ function allocationGroup(e) {
       var rows=[...dialog.querySelectorAll('[data-base-day]')],planDays=rows.map(function(row,i){var mode=row.querySelector('[data-base-mode]').value;return {date:week.dates[i],mode:mode,minutes:mode==='generate'?Number(row.querySelector('[data-base-time]').value):null};});
       if(!planDays.some(function(day){return day.mode==='generate';})){status.textContent='AI가 만들 요일을 한 개 이상 선택해주세요.';return;}
       if(planDays.some(function(day){return day.mode==='generate' && ![30,45,60,75,90,120].includes(day.minutes);})){status.textContent='AI 생성 요일의 운동 시간을 선택해주세요.';return;}
-      var fingerprint=basePlanFingerprint(),payload={plan:{schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:Object.assign({},info,{goal:goal,experience:experience}),notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),registeredExercises:MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
+      var fingerprint=basePlanFingerprint(),payload={plan:{schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:Object.assign({},info,{goal:goal,experience:experience}),notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),referenceDate:todayStr(),recentTraining:adjustmentRecords(todayStr()).slice(-3000),registeredExercises:MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
       var button=this,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000);button.disabled=true;status.dataset.kind='loading';status.textContent='추천 생성 중이에요. 선택한 요일과 시간에 맞춰 구성하고 있어요. 잠시만 기다려주세요.';var stopBusy=startAiBusy(status,button);
       var requestInputs=[...dialog.querySelectorAll('input,select,textarea,[data-day-chip],[data-select-workdays]')].map(function(el){return {el:el,disabled:el.disabled};});requestInputs.forEach(function(x){x.el.disabled=true;});dialog.addEventListener('close',function(){controller.abort();},{once:true});
       var requestStage='NET';
