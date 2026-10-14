@@ -2791,3 +2791,5 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .ai-preview-dialog .ai-spacing summary::after{content:'⌄';margin-left:auto;}
 .ai-preview-dialog .ai-spacing[open] summary::after{content:'⌃';}
 .ai-preview-dialog .ai-spacing div{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:#697386;}
+
+.ai-budget-table th:first-child{width:42%}.ai-budget-status{display:block;font-size:.75rem;color:var(--muted,#697586);font-weight:400;margin-top:3px}.ai-allocation>details>summary{font-weight:700;padding:14px 0;cursor:pointer}

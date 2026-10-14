@@ -929,6 +929,10 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     });
     if(data.weekReview && textOK(data.weekReview.summary,250) && textOK(data.weekReview.recovery,250))clean.weekReview={summary:data.weekReview.summary,recovery:data.weekReview.recovery};
     if(data.planExplanation && textOK(data.planExplanation.summary,250) && textOK(data.planExplanation.recovery,250))clean.planExplanation={summary:data.planExplanation.summary,recovery:data.planExplanation.recovery};
+    if(data.weeklyAllocation && data.weeklyAllocation.version===1 && ['balanced','constrained','request'].includes(data.weeklyAllocation.mode) && Array.isArray(data.weeklyAllocation.targets)){
+      var groups=['가슴','수직 당기기','수평 당기기','등 기타','어깨','무릎 중심','힙힌지·둔근','무릎 굽힘','종아리','삼두','이두','복근','하체 기타'],rows=data.weeklyAllocation.targets;
+      if(rows.length===groups.length && new Set(rows.map(function(t){return t.group;})).size===groups.length && rows.every(function(t){return groups.includes(t.group) && ['target','min','max','fixed','remaining','actual'].every(function(k){return Number.isInteger(t[k]) && t[k]>=0 && t[k]<=10000;}) && t.min<=t.target && t.target<=t.max;}))clean.weeklyAllocation={version:1,mode:data.weeklyAllocation.mode,targets:rows.map(function(t){return {...t};})};
+    }
     if(Array.isArray(data.reviewNotes))clean.reviewNotes=data.reviewNotes.filter(function(t){return textOK(t,500);}).slice(0,3);
     clean.days.sort(function(a,b){return a.date.localeCompare(b.date);});return clean;
   }
@@ -4020,13 +4024,24 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     return validateAiEditable(clean);
   }
   function validateBaseCandidate(candidate){return validateAiEditable(validateTemporary(candidate,todayStr(),true));}
+function allocationGroup(e) {
+ if(e.muscle==='등'){if(/로우|로잉|row/i.test(e.name))return '수평 당기기';if(/풀업|친업|랫.?풀|풀다운|pull.?up|pull.?down/i.test(e.name))return '수직 당기기';return '등 기타';}
+ if(e.muscle!=='하체')return e.muscle;
+ if(/카프|종아리|calf/i.test(e.name))return '종아리';
+ if(/레그.?컬|leg.?curl/i.test(e.name))return '무릎 굽힘';
+ if(/데드리프트|힙.?쓰러스트|힙.?스러스트|글루트|힙.?힌지|굿.?모닝|deadlift/i.test(e.name))return '힙힌지·둔근';
+ if(/스쿼트|런지|레그.?프레스|레그.?익스텐션|스텝.?업|squat|lunge/i.test(e.name))return '무릎 중심';
+ return '하체 기타';
+}
+
   function baseAllocationHtml(candidate,selected){
-    var saved=loadSavedRoutine(),week=adjustmentWeek(todayStr()),kept=[],changed=[],totals={},schedule=[];
+    var saved=loadSavedRoutine(),week=adjustmentWeek(todayStr()),kept=[],changed=[],totals={},schedule=[],groupTotals={};
     MUSCLES.forEach(function(m){totals[m]={fixed:0,added:0};});
     week.dates.forEach(function(date,i){
       var replacement=selected.has(date)&&candidate.days.find(function(d){return d.date===date;});
       (replacement?changed:kept).push(['월','화','수','목','금','토','일'][i]);
-      var dayExercises=replacement?replacement.exercises:(saved[i].ex||[]).map(function(e){return {muscle:e.m,sets:e.s};});
+      var dayExercises=replacement?replacement.exercises:(saved[i].ex||[]).map(function(e){return {name:e.n,muscle:e.m,sets:e.s};});
+      dayExercises.forEach(function(e){var group=allocationGroup(e);groupTotals[group]=(groupTotals[group]||0)+(Number(e.sets)||0);});
       var daySets={};dayExercises.forEach(function(e){daySets[e.muscle]=(daySets[e.muscle]||0)+(Number(e.sets)||0);});
       schedule.push({label:['월','화','수','목','금','토','일'][i],changed:!!replacement,sets:daySets});
       (replacement?replacement.exercises:(saved[i].ex||[]).map(function(e){return {muscle:e.m,sets:e.s};})).forEach(function(e){if(totals[e.muscle])totals[e.muscle][replacement?'added':'fixed']+=Number(e.sets)||0;});
@@ -4036,7 +4051,12 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var review=explanation?'<div class="ai-plan-explanation"><h3>구성 이유</h3><p>'+statsEscape(explanation.summary)+'</p><p>'+statsEscape(explanation.recovery)+'</p><p class="ai-allocation-help">생성 시 설명이에요. 직접 편집하면 달라질 수 있어요.</p></div>':candidate.weekReview?'<details class="ai-spacing"><summary>생성 시 주간 검토</summary><p>'+statsEscape(candidate.weekReview.summary)+'</p><p>'+statsEscape(candidate.weekReview.recovery)+'</p><p class="ai-allocation-help">AI 검토 설명이며, 직접 편집하거나 적용 요일을 바꾸면 실제 계획과 달라질 수 있어요.</p></details>':'';
     var spacing=MUSCLES.map(function(m){var indices=schedule.map(function(d,i){return d.sets[m]>0?i:-1;}).filter(function(i){return i>=0;});if(!indices.length)return '';var gap=Math.min.apply(null,indices.map(function(v,i){return ((indices[(i+1)%indices.length]-v+7)%7)||7;}));return '<span>'+statsEscape(m)+' '+indices.length+'일 · 최소 '+gap+'일 간격</span>';}).filter(Boolean).join('');
     var scheduleHtml='<div class="ai-week-schedule"><h3>적용 후 주간 루틴</h3>'+schedule.map(function(d,i){var next=schedule[(i+1)%7],overlap=MUSCLES.filter(function(m){return d.sets[m]>=3&&next.sets[m]>=3;});return '<div class="ai-week-row"><strong>'+d.label+'</strong><span>'+(d.changed?'변경':'유지')+'</span><p>'+statsEscape(MUSCLES.filter(function(m){return d.sets[m]>0;}).map(function(m){return m+' '+d.sets[m]+'세트';}).join(' · ')||'휴식')+'</p>'+(overlap.length?'<small>'+statsEscape(next.label+'요일과 '+overlap.join('·')+' 직접 세트가 연속 배치돼요.')+'</small>':'')+'</div>';}).join('')+'</div>';
-    return '<section class="ai-allocation">'+scheduleHtml+'<h3>적용 후 직접 세트</h3><p><strong>변경</strong> '+changed.join('·')+' <br><strong>유지</strong> '+(kept.join('·')||'없음')+'</p><p class="ai-allocation-help">선택하지 않은 요일은 그대로예요. 아래는 계획 합계이며 권장량이나 실제 수행량이 아니에요. 프레스·당기기의 팔 보조 자극은 합산하지 않아요.</p><table><thead><tr><th>부위</th>'+(hasFixed?'<th>유지</th><th>새 제안</th>':'')+'<th>합계</th></tr></thead><tbody>'+MUSCLES.map(function(m){var t=totals[m];return '<tr><th>'+m+'</th>'+(hasFixed?'<td>'+t.fixed+'</td><td>'+t.added+'</td>':'')+'<td><strong>'+(t.fixed+t.added)+'</strong></td></tr>';}).join('')+'</tbody></table><details class="ai-spacing"><summary>부위별 배치 간격</summary><div>'+spacing+'</div><p class="ai-allocation-help">다음 주 연결을 포함한 요일 간격이에요. 실제 운동 시각·수행 강도·보조근 피로와 회복 상태는 반영하지 않아요.</p></details><p class="ai-allocation-help">0은 해당 부위의 직접 운동이 없다는 뜻이에요. '+(hasFixed?'유지 중인 운동은 재배치되지 않아요.':'이번 합계는 모두 새로 구성한 운동이에요.')+'</p>'+review+(candidate.reviewNotes||[]).map(function(t){return '<p class="ai-allocation-warning">생성 시 확인 사항 · '+statsEscape(t)+' 편집 후에는 위 합계를 다시 확인해주세요.</p>';}).join('')+'</section>';
+    var budget=candidate.weeklyAllocation,budgetHtml='';
+    if(budget){
+      var gaps=budget.targets.filter(function(t){return t.target>0 && (groupTotals[t.group]||0)<t.min;}).map(function(t){return t.group;});
+      budgetHtml='<h3>주간 배분 확인</h3><p class="ai-allocation-help">시작 범위는 목표·경력·시간을 반영한 앱의 계획 기준이에요. 개인별 권장량이나 회복 판정은 아니에요. 적용 후 값은 유지 요일을 포함하며, 편집할 때 다시 계산해요.</p>'+(budget.mode!=='balanced'?'<p class="ai-allocation-help">추가 요청을 우선해 종목과 요일을 유지했어요. '+(budget.mode==='request'?'운동량·우선 부위·컨디션 요청을 보존하기 위해 세트를 자동 배분하지 않았어요.':'세트 수만 조정했어요.')+'</p>':'')+'<table class="ai-budget-table"><thead><tr><th>부위·유형</th><th>시작 범위</th><th>적용 후</th></tr></thead><tbody>'+budget.targets.filter(function(t){return t.target>0 || groupTotals[t.group];}).map(function(t){var actual=groupTotals[t.group]||0,status=t.target===0?'별도 확인':actual<t.min?'범위 미만':actual>t.max?'범위 초과':'범위 내';return '<tr><th>'+statsEscape(t.group)+'</th><td>'+(t.target?t.min+'–'+t.max:'—')+'</td><td><strong>'+actual+'</strong><small class="ai-budget-status">'+status+'</small></td></tr>';}).join('')+'</tbody></table>'+(gaps.length?'<p class="ai-allocation-warning">'+statsEscape(gaps.join('·'))+'는 시작 범위에 못 미쳐요. 시간·유지 일정·추가 요청의 영향을 확인해주세요.</p>':'')+'<p class="ai-allocation-help">하체는 무릎 중심·힙힌지·무릎 굽힘·종아리로 나눠요. 레그 컬은 무릎 굽힘에 포함돼요. 등은 수직·수평 당기기로 나누고, 분류가 불명확한 종목은 기타로 표시해요. 팔의 보조 자극은 직접 세트에 더하지 않아요.</p>';
+    }
+    return '<section class="ai-allocation">'+scheduleHtml+budgetHtml+'<details'+(budget?'':' open')+'><summary>직접 세트 합계</summary><h3>적용 후 직접 세트</h3><p><strong>변경</strong> '+changed.join('·')+' <br><strong>유지</strong> '+(kept.join('·')||'없음')+'</p><p class="ai-allocation-help">선택하지 않은 요일은 그대로예요. 아래는 계획 합계이며 권장량이나 실제 수행량이 아니에요. 프레스·당기기의 팔 보조 자극은 합산하지 않아요.</p><table><thead><tr><th>부위</th>'+(hasFixed?'<th>유지</th><th>새 제안</th>':'')+'<th>합계</th></tr></thead><tbody>'+MUSCLES.map(function(m){var t=totals[m];return '<tr><th>'+m+'</th>'+(hasFixed?'<td>'+t.fixed+'</td><td>'+t.added+'</td>':'')+'<td><strong>'+(t.fixed+t.added)+'</strong></td></tr>';}).join('')+'</tbody></table></details><details class="ai-spacing"><summary>부위별 배치 간격</summary><div>'+spacing+'</div><p class="ai-allocation-help">다음 주 연결을 포함한 요일 간격이에요. 실제 운동 시각·수행 강도·보조근 피로와 회복 상태는 반영하지 않아요.</p></details><p class="ai-allocation-help">0은 해당 부위의 직접 운동이 없다는 뜻이에요. '+(hasFixed?'유지 중인 운동은 재배치되지 않아요.':'이번 합계는 모두 새로 구성한 운동이에요.')+'</p>'+review+(candidate.reviewNotes||[]).map(function(t){return '<p class="ai-allocation-warning">생성 시 확인 사항 · '+statsEscape(t)+' 편집 후에는 위 합계를 다시 확인해주세요.</p>';}).join('')+'</section>';
   }
   function proposalComparison(candidate,kind,selected){
     if(kind==='base')return baseAllocationHtml(candidate,selected);
