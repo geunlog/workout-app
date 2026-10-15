@@ -2820,3 +2820,11 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .ai-day-settings>summary{font-size:13px;color:#596579;min-height:32px;cursor:pointer;}
 .ai-day-settings[open]>summary{margin-bottom:8px;}
 .ai-day-settings .ai-day-rest{margin-bottom:0;}
+
+/* Computed evidence stays separate from generated explanations. */
+.ai-evidence{padding:14px;margin:12px 0 20px;background:var(--card,#fff);border:1px solid #dce2ef;border-radius:14px;}
+.ai-evidence>p{margin:10px 0;line-height:1.65;font-size:14px;}
+.ai-evidence summary{padding:12px 0;min-height:44px;cursor:pointer;font-weight:600;}
+.ai-pattern-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ai-pattern-grid>div{display:flex;justify-content:space-between;gap:8px;padding:10px;background:#f3f5fc;border-radius:8px;font-size:13px;}
+@media(max-width:380px){.ai-pattern-grid{grid-template-columns:1fr;}}
