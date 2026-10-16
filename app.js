@@ -5750,7 +5750,7 @@ function estimateSession(day) {
       '추가 예정: ' + analysis.addRecordCount + '세트\n' +
       '중복 제외: ' + analysis.duplicateRecordCount + '세트\n\n' +
       '기존 운동 관리 데이터는 수정/삭제하지 않고, JSON에만 있는 운동종류만 추가합니다.\n' +
-      'AI 운동 정보는 현재 기기에 저장된 정보가 없을 때 복원합니다. 기존 정보가 있으면 유지합니다.\n파일에 임시 루틴이 있으면 함께 복원하며, 지난 주의 임시 루틴은 활성화하지 않습니다.\n계속할까요?';
+      'AI 운동 정보는 기존에 입력된 필드를 유지하고, 비어 있는 필드만 백업의 유효한 값으로 보완합니다.\n파일에 임시 루틴이 있으면 함께 복원하며, 지난 주의 임시 루틴은 활성화하지 않습니다.\n계속할까요?';
 
     if (!await confirmDataAction('현재 플랜에 가져오기',message,'가져오기')) return false;
 
@@ -5839,9 +5839,13 @@ function estimateSession(day) {
 
   function athleteRestoreOperations(data){
     if(!data.athleteInfo)return [];
-    var current=athleteInfo();
-    if(Object.keys(current).some(function(k){return current[k];}))return [];
-    return [{key:ATHLETE_INFO_KEY,value:data.athleteInfo}];
+    var current=athleteInfo(),next=Object.assign({},current),changed=false;
+    Object.keys(current).forEach(function(k){
+      var value=data.athleteInfo[k];
+      var valid=k==='goal'?['hypertrophy','strength','maintenance','fitness'].includes(value):k==='experience'?['new','under1','one3','over3'].includes(value):typeof value==='string' && value.trim().length>0 && value.length<=500 && !/[<>]/.test(value);
+      if(!current[k] && valid){next[k]=value;changed=true;}
+    });
+    return changed?[{key:ATHLETE_INFO_KEY,value:next}]:[];
   }
   function profileImportOperations(p,name){
     return [
@@ -5922,6 +5926,7 @@ function estimateSession(day) {
         (isAll ? ' 전체 백업' : ' · 운동기록 ' + mergeInfo.importedRecordCount + '세트' +
         (mergeInfo.duplicateRecordCount ? ' · 중복 ' + mergeInfo.duplicateRecordCount + '세트' : '')) +
       '</p>' +
+      '<p class="import-choice-summary">AI 운동 정보는 기존 입력값을 유지하고 빈 필드만 백업의 유효한 값으로 보완합니다.</p>' +
       '<p class="import-choice-question">' + (isAll ? '담긴 플랜을 모두 새 플랜으로 추가합니다.' : '이 파일을 어떻게 가져올까요?') + '</p>' +
       '<p class="import-choice-summary">공통 종목은 없는 항목만 추가해요. 같은 부위·이름의 기존 목표값은 유지돼요. 추가 종목은 모든 플랜에서 사용할 수 있어요.</p>' +
       '<div class="import-choice-actions">' +
