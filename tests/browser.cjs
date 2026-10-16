@@ -1,0 +1,27 @@
+const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+const root=path.resolve(__dirname,'..');
+const server=http.createServer((req,res)=>{let file=path.join(root,new URL(req.url,'http://localhost').pathname);if(file===root+'/')file+='index.html';if(!file.startsWith(root+'/')){res.writeHead(403).end();return;}try{let bytes=fs.readFileSync(file);if(file.endsWith('app.js'))bytes=bytes.toString().replace('  function athleteRestoreOperations(data){',`  window.__test={transferSnapshot,allProfilesSnapshot,validateTransfer,importTransfer,athleteRestoreOperations,athleteInfo,storageTransaction,normalizeRoutine,validateTemporary,adjustmentWeek,todayStr,editAiProposal,estimateSession};\n  function athleteRestoreOperations(data){`);res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/octet-stream');res.end(bytes);}catch{res.writeHead(404).end();}});
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({headless:true});try{
+ const page=await browser.newPage({viewport:{width:390,height:844},serviceWorkers:'block'}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.waitForFunction(()=>window.__test);
+ const results=await page.evaluate(()=>{const t=window.__test,assert=(v,msg)=>{if(!v)throw new Error(msg);};
+ const info={goal:'hypertrophy',experience:'over3',preferences:'기본 선호',excluded:'스쿼트',equipment:'덤벨만'};
+ localStorage.setItem('geunlog-athlete-info-v1',JSON.stringify(info));
+ const single=t.transferSnapshot(),all=t.allProfilesSnapshot();t.validateTransfer(single);t.validateTransfer(all);assert(single.athleteInfo.excluded===info.excluded&&all.athleteInfo.equipment===info.equipment,'athlete export');
+ const legacy=structuredClone(single);delete legacy.athleteInfo;t.validateTransfer(legacy);assert(t.athleteRestoreOperations(legacy).length===0,'old backup does not clear settings');
+ assert(t.athleteRestoreOperations(single).length===0,'existing athlete info protected');localStorage.removeItem('geunlog-athlete-info-v1');t.importTransfer(single);assert(t.athleteInfo().equipment==='덤벨만','new device restore');
+ const six=structuredClone(legacy);six.profile.routine=six.profile.routine.slice(0,6);t.validateTransfer(six);assert(t.normalizeRoutine(six.profile.routine).length===7,'six day compatibility');
+ const week=t.adjustmentWeek(t.todayStr());const candidate={format:'workout-temporary-routine',version:1,weekStart:week.from,weekEnd:week.to,days:[{date:t.todayStr(),title:'긴 종목명 테스트',rest:false,timingModel:2,requestedMinutes:60,exercises:[{name:'아주 긴 이름의 덤벨 인클라인 체스트 프레스 테스트 운동',muscle:'가슴',sets:3,reps:'8~12',rir:'2'}]}]};
+ const valid=t.validateTemporary(candidate,t.todayStr(),false);assert(valid.days[0].timingModel===2,'temporary timing preserved');
+ const d=document.createElement('dialog');d.className='data-confirm-dialog ai-preview-dialog';d.innerHTML='<h2>AI 제안 검증</h2><div data-preview></div>';document.body.appendChild(d);d.showModal();
+ t.editAiProposal(d.querySelector('[data-preview]'),valid,'week',{},new Set([t.todayStr()]));
+ assert(d.textContent.includes('시간 활용'),'timing UI');assert(d.querySelector('input,select'),'editable controls');
+ return {backup:true,legacy:true,sixDay:true,timing:true,modalScroll:d.scrollHeight>=d.clientHeight};});
+ console.log('PASS browser integration '+JSON.stringify(results));
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ await page.screenshot({path:process.env.UI_SCREENSHOT||'/tmp/workout-ai-mobile.png',fullPage:true});
+ const input=page.locator('dialog input[data-ex-sets]').first();await input.focus();await input.fill('4');await input.dispatchEvent('change');assert.equal(await input.inputValue(),'4');
+ console.log('PASS 390px preview: no page overflow, long name, edit input');
+ assert.deepEqual(errors,[]);console.log('PASS no browser runtime errors');
+ }finally{await browser.close();await new Promise(r=>server.close(r));}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});

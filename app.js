@@ -925,7 +925,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         if(rir[0]>rir[rir.length-1])fail(ep+'.rir','0~9 이내의 오름차순 범위여야 해요.');
         return Object.assign({name:e.name.trim(),muscle:e.muscle,sets:e.sets,reps:e.reps,rir:e.rir},typeof e.uid==='string' && /^[a-zA-Z0-9_-]{1,120}$/.test(e.uid)?{uid:e.uid}:{});
       });
-      clean.days.push({date:day.date,title:day.title.trim(),rest:day.rest,exercises:exercises,...(Number.isFinite(day.estimatedMinutes)?{estimatedMinutes:day.estimatedMinutes}:{}),...(Number.isFinite(day.requestedMinutes)?{requestedMinutes:day.requestedMinutes}:{}),...(typeof day.shortSessionReason==='string'?{shortSessionReason:day.shortSessionReason.slice(0,350)}:{})});
+      clean.days.push({timingModel:day.timingModel===2?2:1,date:day.date,title:day.title.trim(),rest:day.rest,exercises:exercises,...(Number.isFinite(day.estimatedMinutes)?{estimatedMinutes:day.estimatedMinutes}:{}),...(Number.isFinite(day.requestedMinutes)?{requestedMinutes:day.requestedMinutes}:{}),...(typeof day.shortSessionReason==='string'?{shortSessionReason:day.shortSessionReason.slice(0,350)}:{})});
     });
     if(data.weekReview && textOK(data.weekReview.summary,250) && textOK(data.weekReview.recovery,250))clean.weekReview={summary:data.weekReview.summary,recovery:data.weekReview.recovery};
     if(data.planExplanation && textOK(data.planExplanation.summary,250) && textOK(data.planExplanation.recovery,250))clean.planExplanation={summary:data.planExplanation.summary,recovery:data.planExplanation.recovery};
@@ -4205,10 +4205,30 @@ function adjustmentAudit(c, days, allocation) {
     var rationale=review?'<details class="ai-week-rationale"><summary>부위별 추가·생략 이유</summary>'+review.priorities.map(function(r){return '<p><strong>'+statsEscape(r.muscle)+'</strong> · '+statsEscape(r.reason)+'</p>';}).join('')+'</details>':'';
     var overlaps=audit.overlaps.map(function(o){return '<p>'+statsEscape(o.dates.map(adjustmentDayLabel).join(' ↔ ')+' · '+o.muscle+(o.kind==='direct'?' 직접 운동':' 보조근 부담 포함'))+'</p>';}).join('');
     var checks='<div class="ai-evidence"><h3>배분 확인</h3>'+(audit.uncertain?'<p class="ai-allocation-warning">기록이 일부 빠졌을 수 있어요. 아래 합계는 확인된 수행량 기준이며, 미실시·부족량을 뜻하지 않아요.</p>':'')+audit.issues.filter(function(i){return candidate.adjustmentReview || i.code!=="ALLOCATION_MISSING";}).map(function(i){return '<p>'+statsEscape(i.text)+'</p>';}).join('')+'<details><summary>세부 유형별 직접 세트</summary><div class="ai-pattern-grid">'+audit.groups.map(function(g){return '<div><span>'+statsEscape(g.group)+'</span><strong>'+g.total+'세트</strong></div>';}).join('')+'</div><p>수행·유지·추가의 합계예요. 종목명에 따른 분류이며 보조근 세트는 환산하지 않아요.</p></details></div>'; 
-    return '<section class="ai-compare ai-week-review">'+timeOverview+checks+'<h3>적용 후 이번 주 운동량</h3><p>실제 수행 + 앞으로 할 운동이에요. 숫자는 직접 세트이며 권장 목표가 아니에요.</p><table class="ai-week-volume"><thead><tr><th scope="col">부위</th><th scope="col">수행</th><th scope="col">유지</th><th scope="col">추가</th><th scope="col">합계</th></tr></thead><tbody>'+rows.map(function(r){return '<tr data-muscle="'+statsEscape(r.muscle)+'"><th scope="row">'+statsEscape(r.muscle)+'</th><td>'+r.performed+'</td><td>'+r.kept+'</td><td>'+r.proposed+'</td><td><strong>'+r.total+'</strong></td></tr>';}).join('')+'</tbody></table><p class="ai-allocation-help">수행: 기록·누락 보완 / 유지: 남은 고정 일정 / 추가: 선택한 제안. 지난 날짜의 계획은 더하지 않아요.</p>'+facts.notices.filter(function(t){return !audit.uncertain || t.indexOf('미기록 운동')<0;}).map(function(t){return '<p class="ai-allocation-warning">'+statsEscape(t)+'</p>';}).join('')+explanation+rationale+'<details class="ai-week-rationale"><summary>남은 날짜별 배치</summary>'+schedule+'</details><details class="ai-week-rationale"><summary>연속 배치와 다음 주 참고</summary>'+(overlaps||'<p>새 제안과 인접 날짜 사이에 분류 가능한 직접·보조근 중복이 확인되지 않았어요. 회복이 완료됐다는 뜻은 아니에요.</p>')+'<p>같은 부위도 종목과 강도에 따라 부담이 달라요. 이 표는 회복 완료 판정이 아니며 프레스·당기기의 보조 자극은 합산하지 않아요.</p>'+facts.nextWeek.map(function(d){return '<p>'+statsEscape(adjustmentDayLabel(d.date)+' 기본 루틴: '+(MUSCLES.map(function(m){var n=d.exercises.filter(function(e){return e.muscle===m;}).reduce(function(n,e){return n+e.sets;},0);return n?m+' '+n+'세트':'';}).filter(Boolean).join(' · ')||'휴식'))+'</p>';}).join('')+'<p>다음 주 기본 루틴은 참고용이며 이번 주 합계와 변경 대상에 포함하지 않아요.</p></details></section>';
+    return '<section class="ai-compare ai-week-review">'+timeOverview+(candidate.reviewNotes||[]).map(function(t){return '<p class="ai-allocation-warning">'+statsEscape(t)+'</p>';}).join('')+checks+'<h3>적용 후 이번 주 운동량</h3><p>실제 수행 + 앞으로 할 운동이에요. 숫자는 직접 세트이며 권장 목표가 아니에요.</p><table class="ai-week-volume"><thead><tr><th scope="col">부위</th><th scope="col">수행</th><th scope="col">유지</th><th scope="col">추가</th><th scope="col">합계</th></tr></thead><tbody>'+rows.map(function(r){return '<tr data-muscle="'+statsEscape(r.muscle)+'"><th scope="row">'+statsEscape(r.muscle)+'</th><td>'+r.performed+'</td><td>'+r.kept+'</td><td>'+r.proposed+'</td><td><strong>'+r.total+'</strong></td></tr>';}).join('')+'</tbody></table><p class="ai-allocation-help">수행: 기록·누락 보완 / 유지: 남은 고정 일정 / 추가: 선택한 제안. 지난 날짜의 계획은 더하지 않아요.</p>'+facts.notices.filter(function(t){return !audit.uncertain || t.indexOf('미기록 운동')<0;}).map(function(t){return '<p class="ai-allocation-warning">'+statsEscape(t)+'</p>';}).join('')+explanation+rationale+'<details class="ai-week-rationale"><summary>남은 날짜별 배치</summary>'+schedule+'</details><details class="ai-week-rationale"><summary>연속 배치와 다음 주 참고</summary>'+(overlaps||'<p>새 제안과 인접 날짜 사이에 분류 가능한 직접·보조근 중복이 확인되지 않았어요. 회복이 완료됐다는 뜻은 아니에요.</p>')+'<p>같은 부위도 종목과 강도에 따라 부담이 달라요. 이 표는 회복 완료 판정이 아니며 프레스·당기기의 보조 자극은 합산하지 않아요.</p>'+facts.nextWeek.map(function(d){return '<p>'+statsEscape(adjustmentDayLabel(d.date)+' 기본 루틴: '+(MUSCLES.map(function(m){var n=d.exercises.filter(function(e){return e.muscle===m;}).reduce(function(n,e){return n+e.sets;},0);return n?m+' '+n+'세트':'';}).filter(Boolean).join(' · ')||'휴식'))+'</p>';}).join('')+'<p>다음 주 기본 루틴은 참고용이며 이번 주 합계와 변경 대상에 포함하지 않아요.</p></details></section>';
   }
 
-  function estimateSession(day) {
+  // SESSION_TIMING_START — v2 is opt-in; unversioned saved/remote proposals use v1.
+function sessionTiming(day) {
+ if(day.rest || !day.exercises.length)return {version:2,minutes:0,fixedMinutes:0,exercises:[]};
+ const warmed=new Set();
+ const exercises=day.exercises.map(e=>{
+  const reps=Number(String(e.reps).split(/[~–-]/).pop())||10;
+  const compound=/프레스|벤치|스쿼트|데드리프트|로우|로잉|풀업|친업|랫.?풀|풀다운|딥스|푸시업|런지|스텝.?업|힙.?쓰|힙.?스/.test(e.name);
+  const unilateral=/원암|원.?레그|싱글.?레그|불가리안/.test(e.name);
+  const heavy=compound && reps<=6;
+  const group=e.muscle||'unknown';
+  const warmupMinutes=compound?(warmed.has(group)?1:3):0;
+  if(compound)warmed.add(group);
+  const restMinutes=heavy?3:compound?2:1.25;
+  const workMinutes=e.sets*reps*3/60*(unilateral?2:1);
+  const recoveryMinutes=Math.max(0,e.sets-1)*restMinutes;
+  return {name:e.name,sets:e.sets,compound,unilateral,warmupMinutes,setupMinutes:1,workMinutes,recoveryMinutes,restMinutes,
+   minutes:1+warmupMinutes+workMinutes+recoveryMinutes};
+ });
+ return {version:2,fixedMinutes:7,minutes:Math.ceil(7+exercises.reduce((n,e)=>n+e.minutes,0)),exercises};
+}
+function legacyEstimateSession(day) {
  if(day.rest || !day.exercises.length)return 0;
  let compoundCount=0;
  const work=day.exercises.reduce((sum,e)=>{
@@ -4220,13 +4240,17 @@ function adjustmentAudit(c, days, allocation) {
  },0);
  return Math.ceil(5+work+5);
 }
+function estimateSession(day) {
+ return day.timingModel===2?sessionTiming(day).minutes:legacyEstimateSession(day);
+}
+// SESSION_TIMING_END
 
   function aiTimingHtml(day){
     if(day.rest || !Number.isFinite(day.requestedMinutes))return '';
     var minutes=estimateSession(day),remaining=day.requestedMinutes-minutes,short=minutes<day.requestedMinutes*0.8;
     var reason=day.shortSessionReason||'';
     if(reason.indexOf('AI가 짧게 구성한 이유를 제공하지 않았어요')>=0)reason='';
-    return '<div class="ai-session-time"><strong>예상 '+minutes+'분 <small>/ 가능 '+day.requestedMinutes+'분</small></strong><span>'+ (remaining<0?'시간 초과 '+(-remaining)+'분':'예상 여유 '+remaining+'분')+'</span></div>'+(short?'<p class="ai-time-note">'+statsEscape(reason||'가능 시간보다 짧은 제안이에요. 아래 수정 요청에서 운동량 보완을 요청할 수 있어요.')+'</p>':'');
+    return '<p class="ai-time-note">'+day.exercises.length+'종목 · '+day.exercises.reduce(function(n,e){return n+e.sets;},0)+'세트 · 시간 활용 '+Math.round(minutes/day.requestedMinutes*100)+'%</p><div class="ai-session-time"><strong>예상 '+minutes+'분 <small>/ 가능 '+day.requestedMinutes+'분</small></strong><span>'+ (remaining<0?'시간 초과 '+(-remaining)+'분':'예상 여유 '+remaining+'분')+'</span></div>'+(short?'<p class="ai-time-note">'+statsEscape(reason||'가능 시간보다 짧은 제안이에요. 아래 수정 요청에서 운동량 보완을 요청할 수 있어요.')+'</p>':'');
   }
   function focusAiFeedback(el){
     if(!el || !el.isConnected || !el.textContent.trim())return;
@@ -4348,7 +4372,7 @@ function adjustmentAudit(c, days, allocation) {
       var rows=[...dialog.querySelectorAll('[data-base-day]')],planDays=rows.map(function(row,i){var mode=row.querySelector('[data-base-mode]').value;return {date:week.dates[i],mode:mode,minutes:mode==='generate'?Number(row.querySelector('[data-base-time]').value):null};});
       if(!planDays.some(function(day){return day.mode==='generate';})){status.textContent='AI가 만들 요일을 한 개 이상 선택해주세요.';return;}
       if(planDays.some(function(day){return day.mode==='generate' && ![30,45,60,75,90,120].includes(day.minutes);})){status.textContent='AI 생성 요일의 운동 시간을 선택해주세요.';return;}
-      var fingerprint=basePlanFingerprint(),payload={plan:{schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:Object.assign({},info,{goal:goal,experience:experience}),notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),referenceDate:todayStr(),recentTraining:adjustmentRecords(todayStr()).slice(-3000),registeredExercises:MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
+      var fingerprint=basePlanFingerprint(),payload={plan:{timingModel:2,schemaVersion:1,weekStart:week.from,weekEnd:week.to,athlete:Object.assign({},info,{goal:goal,experience:experience}),notes:dialog.querySelector('[data-notes]').value.trim(),days:planDays,baseRoutine:planForAi(saved,week),referenceDate:todayStr(),recentTraining:adjustmentRecords(todayStr()).slice(-3000),registeredExercises:MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});}),representativeExercises:representativeCatalog()}};
       var button=this,controller=new AbortController(),timer=setTimeout(function(){controller.abort();},80000);button.disabled=true;status.dataset.kind='loading';status.textContent='추천 생성 중이에요. 선택한 요일과 시간에 맞춰 구성하고 있어요. 잠시만 기다려주세요.';var stopBusy=startAiBusy(status,button);
       var requestInputs=[...dialog.querySelectorAll('input,select,textarea,[data-day-chip],[data-select-workdays]')].map(function(el){return {el:el,disabled:el.disabled};});requestInputs.forEach(function(x){x.el.disabled=true;});dialog.addEventListener('close',function(){controller.abort();},{once:true});
       var requestStage='NET';
@@ -4420,7 +4444,7 @@ function adjustmentAudit(c, days, allocation) {
     });
     if(state.todayStatus==='before' && (thisWeek.some(function(e){return e.date===asOf;}) || supplements.some(function(e){return e.date===asOf;})))throw new Error('오늘 수행한 운동이 있어요. 오늘 운동 상태를 ‘일부 진행’ 또는 ‘완료’로 바꿔주세요.');
     if(!availability.some(function(d){return d.mode==='adjust';}))throw new Error('AI가 조정할 날짜를 하나 이상 선택해주세요.');
-    return {schemaVersion:2,asOf:asOf,weekStart:week.from,weekEnd:week.to,athlete:Object.assign({},info,{goal:state.goal||info.goal}),baseRoutine:planForAi(base,week),currentRoutine:planForAi(current,week),temporaryRoutine:activeTemporary(),recentRecords:records,recordCoverage:state.coverage,supplementalSets:supplements.map(function(e){return {date:e.date,muscle:e.muscle,sets:Number(e.sets)};}),availability:availability,todayStatus:state.todayStatus||'unspecified',special:'none',notes:state.notes||'',representativeExercises:representativeCatalog(),registeredExercises:MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});})};
+    return {timingModel:2,schemaVersion:2,asOf:asOf,weekStart:week.from,weekEnd:week.to,athlete:Object.assign({},info,{goal:state.goal||info.goal}),baseRoutine:planForAi(base,week),currentRoutine:planForAi(current,week),temporaryRoutine:activeTemporary(),recentRecords:records,recordCoverage:state.coverage,supplementalSets:supplements.map(function(e){return {date:e.date,muscle:e.muscle,sets:Number(e.sets)};}),availability:availability,todayStatus:state.todayStatus||'unspecified',special:'none',notes:state.notes||'',representativeExercises:representativeCatalog(),registeredExercises:MUSCLES.flatMap(function(m){return (catalog[m]||[]).map(function(e){return {name:e.n,muscle:m};});})};
   }
   function mergeTemporaryDays(previous,candidate){
     var replaced=new Set(candidate.days.map(function(d){return d.date;}));
@@ -5458,6 +5482,10 @@ function adjustmentAudit(c, days, allocation) {
       });
     }
     if(!data || data.format!=='workout-routine-transfer')fail();
+    if(data.athleteInfo!==undefined){
+      var ai=data.athleteInfo;
+      if(!ai||typeof ai!=='object'||Array.isArray(ai)||!['goal','experience','preferences','excluded','equipment'].every(function(k){return text(ai[k],500);}) || (ai.goal!==''&&!AI_GOALS[ai.goal]) || (ai.experience!==''&&!AI_EXPERIENCE[ai.experience]))fail();
+    }
     // v2(전체 플랜)는 프로필 배열을 담는다. 각 프로필은 v1과 동일한 규칙으로 검증한다.
     if(data.version===2){
       if(data.bodyMeasurements!==undefined)BodyTracker.validate(data.bodyMeasurements);
@@ -5504,7 +5532,7 @@ function adjustmentAudit(c, days, allocation) {
     if(p.aiProposalHistory!=null && (!Array.isArray(p.aiProposalHistory)||p.aiProposalHistory.length>12||p.aiProposalHistory.some(function(item){return !item || !['base','week'].includes(item.kind) || !item.routine || !Array.isArray(item.routine.days) || item.routine.days.length>7 || !text(item.label,100) || typeof item.savedAt!=='string';}) || JSON.stringify(p.aiProposalHistory).length>300000))fail();
   }
   function transferSnapshot() {
-    return {format:'workout-routine-transfer',version:1,exportedAt:new Date().toISOString(),profile:{
+    return {format:'workout-routine-transfer',version:1,exportedAt:new Date().toISOString(),athleteInfo:athleteInfo(),profile:{
       name:activeProfile,routine:loadSavedRoutine(),pending:routineOrderPending?days:null,
       catalog:readJSON(CATALOG_KEY,catalog),logs:logs,memos:getMemos(),draft:draft,pins:pinnedExercises(),temporaryRoutine:temporaryRoutine(),aiProposalHistory:proposalHistory()
     }};
@@ -5529,7 +5557,7 @@ function adjustmentAudit(c, days, allocation) {
   }
   function allProfilesSnapshot(){
     return {format:'workout-routine-transfer',version:2,exportedAt:new Date().toISOString(),
-      activeProfile:activeProfile,bodyMeasurements:BodyTracker.read(),
+      activeProfile:activeProfile,athleteInfo:athleteInfo(),bodyMeasurements:BodyTracker.read(),
       profiles:profiles.map(profileSnapshotFor)};
   }
   function backupFingerprint(profile){
@@ -5722,7 +5750,7 @@ function adjustmentAudit(c, days, allocation) {
       '추가 예정: ' + analysis.addRecordCount + '세트\n' +
       '중복 제외: ' + analysis.duplicateRecordCount + '세트\n\n' +
       '기존 운동 관리 데이터는 수정/삭제하지 않고, JSON에만 있는 운동종류만 추가합니다.\n' +
-      '파일에 임시 루틴이 있으면 함께 복원하며, 지난 주의 임시 루틴은 활성화하지 않습니다.\n계속할까요?';
+      'AI 운동 정보는 기존에 입력된 필드를 유지하고, 비어 있는 필드만 백업의 유효한 값으로 보완합니다.\n파일에 임시 루틴이 있으면 함께 복원하며, 지난 주의 임시 루틴은 활성화하지 않습니다.\n계속할까요?';
 
     if (!await confirmDataAction('현재 플랜에 가져오기',message,'가져오기')) return false;
 
@@ -5768,7 +5796,7 @@ function adjustmentAudit(c, days, allocation) {
       {key:CATALOG_KEY, value:nextCatalog},
       {key:LOG_KEY, value:nextLogs},
       {key:keyFor('bulk-workout-pins-v1',activeProfile),value:Array.from(new Set(pinnedExercises().concat(data.profile.pins || []))).slice(0,5)}
-    ]);
+    ].concat(athleteRestoreOperations(data)));
     if (!ok) {
       document.getElementById('dataTransferHint').textContent =
         '가져오기에 실패했어요. 저장 공간을 확인해주세요.';
@@ -5809,6 +5837,16 @@ function adjustmentAudit(c, days, allocation) {
     };
   }
 
+  function athleteRestoreOperations(data){
+    if(!data.athleteInfo)return [];
+    var current=athleteInfo(),next=Object.assign({},current),changed=false;
+    Object.keys(current).forEach(function(k){
+      var value=data.athleteInfo[k];
+      var valid=k==='goal'?['hypertrophy','strength','maintenance','fitness'].includes(value):k==='experience'?['new','under1','one3','over3'].includes(value):typeof value==='string' && value.trim().length>0 && value.length<=500 && !/[<>]/.test(value);
+      if(!current[k] && valid){next[k]=value;changed=true;}
+    });
+    return changed?[{key:ATHLETE_INFO_KEY,value:next}]:[];
+  }
   function profileImportOperations(p,name){
     return [
       {key:keyFor('bulk-routine-v9',name),value:normalizeRoutine(p.routine)},
@@ -5823,7 +5861,7 @@ function adjustmentAudit(c, days, allocation) {
   }
   // v2(전체 플랜) 파일은 담긴 플랜을 모두 새 플랜으로 추가한다.
   function importAllProfiles(data){
-    var next=profiles.slice(),operations=[],added=[];
+    var next=profiles.slice(),operations=athleteRestoreOperations(data),added=[];
     if(data.bodyMeasurements!==undefined)operations.push({key:BodyTracker.key,value:BodyTracker.merge(data.bodyMeasurements)});
     data.profiles.forEach(function(p){
       var name=p.name+' (가져옴)',suffix=2;
@@ -5854,6 +5892,7 @@ function adjustmentAudit(c, days, allocation) {
       {key:keyFor('bulk-catalog-hypertrophy-v1',name),value:true},
       {key:keyFor('bulk-catalog-expand-all-v2',name),value:true}
     ];
+    operations=operations.concat(athleteRestoreOperations(data));
     if(p.temporaryRoutine)operations.push({key:keyFor('bulk-workout-temporary-v1',name),value:p.temporaryRoutine});
     if(p.pending)operations.push({key:keyFor('bulk-routine-pending-v1',name),value:p.pending});
     var shared=mergeSharedCatalog(readJSON(CATALOG_KEY,catalog),p.catalog);operations.push({key:CATALOG_KEY,value:shared});
@@ -5887,6 +5926,7 @@ function adjustmentAudit(c, days, allocation) {
         (isAll ? ' 전체 백업' : ' · 운동기록 ' + mergeInfo.importedRecordCount + '세트' +
         (mergeInfo.duplicateRecordCount ? ' · 중복 ' + mergeInfo.duplicateRecordCount + '세트' : '')) +
       '</p>' +
+      '<p class="import-choice-summary">AI 운동 정보는 기존 입력값을 유지하고 빈 필드만 백업의 유효한 값으로 보완합니다.</p>' +
       '<p class="import-choice-question">' + (isAll ? '담긴 플랜을 모두 새 플랜으로 추가합니다.' : '이 파일을 어떻게 가져올까요?') + '</p>' +
       '<p class="import-choice-summary">공통 종목은 없는 항목만 추가해요. 같은 부위·이름의 기존 목표값은 유지돼요. 추가 종목은 모든 플랜에서 사용할 수 있어요.</p>' +
       '<div class="import-choice-actions">' +
