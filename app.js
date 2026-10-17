@@ -202,7 +202,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       operations.forEach(function(op,i){
         if(op.remove)localStorage.removeItem(op.key);else localStorage.setItem(op.key,JSON.stringify(op.value));
         applied.push(i);
-      });return true;
+      });scheduleWeeklySummary();return true;
     } catch(e){
       applied.reverse().forEach(function(i){try{var p=previous[i];if(p.raw===null)localStorage.removeItem(p.key);else localStorage.setItem(p.key,p.raw);}catch(ignore){}});
       return false;
@@ -273,7 +273,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   }
   function writeJSON(key, val) {
     if(typeof recordDataLocked!=='undefined' && recordDataLocked && key===LOG_KEY)return false;
-    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+    try { localStorage.setItem(key, JSON.stringify(val)); if(key===LOG_KEY||key===STORAGE_KEY||key===ACTIVE_PROFILE_KEY||key===CATALOG_KEY||key===temporaryKey())scheduleWeeklySummary(); return true; }
     catch (e) { return false; }
   }
 
@@ -1748,6 +1748,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     if(button)button.focus({preventScroll:true});
   }
   function renderPanel() {
+    scheduleWeeklySummary();
     ensureRoutineIds(days);
     updateRoutineMode();
     // 요일/임시 루틴 전환 후에도 안내와 저장 버튼이 같은 변경 상태를 표시한다.
@@ -2245,22 +2246,62 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     }).join('');
   }
 
-  function renderPrinciplesBase() {
-    var vol = weeklyVolume();
-    var openStates = {};
-    document.querySelectorAll('#principles .principle').forEach(function (el, i) { openStates[i] = el.open; });
-
-    var barsHtml = volumeBarsHtml(vol);
-
-    document.getElementById('principles').innerHTML =
-      '<details class="principle fixed-guide"' + (openStates[0] === true ? ' open' : '') + '>' +
+  // Summary plans deliberately bypass editable days/temporaryWorkspaces.
+  function committedWeek() {
+    var base=readRoutineForProfile(activeProfile),temp=activeTemporary();
+    return adjustmentWeek(todayStr()).dates.map(function(date,i){
+      var change=temp && temp.days.find(function(d){return d.date===date;});
+      return change?{ex:change.exercises.map(function(e){return {m:e.muscle,s:e.sets};})}:base[i];
+    });
+  }
+  window.addEventListener('focus',scheduleWeeklySummary);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)scheduleWeeklySummary();});
+  setInterval(scheduleWeeklySummary,60000);
+  function weeklyRecordSummary() {
+    var week=adjustmentWeek(todayStr()),plan={},recorded={},unknown=0;
+    MUSCLES.forEach(function(m){plan[m]=0;recorded[m]=0;});
+    committedWeek().forEach(function(d){(d.ex||[]).forEach(function(e){if(MUSCLES.includes(e.m))plan[e.m]+=parseInt(e.s,10)||0;});});
+    readJSON(LOG_KEY,[]).forEach(function(g){
+      if(!week.dates.includes(g.date))return;
+      (g.entries||[]).forEach(function(e){
+        var m=e.m;
+        if(!m){var matches=MUSCLES.filter(function(k){return (catalog[k]||[]).some(function(x){return x.n===e.n;});});if(matches.length===1)m=matches[0];}
+        if(MUSCLES.includes(m))recorded[m]++;else unknown++;
+      });
+    });
+    return {week:week,plan:plan,recorded:recorded,unknown:unknown};
+  }
+  function weeklyRecordHtml(data) {
+    var muscles=VOLUME_MUSCLES.concat(data.plan['복근']||data.recorded['복근']?['복근']:[]);
+    return '<h2>이번 주 기록 현황</h2><p class="weekly-record-caption">'+data.week.from.slice(5).replace('-','/')+'–'+data.week.to.slice(5).replace('-','/')+' · 저장 / 계획 세트</p><div class="weekly-record-grid">'+muscles.map(function(m){
+      var n=data.recorded[m],p=data.plan[m];
+      return '<div class="weekly-record-tile"><span class="weekly-record-muscle"><i style="background:'+MUSCLE_COLOR[m]+'"></i>'+m+'</span><span class="weekly-record-count">'+(p?'<b>'+n+'</b><span> / '+p+'</span>':n?'<b>'+n+'세트</b><small>계획 없음</small>':'<b>0</b><span> / 0</span>')+'</span></div>';
+    }).join('')+'</div>'+(data.unknown?'<p class="weekly-record-unknown">미분류 기록 '+data.unknown+'세트</p>':'');
+  }
+  function refreshWeeklySummary() {
+    var root=document.getElementById('weeklyRecordedSummary'),bars=document.getElementById('weeklyPlanBars');
+    if(!root&&!bars)return;
+    try{var data=weeklyRecordSummary();if(root)root.innerHTML=weeklyRecordHtml(data);if(bars)bars.innerHTML=volumeBarsHtml(data.plan);}
+    catch(e){if(root)root.textContent='이번 주 기록을 읽지 못했어요. 저장 데이터를 확인해주세요.';}
+  }
+  function scheduleWeeklySummary() {
+    if(scheduleWeeklySummary.pending)return;
+    scheduleWeeklySummary.pending=true;
+    queueMicrotask(function(){scheduleWeeklySummary.pending=false;refreshWeeklySummary();});
+  }
+  function weeklyPlanCardHtml(vol,opened) {
+    return '<details id="weeklyPlanCard" class="principle fixed-guide weekly-plan-card"' + (opened ? ' open' : '') + '>' +
         '<summary>주간 계획 세트<span class="chev"></span></summary>' +
         '<div class="principle-body">' +
           '<p class="bar-legend">근비대 참고구간 · 가슴/등/어깨/하체 12–16 · 이두/삼두 6–10</p>' +
-          '<div class="bars">' + barsHtml + '</div>' +
+          '<div id="weeklyPlanBars" class="bars">' + volumeBarsHtml(vol) + '</div>' +
           '<p class="bar-legend">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +
         '</div>' +
       '</details>';
+  }
+  function renderPrinciplesBase() {
+    document.getElementById('principles').innerHTML='<section id="weeklyRecordedSummary" class="weekly-record-summary" aria-label="이번 주 기록 현황"></section>';
+    refreshWeeklySummary();
   }
 
   function previousDefaultMemos() {
@@ -2682,6 +2723,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     });
   }
   function renderRecords() {
+    scheduleWeeklySummary();
     var scope=document.getElementById('recordsScope');
     if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
     scope.innerHTML='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?'플랜: '+activeProfile:'모든 플랜의 기록 · 다른 플랜 기록은 해당 플랜으로 이동해 수정해요.')+'</p>';
@@ -4519,8 +4561,9 @@ function adjustmentAudit(c, days, allocation) {
   }
 
   function renderReport() {
-    var vol = weeklyVolume(effectiveWeek());
-    var barsHtml = volumeBarsHtml(vol);
+    var vol = weeklyVolume(committedWeek());
+    var existingPlan=document.getElementById('weeklyPlanCard');
+    if(existingPlan)renderReport.planOpened=existingPlan.open;
     var week = effectiveWeek();
 
     if (reportSelectedDay === undefined) reportSelectedDay = todayIndex;
@@ -4572,11 +4615,7 @@ function adjustmentAudit(c, days, allocation) {
       : dayCardHtml(week[reportSelectedDay]);
 
     reportViewEl.innerHTML = temporaryStatusHtml()+dayTabsHtml+daysHtml+
-      '<div class="rep-summary">' +
-        '<h2>이번 주 계획 세트</h2><p class="stats-note">'+(activeTemporary()?'임시 루틴 반영 · ':'')+'월~일 계획 합계 · 실제 수행 기록과 별개</p>' +
-        '<div class="bars">' + barsHtml + '</div>' +
-        '<p class="bar-legend">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +
-      '</div>' +
+      weeklyPlanCardHtml(vol,renderReport.planOpened===true) +
       adjustmentHtml();
     reportViewEl.querySelectorAll('[data-record-ex]').forEach(function(button){button.onclick=function(){
       activeIndex=Number(button.dataset.recordDay);
