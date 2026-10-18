@@ -1,0 +1,61 @@
+name: Integration Chromium and PWA
+on:
+  push:
+    branches: [test/WORKOUT-20261018-001-integration]
+permissions:
+  contents: read
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Static regression
+        run: |
+          mkdir -p test-results
+          set -o pipefail
+          node --check app.js
+          node --check sw.js
+          git diff --check
+          npm test 2>&1 | tee test-results/regression.log
+      - name: Mobile browser
+        id: mobile
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:mobile 2>&1 | tee test-results/mobile.log
+        env:
+          UI_SCREENSHOT: test-results/ai-mobile.png
+      - name: PWA update and offline
+        id: pwa
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          mkdir -p test-results
+          set -o pipefail
+          npm run test:pwa 2>&1 | tee test-results/pwa.log
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: chromium-evidence-${{ github.sha }}
+          path: |
+            test-results/
+            /tmp/weekly-record-*.png
+            /tmp/weekly-plan-*.png
+          retention-days: 7
+      - name: Enforce browser results
+        if: ${{ !cancelled() }}
+        run: test '${{ steps.mobile.outcome }}' = success && test '${{ steps.pwa.outcome }}' = success

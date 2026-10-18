@@ -2828,3 +2828,16 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .ai-pattern-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .ai-pattern-grid>div{display:flex;justify-content:space-between;gap:8px;padding:10px;background:#f3f5fc;border-radius:8px;font-size:13px;}
 @media(max-width:380px){.ai-pattern-grid{grid-template-columns:1fr;}}
+
+/* Weekly plan card retains the former workout-tab design. */
+.bulk-app #weeklyPlanCard {margin:14px 0;border-radius:18px;overflow:hidden;background:#f0f4ff;border:1px solid #c4d1f5;border-top:4px solid var(--primary);box-shadow:0 4px 16px #315bea0a;}
+.bulk-app .weekly-record-summary {background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px;min-width:0;}
+.bulk-app .weekly-record-summary h2 {font-size:14px;margin:0 0 4px;}
+.bulk-app .weekly-record-caption,.bulk-app .weekly-record-unknown {font-size:11px;color:var(--muted);margin:0 0 8px;}
+.bulk-app .weekly-record-unknown {margin:8px 0 0;}
+.bulk-app .weekly-record-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.bulk-app .weekly-record-tile {min-width:0;padding:7px 8px;background:#f7f8fa;border-radius:9px;}
+.bulk-app .weekly-record-muscle {display:flex;align-items:center;gap:5px;font-size:11px;}
+.bulk-app .weekly-record-muscle i {width:6px;height:6px;flex:none;border-radius:50%;}
+.bulk-app .weekly-record-count {display:flex;flex-wrap:wrap;align-items:baseline;gap:3px;font-size:13px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;}
+.bulk-app .weekly-record-count small {font-size:10px;}
