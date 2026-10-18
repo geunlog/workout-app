@@ -2248,7 +2248,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
 
   // Summary plans deliberately bypass editable days/temporaryWorkspaces.
   function committedWeek() {
-    var base=readRoutineForProfile(activeProfile),temp=activeTemporary();
+    var base,temp;
+    try {base=readRoutineForProfile(activeProfile);temp=activeTemporary();}
+    catch(error){return null;} // Never substitute an editable/default routine after a read failure.
     return adjustmentWeek(todayStr()).dates.map(function(date,i){
       var change=temp && temp.days.find(function(d){return d.date===date;});
       return change?{ex:change.exercises.map(function(e){return {m:e.muscle,s:e.sets};})}:base[i];
@@ -2260,8 +2262,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   function weeklyRecordSummary() {
     var week=adjustmentWeek(todayStr()),plan={},recorded={},unknown=0;
     MUSCLES.forEach(function(m){plan[m]=0;recorded[m]=0;});
-    committedWeek().forEach(function(d){(d.ex||[]).forEach(function(e){if(MUSCLES.includes(e.m))plan[e.m]+=parseInt(e.s,10)||0;});});
-    readJSON(LOG_KEY,[]).forEach(function(g){
+    var committed=committedWeek();
+    if(committed)committed.forEach(function(d){(d.ex||[]).forEach(function(e){if(MUSCLES.includes(e.m))plan[e.m]+=parseInt(e.s,10)||0;});});
+    logs.forEach(function(g){
       if(!week.dates.includes(g.date))return;
       (g.entries||[]).forEach(function(e){
         var m=e.m;
@@ -2269,32 +2272,36 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         if(MUSCLES.includes(m))recorded[m]++;else unknown++;
       });
     });
-    return {week:week,plan:plan,recorded:recorded,unknown:unknown};
+    return {week:week,plan:committed?plan:null,recorded:recorded,unknown:unknown,recordsUncertain:!!recordDataWarning || recordDataLocked};
   }
   function weeklyRecordHtml(data) {
-    var muscles=VOLUME_MUSCLES.concat(data.plan['복근']||data.recorded['복근']?['복근']:[]);
+    var muscles=VOLUME_MUSCLES.concat((data.plan && data.plan['복근'])||data.recorded['복근']?['복근']:[]);
     return '<h2>이번 주 기록 현황</h2><p class="weekly-record-caption">'+data.week.from.slice(5).replace('-','/')+'–'+data.week.to.slice(5).replace('-','/')+' · 저장 / 계획 세트</p><div class="weekly-record-grid">'+muscles.map(function(m){
-      var n=data.recorded[m],p=data.plan[m];
-      return '<div class="weekly-record-tile"><span class="weekly-record-muscle"><i style="background:'+MUSCLE_COLOR[m]+'"></i>'+m+'</span><span class="weekly-record-count">'+(p?'<b>'+n+'</b><span> / '+p+'</span>':n?'<b>'+n+'세트</b><small>계획 없음</small>':'<b>0</b><span> / 0</span>')+'</span></div>';
-    }).join('')+'</div>'+(data.unknown?'<p class="weekly-record-unknown">미분류 기록 '+data.unknown+'세트</p>':'');
+      var n=data.recorded[m],p=data.plan && data.plan[m];
+      var count=data.recordsUncertain && !n?'—':n;
+      return '<div class="weekly-record-tile"><span class="weekly-record-muscle"><i style="background:'+MUSCLE_COLOR[m]+'"></i>'+m+'</span><span class="weekly-record-count">'+(!data.plan?'<b>'+count+'</b><small>계획 확인 불가</small>':data.recordsUncertain?'<b>'+count+'</b><small>계획 '+p+'세트</small>':p?'<b>'+n+'</b><span> / '+p+'</span>':n?'<b>'+n+'세트</b><small>계획 없음</small>':'<b>0</b><span> / 0</span>')+'</span></div>';
+    }).join('')+'</div>'+(data.recordsUncertain?'<p class="weekly-record-unknown">일부 기록 확인 불가 · 확인된 세트만 표시하며 —는 0세트가 아니에요. 기록 데이터 안내를 확인해주세요.</p>':'')+(data.unknown?'<p class="weekly-record-unknown">미분류 기록 '+data.unknown+'세트</p>':'');
   }
   function refreshWeeklySummary() {
     var root=document.getElementById('weeklyRecordedSummary'),bars=document.getElementById('weeklyPlanBars');
     if(!root&&!bars)return;
-    try{var data=weeklyRecordSummary();if(root)root.innerHTML=weeklyRecordHtml(data);if(bars)bars.innerHTML=volumeBarsHtml(data.plan);}
-    catch(e){if(root)root.textContent='이번 주 기록을 읽지 못했어요. 저장 데이터를 확인해주세요.';}
+    try{var data=weeklyRecordSummary();if(root)root.innerHTML=weeklyRecordHtml(data);if(bars)bars.innerHTML=weeklyPlanBarsHtml(data.plan);}
+    catch(e){if(root)root.textContent='이번 주 기록을 읽지 못했어요. 저장 데이터를 확인해주세요.';if(bars)bars.innerHTML=weeklyPlanBarsHtml(null);}
   }
   function scheduleWeeklySummary() {
     if(scheduleWeeklySummary.pending)return;
     scheduleWeeklySummary.pending=true;
     queueMicrotask(function(){scheduleWeeklySummary.pending=false;refreshWeeklySummary();});
   }
+  function weeklyPlanBarsHtml(vol) {
+    return vol?volumeBarsHtml(vol):'<p role="status">확정 계획 확인 불가 · 저장된 루틴을 읽지 못했어요. 원본 데이터를 확인해주세요.</p>';
+  }
   function weeklyPlanCardHtml(vol,opened) {
     return '<details id="weeklyPlanCard" class="principle fixed-guide weekly-plan-card"' + (opened ? ' open' : '') + '>' +
         '<summary>주간 계획 세트<span class="chev"></span></summary>' +
         '<div class="principle-body">' +
           '<p class="bar-legend">근비대 참고구간 · 가슴/등/어깨/하체 12–16 · 이두/삼두 6–10</p>' +
-          '<div id="weeklyPlanBars" class="bars">' + volumeBarsHtml(vol) + '</div>' +
+          '<div id="weeklyPlanBars" class="bars">' + weeklyPlanBarsHtml(vol) + '</div>' +
           '<p class="bar-legend">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +
         '</div>' +
       '</details>';
@@ -4561,7 +4568,7 @@ function adjustmentAudit(c, days, allocation) {
   }
 
   function renderReport() {
-    var vol = weeklyVolume(committedWeek());
+    var committed = committedWeek(),vol = committed ? weeklyVolume(committed) : null;
     var existingPlan=document.getElementById('weeklyPlanCard');
     if(existingPlan)renderReport.planOpened=existingPlan.open;
     var week = effectiveWeek();
