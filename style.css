@@ -2841,3 +2841,18 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app .weekly-record-muscle i {width:6px;height:6px;flex:none;border-radius:50%;}
 .bulk-app .weekly-record-count {display:flex;flex-wrap:wrap;align-items:baseline;gap:3px;font-size:13px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;}
 .bulk-app .weekly-record-count small {font-size:10px;}
+
+/* Record UX: compact touch controls, no fixed widths for exercise names. */
+.exercise-note-button{flex:0 0 44px;min-height:44px;border:0;border-radius:10px;background:#f1f5f9;color:#475569;font-size:20px;cursor:pointer}
+.exercise-note-button.has-note{background:#e6f0ff;color:#245bc0}
+.exercise-note-dialog textarea{box-sizing:border-box;width:100%;max-width:100%;font:inherit;padding:12px;resize:vertical}
+.exercise-note-dialog p,.date-record-card h3,.date-record-card p{overflow-wrap:anywhere}
+.exercise-note-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.exercise-note-actions button,.recent-history-all{min-height:44px}
+.record-date-tools{display:flex;gap:8px;align-items:center;margin:12px 0}
+.record-date-tools input{min-width:0;flex:1;padding:10px;font:inherit}
+.record-date-tools button{min-width:44px;min-height:44px}
+.date-record-card{background:white;border:1px solid var(--line,#ddd);border-radius:12px;padding:12px;margin:10px 0;min-width:0}
+.date-record-card h3{font-size:15px;margin:0 0 6px}
+.date-record-card p{font-size:12px;color:var(--muted);margin:0 0 8px}
+.date-record-card .record-card-value{min-width:0;white-space:normal;overflow-wrap:anywhere}
