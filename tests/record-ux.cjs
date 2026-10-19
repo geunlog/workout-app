@@ -2,7 +2,8 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const code=fs.readFileSync(__dirname+'/../app.js','utf8');
 function fn(name){let a=code.indexOf('  function '+name+'(');assert(a>=0,name);return code.slice(a,code.indexOf('\n  }',a)+4);}
 const storage=new Map(),box={console,Date,MUSCLES:['가슴','등','어깨','하체','삼두','이두','복근'],activeProfile:'기본',CATALOG_KEY:'catalog',LOG_KEY:'logs',catalog:{삼두:[]},recordDataLocked:false,scheduleWeeklySummary(){},keyFor:(k,p)=>p==='기본'?k:k+'::'+p,localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>{if(k===box.fail)throw Error('quota');storage.set(k,v);},removeItem:k=>storage.delete(k)},readJSON:(k,d)=>storage.has(k)?JSON.parse(storage.get(k)):d,todayStr:()=> '2026-10-20',entryMuscle:e=>e.m||'기타'};
-vm.createContext(box);for(const n of ['dateRecordRuns','exerciseNotesKey','validateExerciseNotes','exerciseNotes','mergeExerciseNotes','storageTransaction','ensureSeatedCableAdditions','catalogPreset','profileStorageBases'])vm.runInContext(fn(n),box);
+vm.createContext(box);for(const n of ['dateRecordRuns','exerciseNotesKey','validateExerciseNotes','exerciseNotes','mergeExerciseNotes','storageTransaction','ensureSeatedCableAdditions','catalogPreset','profileStorageBases','editedRecords'])vm.runInContext(fn(n),box);
+box.nowStamp=()=> '2026-10-20T12:00:00Z';
 let count=0;function test(n,f){f();console.log('PASS '+n);count++;}const run=s=>vm.runInContext(s,box),plain=v=>JSON.parse(JSON.stringify(v));
 const e=(n,m='가슴',extra={})=>({n,m,id:n,w:'20',reps:'10',...extra});
 box.source=[{date:'2026-10-20',entries:[e('A'),e('A'),e('B'),e('A'),e('A','등'),e('A','가슴',{_profile:'Other'})]}];
@@ -17,4 +18,6 @@ test('new-install exact preset defaults',()=>{const p=run('catalogPreset()');for
 test('existing catalog adds only missing names and preserves settings',()=>{box.catalog={삼두:[{n:names[0],s:5,r:'6',rir:'3'}],가슴:[{n:'custom'}]};run('ensureSeatedCableAdditions()');assert.equal(box.catalog.삼두.length,3);assert.equal(box.catalog.삼두[0].s,5);assert.equal(box.catalog.가슴[0].n,'custom');run('ensureSeatedCableAdditions()');assert.equal(box.catalog.삼두.length,3);});
 test('user deletion after migration remains deleted',()=>{box.catalog.삼두.pop();run('ensureSeatedCableAdditions()');assert.equal(box.catalog.삼두.length,2);});
 test('failed marker write rolls back catalog, no success marker, retries',()=>{storage.delete(marker);const before=storage.get('catalog');box.fail=marker;run('ensureSeatedCableAdditions()');assert.equal(storage.get('catalog'),before);assert.equal(storage.has(marker),false);assert.equal(box.catalog.삼두.length,2);box.fail=null;run('ensureSeatedCableAdditions()');assert.equal(box.catalog.삼두.length,3);});
+
+test('date edits retain ID/creation time and move only the target set',()=>{box.source=[{date:'2026-10-19',dayKey:'mon',entries:[e('A','가슴',{id:'keep',createdAt:'2026-10-19T01:00:00Z'}),e('B')]}];box.values={date:'2026-10-20',w:'30',reps:'12'};const next=run("editedRecords(source,'keep',values)");const moved=next.find(r=>r.date==='2026-10-20').entries[0];assert.equal(moved.id,'keep');assert.equal(moved.createdAt,'2026-10-19T01:00:00Z');assert.equal(moved.updatedAt,box.nowStamp());assert.equal(box.source[0].entries.length,2);});
 console.log(count+' record UX regression groups passed');
