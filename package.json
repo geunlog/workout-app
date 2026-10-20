@@ -1,1 +1,14 @@
-{"name":"workout-integration-tests","version":"1.0.0","private":true,"description":"Test-only tooling; no application runtime dependencies","scripts":{"test":"node tests/regression.cjs && node tests/weekly-summary.cjs","test:mobile":"node tests/browser.cjs && node tests/weekly-summary-browser.cjs && node tests/integration-browser.cjs","test:pwa":"node tests/pwa.cjs"},"devDependencies":{"playwright":"1.56.1"}}
+{
+  "name": "workout-integration-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test-only tooling; no application runtime dependencies",
+  "scripts": {
+    "test": "node tests/regression.cjs && node tests/weekly-summary.cjs && node tests/record-ux.cjs && node tests/record-protection.cjs",
+    "test:mobile": "node tests/browser.cjs && node tests/weekly-summary-browser.cjs && node tests/integration-browser.cjs && node tests/record-ux-browser.cjs && node tests/record-protection-browser.cjs",
+    "test:pwa": "node tests/pwa.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

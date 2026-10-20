@@ -20,7 +20,7 @@ test('KST date changes before UTC midnight',()=>{ // separate sandbox retains re
 const clock={Date:class extends Date{static now(){return Date.parse('2026-10-18T15:00:00Z');}}};vm.createContext(clock);vm.runInContext(fn('todayStr'),clock);assert.equal(vm.runInContext('todayStr()',clock),'2026-10-19');});
 test('PWA release resource versions and hashes',()=>{const html=fs.readFileSync(__dirname+'/../index.html','utf8'),sw=fs.readFileSync(__dirname+'/../sw.js','utf8'),v=html.match(/workout-app-version" content="(\d+)"/)[1];assert(sw.includes('v'+v+'-release-'+v));for(const [file,hash]of Object.entries(JSON.parse(sw.match(/const ASSET_HASHES = (\{[^\n]*\});/)[1])))assert.equal(crypto.createHash('sha256').update(fs.readFileSync(__dirname+'/../'+file)).digest('hex'),hash);});
 // v1.3: execute production validation/recovery, not a parallel raw-log counter.
-for(const name of ['isRoutine','normalizeRoutine','readRoutineForProfile','logValue','preserveLogSource','loadLogs','renderReport','weeklyVolume'])vm.runInContext(fn(name),box);
+for(const name of ['isRoutine','normalizeRoutine','readRoutineForProfile','logValue','preserveLogSource','validateLogRecords','loadLogs','renderReport','weeklyVolume'])vm.runInContext(fn(name),box);
 box.keyFor=(k,p)=>k+':'+p;box.logRecoveryKey=()=> 'recovery:'+box.activeProfile;let serial=0;box.genId=()=>String(++serial);
 const validBase=Array.from({length:7},(_,i)=>({key:['mon','tue','wed','thu','fri','sat','sun'][i],title:'day',letter:'일',ex:[]}));validBase[0].ex=[{n:'press',m:'가슴',s:2}];box.defaults=()=>JSON.parse(JSON.stringify(validBase));box.activeProfile='A';box.LOG_KEY='logs:A';box.STORAGE_KEY='bulk-routine-v9:A';
 const entry=(extra={})=>({id:'valid',n:'press',m:'가슴',w:'20',reps:'10',...extra});

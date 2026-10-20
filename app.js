@@ -261,7 +261,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   function profileStorageBases() {
     return ['bulk-routine-v4','bulk-routine-v5','bulk-routine-v6','bulk-routine-v7','bulk-routine-v8','bulk-routine-v9',
       'bulk-routine-pending-v1','bulk-routine-catalog-v2','bulk-routine-catalog-v3','bulk-routine-log-v1',
-      'bulk-routine-draft-v1','bulk-routine-draft-v2','bulk-routine-log-recovery-v1','bulk-routine-memos-v1','bulk-catalog-hypertrophy-v1',
+      'bulk-routine-draft-v1','bulk-routine-draft-v2','bulk-routine-log-recovery-v1','bulk-routine-memos-v1','bulk-exercise-notes-v1','bulk-catalog-hypertrophy-v1',
       'bulk-catalog-add-bulgarian-v1','bulk-catalog-expand-all-v2','bulk-catalog-expand-all-v3','bulk-workout-pins-v1','bulk-workout-backup-status-v1','bulk-workout-panels-v1','bulk-workout-temporary-v1','bulk-workout-temporary-pending-v1','geunlog-ai-proposal-history-v1'];
   }
   function readJSON(key, fallback) {
@@ -500,6 +500,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     "티비얼리스 레이즈"
   ],
   "삼두": [
+    "시티드 케이블 오버헤드 익스텐션(EZ바)",
+    "시티드 케이블 푸시다운(로프)",
+    "시티드 케이블 푸시다운(EZ바)",
     "스컬 크러셔",
     "로프 푸시다운",
     "오버헤드 케이블 익스텐션",
@@ -722,7 +725,18 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     });
     if (writeJSON(CATALOG_KEY,catalog)) writeJSON(marker,true);
   }
+  function ensureSeatedCableAdditions() {
+    var marker='bulk-catalog-seated-cable-20261019-v1';
+    if(readJSON(marker,false))return;
+    var next=JSON.parse(JSON.stringify(catalog));
+    if(!Array.isArray(next.삼두))return;
+    ['시티드 케이블 오버헤드 익스텐션(EZ바)','시티드 케이블 푸시다운(로프)','시티드 케이블 푸시다운(EZ바)'].forEach(function(n){
+      if(!next.삼두.some(function(e){return e.n===n;}))next.삼두.push({n:n,s:3,r:'10~15',rir:'1~2'});
+    });
+    if(storageTransaction([{key:CATALOG_KEY,value:next},{key:marker,value:true}]))catalog=next;
+  }
   function ensureCatalogAdditions() {
+    ensureSeatedCableAdditions();
     if(CATALOG_KEY==='bulk-routine-catalog-shared-v1')return;
     var marker = keyFor('bulk-catalog-expand-all-v3', activeProfile);
     if (readJSON(marker, false)) return;
@@ -783,7 +797,46 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var number=Number(text);
     return Number.isFinite(number) && number>=0 && number<=max && (!integer || Number.isInteger(number))?text:null;
   }
-  function loadLogs() {
+  function validateLogRecords(source,makeId) {
+    var result=[],ids=new Set(),damaged=!Array.isArray(source),changed=false;
+    if(damaged)source=[];
+    var reserved=new Set(source.flatMap(function(r){return r&&Array.isArray(r.entries)?r.entries.filter(function(e){return e&&typeof e.id==='string';}).map(function(e){return e.id;}):[];}));
+    source.forEach(function(rec){
+      if(!rec || typeof rec.date!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(rec.date) || !['sun','mon','tue','wed','thu','fri','sat'].includes(rec.dayKey) || !Array.isArray(rec.entries)){damaged=true;return;}
+      var date=new Date(rec.date+'T00:00:00Z');
+      if(isNaN(date.getTime()) || date.toISOString().slice(0,10)!==rec.date){damaged=true;return;}
+      var entries=[];
+      rec.entries.forEach(function(entry){
+        if(!entry || typeof entry.n!=='string' || !entry.n.trim() || (entry.m!=null && typeof entry.m!=='string')){damaged=true;return;}
+        var weight=logValue(entry.w,500,false),reps=logValue(entry.reps,100,true);
+        if(weight===null || reps===null || (weight==='-' && reps==='-')){damaged=true;return;}
+        var id=entry.id;
+        if(typeof id!=='string' || !id || ids.has(id)){var baseId=makeId(result.length,entries.length),suffix=0;id=baseId;while(ids.has(id)||reserved.has(id))id=baseId+'-'+(++suffix);changed=true;}
+        ids.add(id);entries.push(Object.assign({},entry,{id:id,w:weight,reps:reps}));
+      });
+      if(entries.length)result.push(Object.assign({},rec,{entries:entries}));
+    });
+    result.sort(function(a,b){return a.date.localeCompare(b.date);});
+    return {logs:result,damaged:damaged,changed:changed};
+  }
+  var profileLogIssues=new Map();
+  function readProfileLogs(profile) {
+    var raw,checked;
+    try{raw=localStorage.getItem(keyFor('bulk-routine-log-v1',profile));}
+    catch(error){return {logs:[],issue:'저장소 읽기 실패 · 기록 확인 불가'};}
+    try{checked=validateLogRecords(raw===null?[]:JSON.parse(raw),function(r,e){return 'readonly-'+JSON.stringify([profile,r,e]);});}
+    catch(error){return {logs:[],issue:'손상된 JSON · 기록 확인 불가'};}
+    return {logs:checked.logs,issue:checked.damaged?'일부 기록 확인 불가 · 유효한 기록만 표시':checked.changed?'기록 ID 확인 필요 · 조회용 ID 사용':''};
+  }
+  function profileLogWarningsHtml() {
+    return profiles.filter(function(p){return p!==activeProfile&&profileLogIssues.has(p);}).map(function(p){return '<p class="stats-note profile-log-warning" role="status">'+statsEscape(p)+' 플랜: '+statsEscape(profileLogIssues.get(p))+' · 해당 플랜으로 전환해 원본 보호·복구 안내를 확인해주세요.</p>';}).join('');
+  }
+  function loadLogs(profile) {
+    if(profile && profile!==activeProfile){
+      var read=readProfileLogs(profile);
+      if(read.issue)profileLogIssues.set(profile,read.issue);else profileLogIssues.delete(profile);
+      return read.logs;
+    }
     recordDataLocked=false;recordDataWarning='';
     var raw=null,source=[],damaged=false,changed=false;
     try {
@@ -795,23 +848,8 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if(raw===null){recordDataLocked=true;recordDataWarning='운동기록 저장소에 접근할 수 없어요. 원본 보호를 위해 기록 변경을 중지했어요.';return [];}
       source=[];damaged=true;
     }
-    var result=[],ids=new Set();
-    source.forEach(function(rec){
-      if(!rec || typeof rec.date!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(rec.date) || !['sun','mon','tue','wed','thu','fri','sat'].includes(rec.dayKey) || !Array.isArray(rec.entries)){damaged=true;return;}
-      var date=new Date(rec.date+'T00:00:00Z');
-      if(isNaN(date.getTime()) || date.toISOString().slice(0,10)!==rec.date){damaged=true;return;}
-      var entries=[];
-      rec.entries.forEach(function(entry){
-        if(!entry || typeof entry.n!=='string' || !entry.n.trim() || (entry.m!=null && typeof entry.m!=='string')){damaged=true;return;}
-        var weight=logValue(entry.w,500,false),reps=logValue(entry.reps,100,true);
-        if(weight===null || reps===null || (weight==='-' && reps==='-')){damaged=true;return;}
-        var id=entry.id;
-        if(typeof id!=='string' || !id || ids.has(id)){id='recovered-'+result.length+'-'+entries.length+'-'+genId();changed=true;}
-        ids.add(id);entries.push(Object.assign({},entry,{id:id,w:weight,reps:reps}));
-      });
-      if(entries.length)result.push(Object.assign({},rec,{entries:entries}));
-    });
-    result.sort(function(a,b){return a.date.localeCompare(b.date);});
+    var checked=validateLogRecords(source,function(r,e){return 'recovered-'+r+'-'+e+'-'+genId();});
+    var result=checked.logs;damaged=damaged||checked.damaged;changed=checked.changed;
     if(damaged){
       var protectedSource=preserveLogSource(raw);
       recordDataLocked=!protectedSource;
@@ -1089,7 +1127,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     if(statsScope!=='all')return logs;
     var seen=new Set(),out=[];
     profiles.forEach(function(profile){
-      var source=profile===activeProfile?logs:readJSON(keyFor('bulk-routine-log-v1',profile),[]),cat=profile===activeProfile?catalog:readJSON(CATALOG_KEY,catalog);
+      var source=profile===activeProfile?logs:loadLogs(profile),cat=profile===activeProfile?catalog:readJSON(CATALOG_KEY,catalog);
       if(!cat || typeof cat!=='object')cat={};
       if(!Array.isArray(source))return;
       source.forEach(function(group){
@@ -1289,8 +1327,10 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     arrow.setAttribute('aria-hidden','true');
     hint.appendChild(arrow);
   }
-  function openRecentHistoryModal(name,date,trigger) {
-    var recent=recentHistoryFor(name,date,5);
+  function openRecentHistoryModal(name,date,trigger,muscle) {
+    muscle=muscle||'기타';
+    var scoped=logs.map(function(r){return Object.assign({},r,{entries:r.entries.filter(function(e){return e.n===name&&entryMuscle(e)===muscle;})});});
+    var recent=scoped.flatMap(function(r){return r.entries.map(function(e){return Object.assign({},e,{date:r.date});});}).filter(function(e){return e.date<=date;}).reverse().slice(0,5);
 
     var overlay=document.createElement('div');
     overlay.className='direct-record-overlay';
@@ -1313,7 +1353,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     head.appendChild(title);head.appendChild(closeBtn);
     modal.appendChild(head);
 
-    var pr=prSnapshotFor(name,logs);
+    var pr=prSnapshotFor(name,scoped);
     var bestWeightText=pr.weight
       ? statsFormatMetric(pr.weight.value,'weight')+' × '+(pr.weight.reps==null?'–':statsEscape(pr.weight.reps))+'회'
       : '-';
@@ -1337,7 +1377,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       row.className='recent-history-row';
       var d=document.createElement('span');
       d.className='recent-history-date';
-      var dateRecords=historyFor(name).filter(function(e){return e.date===item.date;});
+      var dateRecords=scoped.filter(function(r){return r.date===item.date;}).flatMap(function(r){return r.entries;});
       var setNumber=dateRecords.findIndex(function(e){return e.id===item.id;})+1;
       d.textContent=item.date;var setLabel=document.createElement('small');setLabel.className='recent-set-number';setLabel.textContent=setNumber+'번째 세트';d.appendChild(setLabel);
       var value=document.createElement('span');
@@ -1346,6 +1386,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       row.appendChild(d);row.appendChild(value);list.appendChild(row);
     });
     modal.appendChild(list);modal.appendChild(prDetails);
+    var allButton=document.createElement('button');allButton.type='button';allButton.className='btn-reset recent-history-all';allButton.textContent='전체 기록 보기 ↗';allButton.onclick=function(){close();viewExerciseRecords(name,muscle,date);};modal.appendChild(allButton);
     overlay.appendChild(modal);
 
     function close(){
@@ -1355,7 +1396,10 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       var app=document.querySelector('.bulk-app');if(app)app.inert=false;
       if(trigger && trigger.isConnected)trigger.focus({preventScroll:true});
     }
-    function keydown(e){if(e.key==='Escape'){e.preventDefault();close();}}
+    function keydown(e){
+      if(e.key==='Escape'){e.preventDefault();close();}
+      if(e.key==='Tab'){var nodes=Array.from(modal.querySelectorAll('button,[tabindex="0"]')).filter(function(n){return !n.disabled;}),first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+    }
     closeBtn.addEventListener('click',close);
     overlay.addEventListener('click',function(e){if(e.target===overlay)close();});
     var app=document.querySelector('.bulk-app');if(app)app.inert=true;
@@ -1904,6 +1948,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       nameRead.className = 'exercise-name-read routine-read-only';
       nameRead.textContent = ex.n || '종목 미지정';
       top.appendChild(nameRead);
+      var noteButton=document.createElement('button');noteButton.type='button';noteButton.className='exercise-note-button';noteButton.textContent='✎';noteButton.setAttribute('aria-label',ex.m+' '+ex.n+' 종목 메모');
+      try{if(exerciseNotes().some(function(n){return n.m===ex.m&&n.n===ex.n;})){noteButton.textContent='📝';noteButton.classList.add('has-note');}}catch(ignore){noteButton.textContent='!';}
+      noteButton.onclick=function(){openExerciseNote(ex,noteButton);};top.appendChild(noteButton);
       if(d.temporary){var badge=document.createElement('span');badge.className='temporary-badge routine-read-only';badge.textContent='임시';top.appendChild(badge);}
       top.appendChild(nameSel);
       top.appendChild(del);
@@ -2018,7 +2065,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if(saved.length){
         var lastSaved=saved[saved.length-1];
         var summary=document.createElement('div');summary.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' '+saved.length+' / 계획 '+ex.s+'세트 · 마지막 저장 '+(lastSaved.w==='-'?'무게 미입력':lastSaved.w+'kg')+' × '+(lastSaved.reps==='-'?'횟수 미입력':lastSaved.reps+'회');savedBox.appendChild(summary);
-        if(!prev){summary.className='history-tappable';summary.tabIndex=0;summary.setAttribute('role','button');summary.setAttribute('aria-label',ex.n+' 최근 기록 보기');summary.addEventListener('click',function(){openRecentHistoryModal(ex.n,selectedRecordDate,summary);});summary.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openRecentHistoryModal(ex.n,selectedRecordDate,summary);}});}
+        if(!prev){summary.className='history-tappable';summary.tabIndex=0;summary.setAttribute('role','button');summary.setAttribute('aria-label',ex.n+' 최근 기록 보기');summary.addEventListener('click',function(){openRecentHistoryModal(ex.n,selectedRecordDate,summary,ex.m);});summary.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openRecentHistoryModal(ex.n,selectedRecordDate,summary,ex.m);}});}
         var edit=document.createElement('button');edit.type='button';edit.className='btn-reset';edit.textContent='마지막 세트 수정';edit.onclick=function(){openRecordEditor(quick,lastSaved,edit,{card:li,title:moreTitle,number:saved.length});};quick.appendChild(edit);
         var undo=document.createElement('button');undo.type='button';undo.className='btn-reset';undo.textContent='마지막 저장 취소';undo.onclick=function(){
           requireSecondClick(undo,'되돌리기 확인',function(){var next=logs.map(function(g){return Object.assign({},g,{entries:g.entries.filter(function(e){return e.id!==lastSaved.id;})});}).filter(function(g){return g.entries.length;});if(!writeJSON(LOG_KEY,next)){showToast('저장 취소 실패 · 기존 기록 유지','error');return;}clearRecordUndo();logs=next;renderPanel();renderRecords();showToast('선택한 1세트 저장을 되돌렸어요.');});
@@ -2036,11 +2083,11 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         }
         renderPreviousHint();
         hint.addEventListener('click',function(){
-          if(hint.classList.contains('history-tappable'))openRecentHistoryModal(ex.n,selectedRecordDate,hint);
+          if(hint.classList.contains('history-tappable'))openRecentHistoryModal(ex.n,selectedRecordDate,hint,ex.m);
         });
         hint.addEventListener('keydown',function(e){
           if((e.key==='Enter' || e.key===' ') && hint.classList.contains('history-tappable')){
-            e.preventDefault();openRecentHistoryModal(ex.n,selectedRecordDate,hint);
+            e.preventDefault();openRecentHistoryModal(ex.n,selectedRecordDate,hint,ex.m);
           }
         });
         wIn.addEventListener('input',renderPreviousHint);
@@ -2348,6 +2395,34 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     return previous ? defaultMemos().find(function(item){return item.id===memo.id;}) : Object.assign({},memo);
   }
   var memoDraft = [], memoEditingProfile = null;
+  function exerciseNotesKey(profile) { return keyFor('bulk-exercise-notes-v1',profile || activeProfile); }
+  function validateExerciseNotes(value) {
+    if(!Array.isArray(value)||value.length>5000)throw Error('종목 메모 형식이 올바르지 않아요.');
+    var seen=new Set();
+    value.forEach(function(e){
+      if(!e||!MUSCLES.concat(['기타']).includes(e.m)||typeof e.n!=='string'||!e.n.trim()||e.n.length>200||typeof e.body!=='string'||!e.body.trim()||e.body.length>500)throw Error('종목 메모 형식이 올바르지 않아요.');
+      var key=JSON.stringify([e.m,e.n]);if(seen.has(key))throw Error('종목 메모가 중복돼요.');seen.add(key);
+    });return value;
+  }
+  function exerciseNotes(profile) {
+    var raw=localStorage.getItem(exerciseNotesKey(profile));
+    return validateExerciseNotes(raw===null?[]:JSON.parse(raw));
+  }
+  function mergeExerciseNotes(current,incoming) {
+    var next=validateExerciseNotes(current).slice();
+    validateExerciseNotes(incoming || []).forEach(function(e){if(!next.some(function(old){return old.m===e.m&&old.n===e.n;}))next.push(e);});return next;
+  }
+  function openExerciseNote(ex,trigger) {
+    var owner=activeProfile,notes;
+    try{notes=exerciseNotes();}catch(e){showToast('종목 메모를 읽지 못했어요. 원본을 보호하며 편집을 중지해요.','error');return;}
+    var old=notes.find(function(n){return n.m===ex.m&&n.n===ex.n;}),dialog=document.createElement('dialog');dialog.className='data-confirm-dialog exercise-note-dialog';
+    dialog.innerHTML='<h3>종목 메모</h3><p></p><textarea maxlength="500" rows="5" aria-label="종목 메모 내용"></textarea><small>최대 500자 · 빈 내용으로 저장하면 삭제돼요.</small><p role="alert"></p><div class="exercise-note-actions"><button type="button" data-cancel>취소</button><button type="button" data-delete>삭제</button><button type="button" data-save>저장</button></div>';
+    dialog.querySelector('p').textContent=ex.m+' · '+ex.n;
+    var input=dialog.querySelector('textarea');input.value=old?old.body:'';
+    function commit(body){try{if(owner!==activeProfile)throw Error('플랜이 변경됐어요. 다시 열어주세요.');if(body.length>500)throw Error('메모는 500자까지 저장할 수 있어요.');var next=exerciseNotes().filter(function(n){return n.m!==ex.m||n.n!==ex.n;});if(body.trim())next.push({m:ex.m,n:ex.n,body:body.trim()});if(!writeJSON(exerciseNotesKey(),next))throw Error('저장하지 못했어요. 기존 메모는 유지돼요.');trigger.textContent=body.trim()?'📝':'✎';trigger.classList.toggle('has-note',!!body.trim());refreshBackupStatus();dialog.close();showToast(body.trim()?'종목 메모 저장됨':'종목 메모 삭제됨');}catch(e){dialog.querySelector('[role=alert]').textContent=e.message;}}
+    dialog.querySelector('[data-save]').onclick=function(){commit(input.value);};dialog.querySelector('[data-delete]').onclick=function(){commit('');};dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();};
+    dialog.onclose=function(){dialog.remove();if(trigger.isConnected)trigger.focus({preventScroll:true});};document.body.appendChild(dialog);dialog.showModal();input.focus();
+  }
   function memoKey() { return keyFor('bulk-routine-memos-v1', activeProfile); }
   function getMemos() {
     var stored = readJSON(memoKey(), null);
@@ -2721,11 +2796,65 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     row.insertAdjacentElement('afterend',form);
     (trigger.classList.contains('record-card-date')?dateButton:weight).focus();
   }
+  var recordsViewMode='exercise',recordsSelectedDate='',recordsDateContext='';
+  function dateRecordRuns(source,date) {
+    // Keep original array order when legacy timestamps are missing; never invent times.
+    var list=[];
+    source.forEach(function(r){if(r.date===date&&r.date<=todayStr())r.entries.forEach(function(e){list.push(Object.assign({},e,{date:r.date}));});});
+    if(list.length&&list.every(function(e){return typeof e.createdAt==='string'&&Number.isFinite(Date.parse(e.createdAt));}))list.sort(function(a,b){return Date.parse(a.createdAt)-Date.parse(b.createdAt);});
+    var runs=[];
+    list.forEach(function(e){var key=JSON.stringify([e._profile||activeProfile,entryMuscle(e),e.n]),last=runs[runs.length-1];if(!last||last.key!==key){last={key:key,entries:[]};runs.push(last);}last.entries.push(e);});
+    return runs;
+  }
+  function resolveRecordDate(source,selected,previousContext) {
+    var context=JSON.stringify([activeProfile,recordsScope,recFilterFrom,recFilterTo,recordMuscleQuery,recordExerciseQuery.trim().toLocaleLowerCase('ko-KR')]);
+    var dates=Array.from(new Set(source.filter(function(r){return r.date<=todayStr()&&(!recFilterFrom||r.date>=recFilterFrom)&&(!recFilterTo||r.date<=recFilterTo)&&r.entries.some(function(e){return (!recordMuscleQuery||entryMuscle(e)===recordMuscleQuery)&&(!recordExerciseQuery.trim()||e.n.toLocaleLowerCase('ko-KR').includes(recordExerciseQuery.trim().toLocaleLowerCase('ko-KR')));});}).map(function(r){return r.date;}))).sort();
+    if(!selected||(context!==previousContext&&!dates.includes(selected)))selected=dates.at(-1)||(recFilterTo&&recFilterTo<todayStr()?recFilterTo:todayStr());
+    return {date:selected,context:context,dates:dates};
+  }
+  function renderDateRecords(source,removeRecords) {
+    var selection=resolveRecordDate(source,recordsSelectedDate,recordsDateContext);
+    recordsSelectedDate=selection.date;recordsDateContext=selection.context;
+    var tools=document.createElement('div');tools.className='record-date-tools';
+    tools.innerHTML='<button type="button" data-prev aria-label="이전 날짜">‹</button><input type="date" aria-label="조회 날짜"><button type="button" data-next aria-label="다음 날짜">›</button>';
+    var input=tools.querySelector('input');input.value=recordsSelectedDate;input.min=recFilterFrom;input.max=recFilterTo&&recFilterTo<todayStr()?recFilterTo:todayStr();
+    function change(value){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');input.value=recordsSelectedDate;return;}if(value&&value<=todayStr()){if((recFilterFrom&&value<recFilterFrom)||(recFilterTo&&value>recFilterTo)){showToast('선택한 날짜는 조회 기간 밖이에요. 기간 필터를 먼저 변경해주세요.','pending');input.value=recordsSelectedDate;return;}recordsSelectedDate=value;renderRecords();}}
+    input.onchange=function(){change(input.value);};[-1,1].forEach(function(offset,i){tools.querySelector(i?'[data-next]':'[data-prev]').onclick=function(){var d=new Date(recordsSelectedDate+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+offset);change(d.toISOString().slice(0,10));};});
+    var jump=document.createElement('select');jump.setAttribute('aria-label','조건에 맞는 기록일');
+    var placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=selection.dates.length?'기록이 있는 날짜로 이동':'조건에 맞는 기록일 없음';jump.appendChild(placeholder);
+    selection.dates.slice().reverse().forEach(function(d){var option=document.createElement('option');option.value=d;option.textContent=d;jump.appendChild(option);});jump.value=selection.dates.includes(recordsSelectedDate)?recordsSelectedDate:'';jump.onchange=function(){change(jump.value);};
+    recordsListEl.appendChild(tools);recordsListEl.appendChild(jump);
+    var runs=dateRecordRuns(source,recordsSelectedDate).filter(function(run){var e=run.entries[0];return (!recFilterFrom||recordsSelectedDate>=recFilterFrom)&&(!recFilterTo||recordsSelectedDate<=recFilterTo)&&(!recordMuscleQuery||entryMuscle(e)===recordMuscleQuery)&&(!recordExerciseQuery||e.n.toLocaleLowerCase('ko-KR').includes(recordExerciseQuery.trim().toLocaleLowerCase('ko-KR')));});
+    var note=document.createElement('p');note.className='stats-note';note.textContent=recordsSelectedDate+' · '+new Set(runs.map(function(r){return r.key;})).size+'개 종목 · '+runs.reduce(function(n,r){return n+r.entries.length;},0)+'세트 · 저장 순서 기준'+(recFilterFrom||recFilterTo||recordExerciseQuery||recordMuscleQuery?' · 필터 적용 중':'')+(recordDataWarning?' · 일부 기록 확인 불가':'');recordsListEl.appendChild(note);
+    runs.forEach(function(run,i){var e=run.entries[0],card=document.createElement('article');card.className='date-record-card';var heading=document.createElement('h3');heading.textContent=(i+1)+'. '+e.n;var meta=document.createElement('p');meta.textContent=entryMuscle(e)+' · '+run.entries.length+'세트'+(recordsScope==='all'?' · '+(e._profile||activeProfile):'');card.append(heading,meta);
+      run.entries.forEach(function(entry,index){var row=document.createElement('div');row.className='rec-item';var label=document.createElement('span');label.textContent=(index+1)+'세트';var edit=document.createElement('button');edit.type='button';edit.className='record-card-value record-edit-trigger';edit.textContent=(entry.w==='-'?'무게 미입력':entry.w+'kg')+' × '+(entry.reps==='-'?'횟수 미입력':entry.reps+'회');entry._setNo=index+1;edit.onclick=function(){if(entry._profile&&entry._profile!==activeProfile){switchProfile(entry._profile);return;}openRecordEditor(row,entry,edit);};row.append(label,edit);
+        if(!entry._profile||entry._profile===activeProfile){var del=document.createElement('button');del.type='button';del.className='btn-hist-del';del.innerHTML=deleteIcon();del.setAttribute('aria-label',entry.n+' '+(index+1)+'세트 기록 삭제');del.onclick=function(){requireSecondClick(del,'확인',function(){removeRecords(function(item){return item.id===entry.id;},true);});};row.appendChild(del);}card.appendChild(row);
+      });recordsListEl.appendChild(card);
+    });
+    if(!runs.length){var empty=document.createElement('p');empty.textContent='해당 날짜·조건의 저장 기록이 없어요.';recordsListEl.appendChild(empty);}
+    document.querySelector('.records-disclosure-actions').hidden=true;
+    var searchEmpty=document.getElementById('recordSearchEmpty');if(searchEmpty)searchEmpty.hidden=true;
+  }
+  function viewExerciseRecords(name,muscle,date) {
+    recordsViewMode='exercise';recordsScope='current';recordExerciseQuery=name;recordMuscleQuery=muscle;
+    var available=logs.filter(function(r){return r.date<=todayStr()&&r.entries.some(function(e){return e.n===name&&entryMuscle(e)===muscle;});}).map(function(r){return r.date;}).sort();
+    var targetDate=available.includes(date)?date:available.at(-1);
+    var periodChanged=!!targetDate&&((recFilterFrom&&targetDate<recFilterFrom)||(recFilterTo&&targetDate>recFilterTo));
+    if(periodChanged){recFilterFrom='';recFilterTo='';}
+    document.getElementById('recordSearchMuscle').value=muscle;
+    mode='records';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();renderRecords();
+    var key=JSON.stringify([muscle,name]),card=Array.from(recordsListEl.querySelectorAll('[data-record-key]')).find(function(el){return el.dataset.recordKey==='exercise:'+key;});
+    showToast('현재 플랜의 해당 부위·종목으로 조회 조건을 맞췄어요.'+(periodChanged?' 기간 필터를 해제했어요.':''));
+    if(!card){showToast('해당 부위·종목에 저장된 기록이 없어요.');return;}
+    card.open=true;var parent=card.closest('.record-muscle-group');if(parent)parent.open=true;
+    var groups=Array.from(card.querySelectorAll('.record-day-group')),day=groups.find(function(g){return g.dataset.recordKey==='day:'+key+'|'+date;})||groups[0];if(day)day.open=true;
+    var target=(day||card).querySelector('summary');target.focus({preventScroll:true});target.scrollIntoView({behavior:'smooth',block:'center'});
+  }
   var recordsScope='current';
   function recordsSource(){
     if(recordsScope==='current')return logs;
     return profiles.flatMap(function(profile){
-      var source=profile===activeProfile?logs:readJSON(keyFor('bulk-routine-log-v1',profile),[]);
+      var source=profile===activeProfile?logs:loadLogs(profile);
       return Array.isArray(source)?source.filter(function(r){return r&&Array.isArray(r.entries);}).map(function(r){return Object.assign({},r,{entries:r.entries.map(function(e){return Object.assign({},e,{_profile:profile});})});}):[];
     });
   }
@@ -2734,9 +2863,12 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var scope=document.getElementById('recordsScope');
     if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
     scope.innerHTML='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?'플랜: '+activeProfile:'모든 플랜의 기록 · 다른 플랜 기록은 해당 플랜으로 이동해 수정해요.')+'</p>';
+    var viewSwitch=document.createElement('div');viewSwitch.className='stats-periods';viewSwitch.setAttribute('role','group');viewSwitch.setAttribute('aria-label','기록 보기 방식');
+    [['date','날짜별'],['exercise','종목별']].forEach(function(pair){var b=document.createElement('button');b.type='button';b.textContent=pair[1];b.dataset.recordsView=pair[0];b.setAttribute('aria-pressed',String(recordsViewMode===pair[0]));b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsViewMode=pair[0];renderRecords();};viewSwitch.appendChild(b);});scope.appendChild(viewSwitch);
     scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;renderRecords();};});
     document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'날짜 옆에 소속 플랜을 표시해요.':'현재 플랜의 기록을 표시해요.';
-    var sourceRecords=recordsSource();
+    var sourceRecords=recordsSource().filter(function(r){return r.date<=todayStr();});
+    if(recordsScope==='all')scope.insertAdjacentHTML('beforeend',profileLogWarningsHtml());
     refreshRecordFilterOptions();
     syncRecordFilterUI();
     var opened = {};
@@ -2794,6 +2926,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       logs = next;renderRecords();
       if(removed>0){if(allowUndo)offerRecordUndo(before,removed);else showToast('운동기록 '+removed+'세트 삭제 완료');}
     }
+    if(recordsViewMode==='date'){renderDateRecords(sourceRecords,deleteRecords);return;}
     Array.from(groups.entries()).sort(compareRecordGroups).forEach(function (pairEntry) {
       var key=pairEntry[0],all=pairEntry[1];
       var pair=JSON.parse(key),muscle=pair[0],name=pair[1];
@@ -3576,7 +3709,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details></section>';
     rangeHtml=rangeHtml.replace('</h3>', '</h3><div class="stats-range-attendance"><span>기록한 날</span><strong>'+data.days+'<small>일</small></strong></div>');
     var muscleHtml='<section class="stats-card"><h3>부위별 운동량</h3><p class="stats-scope-label">직전 주·월과 비교</p>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>집계 기준</summary><p class="stats-note">괄호·회색 막대: 직전 기간 세트 수<br>볼륨: 무게 × 횟수의 합계 · 누락 세트 제외<br>같은 부위의 변화를 비교하세요. 주간은 월요일부터예요.<br>비교 기간: '+mcRange.prevFrom+' ~ '+mcRange.prevTo+'</p></details></section>';
-    statsViewEl.innerHTML=scopeHtml+
+    statsViewEl.innerHTML=scopeHtml+(statsScope==='all'?profileLogWarningsHtml():'')+
       muscleHtml+
       big3Html+
       pinnedStatsHtml()+
@@ -3966,7 +4099,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   function adjustmentRecords(asOf){
     var start=statsOffset(asOf,-13),seen=new Set(),result=[];
     profiles.forEach(function(profile){
-      var groups=profile===activeProfile?logs:readJSON(keyFor('bulk-routine-log-v1',profile),[]);
+      var groups=profile===activeProfile?logs:loadLogs(profile);
       if(!Array.isArray(groups))return;
       groups.forEach(function(g){if(g.date<start || g.date>asOf || !Array.isArray(g.entries))return;
         g.entries.forEach(function(e){var id=e.id?g.date+':'+e.id:null;if(id && seen.has(id))return;if(id)seen.add(id);
@@ -4001,7 +4134,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var state=adjustmentState(),info=athleteInfo(),complete=AI_GOALS[info.goal] && AI_EXPERIENCE[info.experience],week=adjustmentWeek(todayStr());
     return '<details class="adjustment-card ai-adjustment" id="weekAdjustment"'+(state.open?' open':'')+'><summary>'+(activeTemporary()?'남은 일정 다시 조정':'이번 주 루틴 조정')+'</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+' · 현재 플랜 기준</p>'+
       '<details class="ai-athlete" id="aiAthleteInfo"'+(!complete?' open':'')+'><summary>내 운동 정보 <small>'+(complete?statsEscape(AI_GOALS[info.goal]+' · '+AI_EXPERIENCE[info.experience]):'최초 한 번 입력')+'</small></summary><p class="adjustment-note">이 기기에 저장되며 모든 플랜에서 함께 사용해요.</p><div class="ai-fields"><label>운동 목표<select id="aiGoal">'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>꾸준히 운동한 기간<select id="aiExperience">'+adjustmentOptions(AI_EXPERIENCE,info.experience,'기간 선택')+'</select></label><label>선호 운동·우선 부위 (선택)<input id="aiPreferences" maxlength="500" value="'+statsEscape(info.preferences)+'" placeholder="예: 하체를 우선하고 싶어요"></label><label>피할 운동 (선택)<input id="aiExcluded" maxlength="500" value="'+statsEscape(info.excluded)+'" placeholder="예: 딥스 제외"></label><label>평소 장비 제약 (선택)<input id="aiEquipment" maxlength="500" value="'+statsEscape(info.equipment)+'" placeholder="없으면 비워두세요"></label></div><button type="button" class="btn-reset" id="btnAthleteSave">내 운동 정보 저장</button><p id="athleteSaveStatus" role="status"></p></details>'+
-      '<section class="ai-survey-section"><h3>1. 실제 운동 기록 확인</h3><ul class="ai-record-summary">'+adjustmentRecordSummary(state)+'</ul><p class="adjustment-note">다른 플랜의 기록도 포함해요. 기록 없음이 휴식을 뜻하지는 않아요.</p><label>지금까지 한 운동이 모두 반영됐나요?<select id="adjustCoverage">'+adjustmentOptions({all:'네, 모두 반영됐어요',some:'기록하지 않은 운동이 있어요',none:'이번 주는 아직 운동하지 않았어요',unknown:'정확히 모르겠어요'},state.coverage,'선택해주세요')+'</select></label><div id="aiSupplementArea"'+(state.coverage==='some'?'':' hidden')+'><p class="adjustment-note">빠진 운동만 추가하세요. 추천에만 반영하며 실제 기록에는 저장하지 않아요.</p><div id="aiSupplements">'+adjustmentSupplementsHtml(state)+'</div><button type="button" class="btn-reset" id="btnSupplementAdd">+ 누락 운동 추가</button></div></section>'+
+      '<section class="ai-survey-section"><h3>1. 실제 운동 기록 확인</h3><ul class="ai-record-summary">'+adjustmentRecordSummary(state)+'</ul>'+profileLogWarningsHtml()+'<p class="adjustment-note">다른 플랜의 기록도 포함해요. 기록 없음이 휴식을 뜻하지는 않아요.</p><label>지금까지 한 운동이 모두 반영됐나요?<select id="adjustCoverage">'+adjustmentOptions({all:'네, 모두 반영됐어요',some:'기록하지 않은 운동이 있어요',none:'이번 주는 아직 운동하지 않았어요',unknown:'정확히 모르겠어요'},state.coverage,'선택해주세요')+'</select></label><div id="aiSupplementArea"'+(state.coverage==='some'?'':' hidden')+'><p class="adjustment-note">빠진 운동만 추가하세요. 추천에만 반영하며 실제 기록에는 저장하지 않아요.</p><div id="aiSupplements">'+adjustmentSupplementsHtml(state)+'</div><button type="button" class="btn-reset" id="btnSupplementAdd">+ 누락 운동 추가</button></div></section>'+
       '<section class="ai-survey-section"><h3>2. 남은 일정과 시간</h3><p class="adjustment-note">운동할 수 있는 날은 ‘AI가 조정’, 바꾸지 않을 날은 ‘기존 일정 유지’, 운동할 수 없는 날은 ‘휴식’을 선택하세요. AI는 가능한 날에도 휴식을 제안할 수 있어요.</p><p id="aiScheduleGuidance" class="ai-schedule-guidance" role="status"></p><div id="aiBulkMinutes"><label>시간 일괄 적용<select id="adjustMinutes">'+adjustmentTimeOptions(state.minutes)+'</select></label><button type="button" class="btn-reset" id="applyAiMinutes">조정할 날짜에 적용</button><p class="adjustment-note">아래 날짜별 시간이 최종 기준이에요. 적용 후 개별 변경할 수 있어요.</p></div><div id="aiSchedule">'+adjustmentScheduleHtml(state)+'</div><div id="aiTodayArea"><label>오늘 운동은 어디까지 했나요?<select id="aiTodayStatus">'+adjustmentOptions({before:'아직 시작 전',partial:'일부 진행 · 추가 운동 가능',done:'오늘 운동 완료 · 오늘 일정 유지'},state.todayStatus,'오늘을 조정할 때 선택')+'</select></label><p id="aiTodayHint" class="adjustment-note" role="status"></p></div></section>'+
       '<section class="ai-survey-section"><h3>3. 추가 조건 <small>선택</small></h3><label>이번 추천의 목표<select id="aiWeekGoal">'+adjustmentOptions(AI_GOALS,state.goal,'내 운동 정보의 목표 사용')+'</select></label><label>추가 요청사항<textarea id="adjustNotes" rows="3" maxlength="1000" placeholder="예: 이번 주는 운동량을 줄이고 싶어요. 하체를 더 하고 싶어요. 집에서 덤벨로 운동해요.">'+statsEscape(state.notes||'')+'</textarea></label><p class="adjustment-note">피로, 통증, 피하고 싶은 운동 등 추천에 반영할 내용이 있을 때만 적어주세요.</p></section>'+
       '<button type="button" class="btn-reset adjustment-generate" id="btnAdjustmentGenerate">'+(activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기')+'</button><p class="adjustment-note">운동 정보·최근 14일 기록·입력 조건이 Gemini에 전송돼요. 제안을 확인한 뒤 적용할 수 있어요.</p><p id="adjustmentStatus" role="status" aria-live="polite"></p><button type="button" class="btn-reset" id="reopenAiProposal" hidden>이전 제안 다시 보기</button><button type="button" class="btn-reset" id="btnAiHistoryReport">저장된 이전 제안</button>'+
@@ -5552,6 +5685,7 @@ function estimateSession(day) {
   // v1 프로필 본문 검증 — v2의 각 프로필에도 그대로 적용한다.
   function validateProfilePayload(p,fail,text,routine){
     routine(p.routine);
+    if(p.exerciseNotes!==undefined)validateExerciseNotes(p.exerciseNotes);
     if(p.pins!=null && (!Array.isArray(p.pins)||p.pins.length>5||p.pins.some(function(n){return !text(n,200);})))fail();
     if(p.pending!=null)routine(p.pending);
     if(!p.catalog || typeof p.catalog!=='object')fail();
@@ -5580,7 +5714,7 @@ function estimateSession(day) {
   function transferSnapshot() {
     return {format:'workout-routine-transfer',version:1,exportedAt:new Date().toISOString(),athleteInfo:athleteInfo(),profile:{
       name:activeProfile,routine:loadSavedRoutine(),pending:routineOrderPending?days:null,
-      catalog:readJSON(CATALOG_KEY,catalog),logs:logs,memos:getMemos(),draft:draft,pins:pinnedExercises(),temporaryRoutine:temporaryRoutine(),aiProposalHistory:proposalHistory()
+      catalog:readJSON(CATALOG_KEY,catalog),logs:logs,memos:getMemos(),exerciseNotes:exerciseNotes(),draft:draft,pins:pinnedExercises(),temporaryRoutine:temporaryRoutine(),aiProposalHistory:proposalHistory()
     }};
   }
   // 10번: 활성 플랜이 아닌 플랜은 저장소에서 직접 읽어 스냅샷을 만든다.
@@ -5595,6 +5729,7 @@ function estimateSession(day) {
       catalog:readJSON(CATALOG_KEY,catalog) || {},
       logs:readJSON(keyFor('bulk-routine-log-v1',name),[]) || [],
       memos:readJSON(keyFor('bulk-routine-memos-v1',name),[]) || [],
+      exerciseNotes:exerciseNotes(name),
       draft:readJSON(keyFor('bulk-routine-draft-v2',name),{}) || {},
       pins:readJSON(keyFor('bulk-workout-pins-v1',name),[]) || [],
       temporaryRoutine:readJSON(keyFor('bulk-workout-temporary-v1',name),null),
@@ -5791,6 +5926,7 @@ function estimateSession(day) {
       '[운동 관리]\n' +
       '신규 운동종류 추가 예정: ' + catalogAdds.length + '개\n' +
       addCatalogText + '\n\n' +
+      '종목 메모는 기존 내용을 유지하고, 메모가 없는 종목만 백업에서 추가합니다.\n\n' +
       '[운동 기록]\n' +
       '파일 기록: ' + analysis.importedRecordCount + '세트\n' +
       '추가 예정: ' + analysis.addRecordCount + '세트\n' +
@@ -5841,6 +5977,7 @@ function estimateSession(day) {
       {key:routinePendingKey(), remove:true},
       {key:CATALOG_KEY, value:nextCatalog},
       {key:LOG_KEY, value:nextLogs},
+      {key:exerciseNotesKey(),value:mergeExerciseNotes(exerciseNotes(),imported.exerciseNotes)},
       {key:keyFor('bulk-workout-pins-v1',activeProfile),value:Array.from(new Set(pinnedExercises().concat(data.profile.pins || []))).slice(0,5)}
     ].concat(athleteRestoreOperations(data)));
     if (!ok) {
@@ -5898,6 +6035,7 @@ function estimateSession(day) {
       {key:keyFor('bulk-routine-v9',name),value:normalizeRoutine(p.routine)},
       {key:keyFor('bulk-routine-log-v1',name),value:p.logs},
       {key:keyFor('bulk-routine-memos-v1',name),value:p.memos},
+      {key:exerciseNotesKey(name),value:p.exerciseNotes || []},
       {key:keyFor('bulk-routine-draft-v2',name),value:p.draft},
       {key:keyFor('bulk-workout-pins-v1',name),value:p.pins || []},
       {key:keyFor('geunlog-ai-proposal-history-v1',name),value:p.aiProposalHistory || []},
@@ -5932,6 +6070,7 @@ function estimateSession(day) {
       {key:keyFor('bulk-routine-v9',name),value:normalizeRoutine(p.routine)},
       {key:keyFor('bulk-routine-log-v1',name),value:p.logs},
       {key:keyFor('bulk-routine-memos-v1',name),value:p.memos},
+      {key:exerciseNotesKey(name),value:p.exerciseNotes || []},
       {key:keyFor('bulk-routine-draft-v2',name),value:p.draft},
       {key:keyFor('bulk-workout-pins-v1',name),value:p.pins || []},
       {key:keyFor('geunlog-ai-proposal-history-v1',name),value:p.aiProposalHistory || []},

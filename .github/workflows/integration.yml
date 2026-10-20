@@ -1,6 +1,8 @@
 name: Integration Chromium and PWA
 on:
   push:
+    branches: [test/WORKOUT-20261018-001-integration, work/WORKOUT-20261019-001]
+  pull_request:
     branches: [test/WORKOUT-20261018-001-integration]
 permissions:
   contents: read
@@ -29,7 +31,12 @@ jobs:
           set -o pipefail
           node --check app.js
           node --check sw.js
-          git diff --check
+          base="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base" ]; then base=9591e342b8e61e6bab13f052d59d9bdae2e11c88; fi
+          git cat-file -e "$base^{commit}"
+          git merge-base --is-ancestor "$base" HEAD
+          test "$base" != "$(git rev-parse HEAD)"
+          git diff --check "$base" HEAD
           npm test 2>&1 | tee test-results/regression.log
       - name: Mobile browser
         id: mobile
