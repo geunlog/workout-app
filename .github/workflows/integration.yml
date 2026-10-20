@@ -51,6 +51,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
+          UI_BASELINE=d60acb5ef0e6d021d3cd6201192f9fc3fd5539ea node tests/ui-polish-browser.cjs 2>&1 | tee test-results/ui-before.log
           npm run test:mobile 2>&1 | tee test-results/mobile.log
         env:
           UI_SCREENSHOT: test-results/ai-mobile.png

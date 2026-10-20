@@ -2936,3 +2936,19 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app .records-view-tabs button:active,.bulk-app .exercise-note-button:active{background:#edf2fb}
 @media(max-width:480px){.exercise-note-dialog{margin:auto auto 0;width:100%;max-width:480px;border-radius:24px 24px 0 0;max-height:88dvh}.exercise-note-heading{padding-top:18px}}
 @media(max-width:360px){.bulk-app .record-filter-panel{padding:12px}.exercise-note-heading{padding-left:16px;padding-right:16px}.exercise-note-content{padding-left:16px;padding-right:16px}.exercise-note-actions{padding-left:16px;padding-right:16px}.bulk-app .weekly-record-count b{font-size:17px}}
+
+/* v155 review: preserve Korean word units without constraining long titles. */
+.bulk-app .rep-day-letter{width:auto;min-width:18px;white-space:nowrap}
+.bulk-app .rep-day-title{min-width:0;word-break:keep-all;overflow-wrap:anywhere}
+.bulk-app .rep-day-total{flex-shrink:0;margin-left:auto}
+.bulk-app .records-view-tabs small,.bulk-app .weekly-record-muscle,
+.bulk-app .record-filter-panel .rec-filter-row label,
+.bulk-app .record-filter-panel .record-scope-note{font-size:12px;line-height:1.5}
+.bulk-app .weekly-record-caption{font-size:12px}
+@media(max-width:480px){
+  .bulk-app .ai-schedule-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:6px 8px;padding:10px 0}
+  .bulk-app .ai-schedule-row>strong{grid-column:1/-1;white-space:nowrap;line-height:1.5}
+  .bulk-app .ai-schedule-row label{min-width:0}
+  .bulk-app .ai-schedule-row select{width:100%;min-width:0;min-height:44px;padding:8px;font-size:13px}
+}
+.bulk-app .rep-ex-name,.bulk-app .exercise-name-read{word-break:keep-all;overflow-wrap:anywhere}
