@@ -797,11 +797,45 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var number=Number(text);
     return Number.isFinite(number) && number>=0 && number<=max && (!integer || Number.isInteger(number))?text:null;
   }
+  function validateLogRecords(source,makeId) {
+    var result=[],ids=new Set(),damaged=!Array.isArray(source),changed=false;
+    if(damaged)source=[];
+    var reserved=new Set(source.flatMap(function(r){return r&&Array.isArray(r.entries)?r.entries.filter(function(e){return e&&typeof e.id==='string';}).map(function(e){return e.id;}):[];}));
+    source.forEach(function(rec){
+      if(!rec || typeof rec.date!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(rec.date) || !['sun','mon','tue','wed','thu','fri','sat'].includes(rec.dayKey) || !Array.isArray(rec.entries)){damaged=true;return;}
+      var date=new Date(rec.date+'T00:00:00Z');
+      if(isNaN(date.getTime()) || date.toISOString().slice(0,10)!==rec.date){damaged=true;return;}
+      var entries=[];
+      rec.entries.forEach(function(entry){
+        if(!entry || typeof entry.n!=='string' || !entry.n.trim() || (entry.m!=null && typeof entry.m!=='string')){damaged=true;return;}
+        var weight=logValue(entry.w,500,false),reps=logValue(entry.reps,100,true);
+        if(weight===null || reps===null || (weight==='-' && reps==='-')){damaged=true;return;}
+        var id=entry.id;
+        if(typeof id!=='string' || !id || ids.has(id)){var baseId=makeId(result.length,entries.length),suffix=0;id=baseId;while(ids.has(id)||reserved.has(id))id=baseId+'-'+(++suffix);changed=true;}
+        ids.add(id);entries.push(Object.assign({},entry,{id:id,w:weight,reps:reps}));
+      });
+      if(entries.length)result.push(Object.assign({},rec,{entries:entries}));
+    });
+    result.sort(function(a,b){return a.date.localeCompare(b.date);});
+    return {logs:result,damaged:damaged,changed:changed};
+  }
+  var profileLogIssues=new Map();
+  function readProfileLogs(profile) {
+    var raw,checked;
+    try{raw=localStorage.getItem(keyFor('bulk-routine-log-v1',profile));}
+    catch(error){return {logs:[],issue:'저장소 읽기 실패 · 기록 확인 불가'};}
+    try{checked=validateLogRecords(raw===null?[]:JSON.parse(raw),function(r,e){return 'readonly-'+JSON.stringify([profile,r,e]);});}
+    catch(error){return {logs:[],issue:'손상된 JSON · 기록 확인 불가'};}
+    return {logs:checked.logs,issue:checked.damaged?'일부 기록 확인 불가 · 유효한 기록만 표시':checked.changed?'기록 ID 확인 필요 · 조회용 ID 사용':''};
+  }
+  function profileLogWarningsHtml() {
+    return profiles.filter(function(p){return p!==activeProfile&&profileLogIssues.has(p);}).map(function(p){return '<p class="stats-note profile-log-warning" role="status">'+statsEscape(p)+' 플랜: '+statsEscape(profileLogIssues.get(p))+' · 해당 플랜으로 전환해 원본 보호·복구 안내를 확인해주세요.</p>';}).join('');
+  }
   function loadLogs(profile) {
     if(profile && profile!==activeProfile){
-      var owner=activeProfile,key=LOG_KEY,locked=recordDataLocked,warning=recordDataWarning;
-      try{activeProfile=profile;LOG_KEY=keyFor('bulk-routine-log-v1',profile);return loadLogs();}
-      finally{activeProfile=owner;LOG_KEY=key;recordDataLocked=locked;recordDataWarning=warning;}
+      var read=readProfileLogs(profile);
+      if(read.issue)profileLogIssues.set(profile,read.issue);else profileLogIssues.delete(profile);
+      return read.logs;
     }
     recordDataLocked=false;recordDataWarning='';
     var raw=null,source=[],damaged=false,changed=false;
@@ -814,23 +848,8 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if(raw===null){recordDataLocked=true;recordDataWarning='운동기록 저장소에 접근할 수 없어요. 원본 보호를 위해 기록 변경을 중지했어요.';return [];}
       source=[];damaged=true;
     }
-    var result=[],ids=new Set();
-    source.forEach(function(rec){
-      if(!rec || typeof rec.date!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(rec.date) || !['sun','mon','tue','wed','thu','fri','sat'].includes(rec.dayKey) || !Array.isArray(rec.entries)){damaged=true;return;}
-      var date=new Date(rec.date+'T00:00:00Z');
-      if(isNaN(date.getTime()) || date.toISOString().slice(0,10)!==rec.date){damaged=true;return;}
-      var entries=[];
-      rec.entries.forEach(function(entry){
-        if(!entry || typeof entry.n!=='string' || !entry.n.trim() || (entry.m!=null && typeof entry.m!=='string')){damaged=true;return;}
-        var weight=logValue(entry.w,500,false),reps=logValue(entry.reps,100,true);
-        if(weight===null || reps===null || (weight==='-' && reps==='-')){damaged=true;return;}
-        var id=entry.id;
-        if(typeof id!=='string' || !id || ids.has(id)){id='recovered-'+result.length+'-'+entries.length+'-'+genId();changed=true;}
-        ids.add(id);entries.push(Object.assign({},entry,{id:id,w:weight,reps:reps}));
-      });
-      if(entries.length)result.push(Object.assign({},rec,{entries:entries}));
-    });
-    result.sort(function(a,b){return a.date.localeCompare(b.date);});
+    var checked=validateLogRecords(source,function(r,e){return 'recovered-'+r+'-'+e+'-'+genId();});
+    var result=checked.logs;damaged=damaged||checked.damaged;changed=checked.changed;
     if(damaged){
       var protectedSource=preserveLogSource(raw);
       recordDataLocked=!protectedSource;
@@ -2777,7 +2796,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     row.insertAdjacentElement('afterend',form);
     (trigger.classList.contains('record-card-date')?dateButton:weight).focus();
   }
-  var recordsViewMode='exercise',recordsSelectedDate='';
+  var recordsViewMode='exercise',recordsSelectedDate='',recordsDateContext='';
   function dateRecordRuns(source,date) {
     // Keep original array order when legacy timestamps are missing; never invent times.
     var list=[];
@@ -2787,15 +2806,24 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     list.forEach(function(e){var key=JSON.stringify([e._profile||activeProfile,entryMuscle(e),e.n]),last=runs[runs.length-1];if(!last||last.key!==key){last={key:key,entries:[]};runs.push(last);}last.entries.push(e);});
     return runs;
   }
+  function resolveRecordDate(source,selected,previousContext) {
+    var context=JSON.stringify([activeProfile,recordsScope,recFilterFrom,recFilterTo,recordMuscleQuery,recordExerciseQuery.trim().toLocaleLowerCase('ko-KR')]);
+    var dates=Array.from(new Set(source.filter(function(r){return r.date<=todayStr()&&(!recFilterFrom||r.date>=recFilterFrom)&&(!recFilterTo||r.date<=recFilterTo)&&r.entries.some(function(e){return (!recordMuscleQuery||entryMuscle(e)===recordMuscleQuery)&&(!recordExerciseQuery.trim()||e.n.toLocaleLowerCase('ko-KR').includes(recordExerciseQuery.trim().toLocaleLowerCase('ko-KR')));});}).map(function(r){return r.date;}))).sort();
+    if(!selected||(context!==previousContext&&!dates.includes(selected)))selected=dates.at(-1)||(recFilterTo&&recFilterTo<todayStr()?recFilterTo:todayStr());
+    return {date:selected,context:context,dates:dates};
+  }
   function renderDateRecords(source,removeRecords) {
-    var dates=source.map(function(r){return r.date;}).filter(function(d){return d<=todayStr()&&(!recFilterFrom||d>=recFilterFrom)&&(!recFilterTo||d<=recFilterTo);}).sort();
-    if(!recordsSelectedDate)recordsSelectedDate=dates.at(-1)||todayStr();
+    var selection=resolveRecordDate(source,recordsSelectedDate,recordsDateContext);
+    recordsSelectedDate=selection.date;recordsDateContext=selection.context;
     var tools=document.createElement('div');tools.className='record-date-tools';
     tools.innerHTML='<button type="button" data-prev aria-label="이전 날짜">‹</button><input type="date" aria-label="조회 날짜"><button type="button" data-next aria-label="다음 날짜">›</button>';
-    var input=tools.querySelector('input');input.value=recordsSelectedDate;input.max=todayStr();
-    function change(value){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');input.value=recordsSelectedDate;return;}if(value&&value<=todayStr()){recordsSelectedDate=value;renderRecords();}}
+    var input=tools.querySelector('input');input.value=recordsSelectedDate;input.min=recFilterFrom;input.max=recFilterTo&&recFilterTo<todayStr()?recFilterTo:todayStr();
+    function change(value){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');input.value=recordsSelectedDate;return;}if(value&&value<=todayStr()){if((recFilterFrom&&value<recFilterFrom)||(recFilterTo&&value>recFilterTo)){showToast('선택한 날짜는 조회 기간 밖이에요. 기간 필터를 먼저 변경해주세요.','pending');input.value=recordsSelectedDate;return;}recordsSelectedDate=value;renderRecords();}}
     input.onchange=function(){change(input.value);};[-1,1].forEach(function(offset,i){tools.querySelector(i?'[data-next]':'[data-prev]').onclick=function(){var d=new Date(recordsSelectedDate+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+offset);change(d.toISOString().slice(0,10));};});
-    recordsListEl.appendChild(tools);
+    var jump=document.createElement('select');jump.setAttribute('aria-label','조건에 맞는 기록일');
+    var placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=selection.dates.length?'기록이 있는 날짜로 이동':'조건에 맞는 기록일 없음';jump.appendChild(placeholder);
+    selection.dates.slice().reverse().forEach(function(d){var option=document.createElement('option');option.value=d;option.textContent=d;jump.appendChild(option);});jump.value=selection.dates.includes(recordsSelectedDate)?recordsSelectedDate:'';jump.onchange=function(){change(jump.value);};
+    recordsListEl.appendChild(tools);recordsListEl.appendChild(jump);
     var runs=dateRecordRuns(source,recordsSelectedDate).filter(function(run){var e=run.entries[0];return (!recFilterFrom||recordsSelectedDate>=recFilterFrom)&&(!recFilterTo||recordsSelectedDate<=recFilterTo)&&(!recordMuscleQuery||entryMuscle(e)===recordMuscleQuery)&&(!recordExerciseQuery||e.n.toLocaleLowerCase('ko-KR').includes(recordExerciseQuery.trim().toLocaleLowerCase('ko-KR')));});
     var note=document.createElement('p');note.className='stats-note';note.textContent=recordsSelectedDate+' · '+new Set(runs.map(function(r){return r.key;})).size+'개 종목 · '+runs.reduce(function(n,r){return n+r.entries.length;},0)+'세트 · 저장 순서 기준'+(recFilterFrom||recFilterTo||recordExerciseQuery||recordMuscleQuery?' · 필터 적용 중':'')+(recordDataWarning?' · 일부 기록 확인 불가':'');recordsListEl.appendChild(note);
     runs.forEach(function(run,i){var e=run.entries[0],card=document.createElement('article');card.className='date-record-card';var heading=document.createElement('h3');heading.textContent=(i+1)+'. '+e.n;var meta=document.createElement('p');meta.textContent=entryMuscle(e)+' · '+run.entries.length+'세트'+(recordsScope==='all'?' · '+(e._profile||activeProfile):'');card.append(heading,meta);
@@ -2840,6 +2868,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;renderRecords();};});
     document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'날짜 옆에 소속 플랜을 표시해요.':'현재 플랜의 기록을 표시해요.';
     var sourceRecords=recordsSource().filter(function(r){return r.date<=todayStr();});
+    if(recordsScope==='all')scope.insertAdjacentHTML('beforeend',profileLogWarningsHtml());
     refreshRecordFilterOptions();
     syncRecordFilterUI();
     var opened = {};
@@ -3680,7 +3709,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details></section>';
     rangeHtml=rangeHtml.replace('</h3>', '</h3><div class="stats-range-attendance"><span>기록한 날</span><strong>'+data.days+'<small>일</small></strong></div>');
     var muscleHtml='<section class="stats-card"><h3>부위별 운동량</h3><p class="stats-scope-label">직전 주·월과 비교</p>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>집계 기준</summary><p class="stats-note">괄호·회색 막대: 직전 기간 세트 수<br>볼륨: 무게 × 횟수의 합계 · 누락 세트 제외<br>같은 부위의 변화를 비교하세요. 주간은 월요일부터예요.<br>비교 기간: '+mcRange.prevFrom+' ~ '+mcRange.prevTo+'</p></details></section>';
-    statsViewEl.innerHTML=scopeHtml+
+    statsViewEl.innerHTML=scopeHtml+(statsScope==='all'?profileLogWarningsHtml():'')+
       muscleHtml+
       big3Html+
       pinnedStatsHtml()+
@@ -4105,7 +4134,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var state=adjustmentState(),info=athleteInfo(),complete=AI_GOALS[info.goal] && AI_EXPERIENCE[info.experience],week=adjustmentWeek(todayStr());
     return '<details class="adjustment-card ai-adjustment" id="weekAdjustment"'+(state.open?' open':'')+'><summary>'+(activeTemporary()?'남은 일정 다시 조정':'이번 주 루틴 조정')+'</summary><p class="adjustment-note">'+week.from+' ~ '+week.to+' · 현재 플랜 기준</p>'+
       '<details class="ai-athlete" id="aiAthleteInfo"'+(!complete?' open':'')+'><summary>내 운동 정보 <small>'+(complete?statsEscape(AI_GOALS[info.goal]+' · '+AI_EXPERIENCE[info.experience]):'최초 한 번 입력')+'</small></summary><p class="adjustment-note">이 기기에 저장되며 모든 플랜에서 함께 사용해요.</p><div class="ai-fields"><label>운동 목표<select id="aiGoal">'+adjustmentOptions(AI_GOALS,info.goal,'목표 선택')+'</select></label><label>꾸준히 운동한 기간<select id="aiExperience">'+adjustmentOptions(AI_EXPERIENCE,info.experience,'기간 선택')+'</select></label><label>선호 운동·우선 부위 (선택)<input id="aiPreferences" maxlength="500" value="'+statsEscape(info.preferences)+'" placeholder="예: 하체를 우선하고 싶어요"></label><label>피할 운동 (선택)<input id="aiExcluded" maxlength="500" value="'+statsEscape(info.excluded)+'" placeholder="예: 딥스 제외"></label><label>평소 장비 제약 (선택)<input id="aiEquipment" maxlength="500" value="'+statsEscape(info.equipment)+'" placeholder="없으면 비워두세요"></label></div><button type="button" class="btn-reset" id="btnAthleteSave">내 운동 정보 저장</button><p id="athleteSaveStatus" role="status"></p></details>'+
-      '<section class="ai-survey-section"><h3>1. 실제 운동 기록 확인</h3><ul class="ai-record-summary">'+adjustmentRecordSummary(state)+'</ul><p class="adjustment-note">다른 플랜의 기록도 포함해요. 기록 없음이 휴식을 뜻하지는 않아요.</p><label>지금까지 한 운동이 모두 반영됐나요?<select id="adjustCoverage">'+adjustmentOptions({all:'네, 모두 반영됐어요',some:'기록하지 않은 운동이 있어요',none:'이번 주는 아직 운동하지 않았어요',unknown:'정확히 모르겠어요'},state.coverage,'선택해주세요')+'</select></label><div id="aiSupplementArea"'+(state.coverage==='some'?'':' hidden')+'><p class="adjustment-note">빠진 운동만 추가하세요. 추천에만 반영하며 실제 기록에는 저장하지 않아요.</p><div id="aiSupplements">'+adjustmentSupplementsHtml(state)+'</div><button type="button" class="btn-reset" id="btnSupplementAdd">+ 누락 운동 추가</button></div></section>'+
+      '<section class="ai-survey-section"><h3>1. 실제 운동 기록 확인</h3><ul class="ai-record-summary">'+adjustmentRecordSummary(state)+'</ul>'+profileLogWarningsHtml()+'<p class="adjustment-note">다른 플랜의 기록도 포함해요. 기록 없음이 휴식을 뜻하지는 않아요.</p><label>지금까지 한 운동이 모두 반영됐나요?<select id="adjustCoverage">'+adjustmentOptions({all:'네, 모두 반영됐어요',some:'기록하지 않은 운동이 있어요',none:'이번 주는 아직 운동하지 않았어요',unknown:'정확히 모르겠어요'},state.coverage,'선택해주세요')+'</select></label><div id="aiSupplementArea"'+(state.coverage==='some'?'':' hidden')+'><p class="adjustment-note">빠진 운동만 추가하세요. 추천에만 반영하며 실제 기록에는 저장하지 않아요.</p><div id="aiSupplements">'+adjustmentSupplementsHtml(state)+'</div><button type="button" class="btn-reset" id="btnSupplementAdd">+ 누락 운동 추가</button></div></section>'+
       '<section class="ai-survey-section"><h3>2. 남은 일정과 시간</h3><p class="adjustment-note">운동할 수 있는 날은 ‘AI가 조정’, 바꾸지 않을 날은 ‘기존 일정 유지’, 운동할 수 없는 날은 ‘휴식’을 선택하세요. AI는 가능한 날에도 휴식을 제안할 수 있어요.</p><p id="aiScheduleGuidance" class="ai-schedule-guidance" role="status"></p><div id="aiBulkMinutes"><label>시간 일괄 적용<select id="adjustMinutes">'+adjustmentTimeOptions(state.minutes)+'</select></label><button type="button" class="btn-reset" id="applyAiMinutes">조정할 날짜에 적용</button><p class="adjustment-note">아래 날짜별 시간이 최종 기준이에요. 적용 후 개별 변경할 수 있어요.</p></div><div id="aiSchedule">'+adjustmentScheduleHtml(state)+'</div><div id="aiTodayArea"><label>오늘 운동은 어디까지 했나요?<select id="aiTodayStatus">'+adjustmentOptions({before:'아직 시작 전',partial:'일부 진행 · 추가 운동 가능',done:'오늘 운동 완료 · 오늘 일정 유지'},state.todayStatus,'오늘을 조정할 때 선택')+'</select></label><p id="aiTodayHint" class="adjustment-note" role="status"></p></div></section>'+
       '<section class="ai-survey-section"><h3>3. 추가 조건 <small>선택</small></h3><label>이번 추천의 목표<select id="aiWeekGoal">'+adjustmentOptions(AI_GOALS,state.goal,'내 운동 정보의 목표 사용')+'</select></label><label>추가 요청사항<textarea id="adjustNotes" rows="3" maxlength="1000" placeholder="예: 이번 주는 운동량을 줄이고 싶어요. 하체를 더 하고 싶어요. 집에서 덤벨로 운동해요.">'+statsEscape(state.notes||'')+'</textarea></label><p class="adjustment-note">피로, 통증, 피하고 싶은 운동 등 추천에 반영할 내용이 있을 때만 적어주세요.</p></section>'+
       '<button type="button" class="btn-reset adjustment-generate" id="btnAdjustmentGenerate">'+(activeTemporary()?'남은 일정 다시 추천받기':'AI로 루틴 제안받기')+'</button><p class="adjustment-note">운동 정보·최근 14일 기록·입력 조건이 Gemini에 전송돼요. 제안을 확인한 뒤 적용할 수 있어요.</p><p id="adjustmentStatus" role="status" aria-live="polite"></p><button type="button" class="btn-reset" id="reopenAiProposal" hidden>이전 제안 다시 보기</button><button type="button" class="btn-reset" id="btnAiHistoryReport">저장된 이전 제안</button>'+
