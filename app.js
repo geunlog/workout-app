@@ -1948,8 +1948,8 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       nameRead.className = 'exercise-name-read routine-read-only';
       nameRead.textContent = ex.n || '종목 미지정';
       top.appendChild(nameRead);
-      var noteButton=document.createElement('button');noteButton.type='button';noteButton.className='exercise-note-button';noteButton.textContent='✎';noteButton.setAttribute('aria-label',ex.m+' '+ex.n+' 종목 메모');
-      try{if(exerciseNotes().some(function(n){return n.m===ex.m&&n.n===ex.n;})){noteButton.textContent='📝';noteButton.classList.add('has-note');}}catch(ignore){noteButton.textContent='!';}
+      var noteButton=document.createElement('button');noteButton.type='button';noteButton.className='exercise-note-button';noteButton.innerHTML=exerciseNoteIcon();noteButton.setAttribute('aria-label',ex.m+' '+ex.n+' 종목 메모');
+      try{if(exerciseNotes().some(function(n){return n.m===ex.m&&n.n===ex.n;})){noteButton.classList.add('has-note');noteButton.setAttribute('aria-label',ex.m+' '+ex.n+' 종목 메모 · 저장됨');}}catch(ignore){noteButton.textContent='!';}
       noteButton.onclick=function(){openExerciseNote(ex,noteButton);};top.appendChild(noteButton);
       if(d.temporary){var badge=document.createElement('span');badge.className='temporary-badge routine-read-only';badge.textContent='임시';top.appendChild(badge);}
       top.appendChild(nameSel);
@@ -2412,14 +2412,20 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var next=validateExerciseNotes(current).slice();
     validateExerciseNotes(incoming || []).forEach(function(e){if(!next.some(function(old){return old.m===e.m&&old.n===e.n;}))next.push(e);});return next;
   }
+  function exerciseNoteIcon() {
+    return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m12 12 8-8-2-2-8 8-1 4z"/></svg>';
+  }
   function openExerciseNote(ex,trigger) {
     var owner=activeProfile,notes;
     try{notes=exerciseNotes();}catch(e){showToast('종목 메모를 읽지 못했어요. 원본을 보호하며 편집을 중지해요.','error');return;}
     var old=notes.find(function(n){return n.m===ex.m&&n.n===ex.n;}),dialog=document.createElement('dialog');dialog.className='data-confirm-dialog exercise-note-dialog';
-    dialog.innerHTML='<h3>종목 메모</h3><p></p><textarea maxlength="500" rows="5" aria-label="종목 메모 내용"></textarea><small>최대 500자 · 빈 내용으로 저장하면 삭제돼요.</small><p role="alert"></p><div class="exercise-note-actions"><button type="button" data-cancel>취소</button><button type="button" data-delete>삭제</button><button type="button" data-save>저장</button></div>';
+    dialog.setAttribute('aria-labelledby','exerciseNoteTitle');
+    dialog.innerHTML='<header class="exercise-note-heading"><h3 id="exerciseNoteTitle">종목 메모</h3><p></p></header><div class="exercise-note-content"><textarea maxlength="500" rows="5" aria-label="종목 메모 내용" aria-describedby="exerciseNoteHint" placeholder="시트 높이, 그립, 자세를 남겨보세요"></textarea><div class="exercise-note-help"><small id="exerciseNoteHint">최대 500자 · 빈 내용으로 저장하면 삭제돼요.</small><span class="exercise-note-count"></span></div><p role="alert"></p></div><div class="exercise-note-actions"><button type="button" data-delete>삭제</button><button type="button" data-cancel>취소</button><button type="button" data-save>저장</button></div>';
     dialog.querySelector('p').textContent=ex.m+' · '+ex.n;
     var input=dialog.querySelector('textarea');input.value=old?old.body:'';
-    function commit(body){try{if(owner!==activeProfile)throw Error('플랜이 변경됐어요. 다시 열어주세요.');if(body.length>500)throw Error('메모는 500자까지 저장할 수 있어요.');var next=exerciseNotes().filter(function(n){return n.m!==ex.m||n.n!==ex.n;});if(body.trim())next.push({m:ex.m,n:ex.n,body:body.trim()});if(!writeJSON(exerciseNotesKey(),next))throw Error('저장하지 못했어요. 기존 메모는 유지돼요.');trigger.textContent=body.trim()?'📝':'✎';trigger.classList.toggle('has-note',!!body.trim());refreshBackupStatus();dialog.close();showToast(body.trim()?'종목 메모 저장됨':'종목 메모 삭제됨');}catch(e){dialog.querySelector('[role=alert]').textContent=e.message;}}
+    function updateNoteCount(){dialog.querySelector('.exercise-note-count').textContent=input.value.length+' / 500';}
+    input.addEventListener('input',updateNoteCount);updateNoteCount();
+    function commit(body){try{if(owner!==activeProfile)throw Error('플랜이 변경됐어요. 다시 열어주세요.');if(body.length>500)throw Error('메모는 500자까지 저장할 수 있어요.');var next=exerciseNotes().filter(function(n){return n.m!==ex.m||n.n!==ex.n;});if(body.trim())next.push({m:ex.m,n:ex.n,body:body.trim()});if(!writeJSON(exerciseNotesKey(),next))throw Error('저장하지 못했어요. 기존 메모는 유지돼요.');trigger.innerHTML=exerciseNoteIcon();trigger.setAttribute('aria-label',ex.m+' '+ex.n+' 종목 메모'+(body.trim()?' · 저장됨':''));trigger.classList.toggle('has-note',!!body.trim());refreshBackupStatus();dialog.close();showToast(body.trim()?'종목 메모 저장됨':'종목 메모 삭제됨');}catch(e){dialog.querySelector('[role=alert]').textContent=e.message;}}
     dialog.querySelector('[data-save]').onclick=function(){commit(input.value);};dialog.querySelector('[data-delete]').onclick=function(){commit('');};dialog.querySelector('[data-cancel]').onclick=function(){dialog.close();};
     dialog.onclose=function(){dialog.remove();if(trigger.isConnected)trigger.focus({preventScroll:true});};document.body.appendChild(dialog);dialog.showModal();input.focus();
   }
@@ -2815,17 +2821,17 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   function renderDateRecords(source,removeRecords) {
     var selection=resolveRecordDate(source,recordsSelectedDate,recordsDateContext);
     recordsSelectedDate=selection.date;recordsDateContext=selection.context;
-    var tools=document.createElement('div');tools.className='record-date-tools';
+    var tools=document.createElement('div');tools.className='record-date-tools';tools.setAttribute('role','group');tools.setAttribute('aria-label','날짜 이동');
     tools.innerHTML='<button type="button" data-prev aria-label="이전 날짜">‹</button><input type="date" aria-label="조회 날짜"><button type="button" data-next aria-label="다음 날짜">›</button>';
     var input=tools.querySelector('input');input.value=recordsSelectedDate;input.min=recFilterFrom;input.max=recFilterTo&&recFilterTo<todayStr()?recFilterTo:todayStr();
     function change(value){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');input.value=recordsSelectedDate;return;}if(value&&value<=todayStr()){if((recFilterFrom&&value<recFilterFrom)||(recFilterTo&&value>recFilterTo)){showToast('선택한 날짜는 조회 기간 밖이에요. 기간 필터를 먼저 변경해주세요.','pending');input.value=recordsSelectedDate;return;}recordsSelectedDate=value;renderRecords();}}
     input.onchange=function(){change(input.value);};[-1,1].forEach(function(offset,i){tools.querySelector(i?'[data-next]':'[data-prev]').onclick=function(){var d=new Date(recordsSelectedDate+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+offset);change(d.toISOString().slice(0,10));};});
-    var jump=document.createElement('select');jump.setAttribute('aria-label','조건에 맞는 기록일');
+    var jump=document.createElement('select');jump.className='record-date-jump';jump.setAttribute('aria-label','조건에 맞는 기록일');
     var placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=selection.dates.length?'기록이 있는 날짜로 이동':'조건에 맞는 기록일 없음';jump.appendChild(placeholder);
     selection.dates.slice().reverse().forEach(function(d){var option=document.createElement('option');option.value=d;option.textContent=d;jump.appendChild(option);});jump.value=selection.dates.includes(recordsSelectedDate)?recordsSelectedDate:'';jump.onchange=function(){change(jump.value);};
     recordsListEl.appendChild(tools);recordsListEl.appendChild(jump);
     var runs=dateRecordRuns(source,recordsSelectedDate).filter(function(run){var e=run.entries[0];return (!recFilterFrom||recordsSelectedDate>=recFilterFrom)&&(!recFilterTo||recordsSelectedDate<=recFilterTo)&&(!recordMuscleQuery||entryMuscle(e)===recordMuscleQuery)&&(!recordExerciseQuery||e.n.toLocaleLowerCase('ko-KR').includes(recordExerciseQuery.trim().toLocaleLowerCase('ko-KR')));});
-    var note=document.createElement('p');note.className='stats-note';note.textContent=recordsSelectedDate+' · '+new Set(runs.map(function(r){return r.key;})).size+'개 종목 · '+runs.reduce(function(n,r){return n+r.entries.length;},0)+'세트 · 저장 순서 기준'+(recFilterFrom||recFilterTo||recordExerciseQuery||recordMuscleQuery?' · 필터 적용 중':'')+(recordDataWarning?' · 일부 기록 확인 불가':'');recordsListEl.appendChild(note);
+    var note=document.createElement('p');note.className='stats-note record-date-summary';note.textContent=recordsSelectedDate+' · '+new Set(runs.map(function(r){return r.key;})).size+'개 종목 · '+runs.reduce(function(n,r){return n+r.entries.length;},0)+'세트 · 저장 순서 기준'+(recFilterFrom||recFilterTo||recordExerciseQuery||recordMuscleQuery?' · 필터 적용 중':'')+(recordDataWarning?' · 일부 기록 확인 불가':'');recordsListEl.appendChild(note);
     runs.forEach(function(run,i){var e=run.entries[0],card=document.createElement('article');card.className='date-record-card';var heading=document.createElement('h3');heading.textContent=(i+1)+'. '+e.n;var meta=document.createElement('p');meta.textContent=entryMuscle(e)+' · '+run.entries.length+'세트'+(recordsScope==='all'?' · '+(e._profile||activeProfile):'');card.append(heading,meta);
       run.entries.forEach(function(entry,index){var row=document.createElement('div');row.className='rec-item';var label=document.createElement('span');label.textContent=(index+1)+'세트';var edit=document.createElement('button');edit.type='button';edit.className='record-card-value record-edit-trigger';edit.textContent=(entry.w==='-'?'무게 미입력':entry.w+'kg')+' × '+(entry.reps==='-'?'횟수 미입력':entry.reps+'회');entry._setNo=index+1;edit.onclick=function(){if(entry._profile&&entry._profile!==activeProfile){switchProfile(entry._profile);return;}openRecordEditor(row,entry,edit);};row.append(label,edit);
         if(!entry._profile||entry._profile===activeProfile){var del=document.createElement('button');del.type='button';del.className='btn-hist-del';del.innerHTML=deleteIcon();del.setAttribute('aria-label',entry.n+' '+(index+1)+'세트 기록 삭제');del.onclick=function(){requireSecondClick(del,'확인',function(){removeRecords(function(item){return item.id===entry.id;},true);});};row.appendChild(del);}card.appendChild(row);
@@ -2863,8 +2869,15 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var scope=document.getElementById('recordsScope');
     if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
     scope.innerHTML='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?'플랜: '+activeProfile:'모든 플랜의 기록 · 다른 플랜 기록은 해당 플랜으로 이동해 수정해요.')+'</p>';
-    var viewSwitch=document.createElement('div');viewSwitch.className='stats-periods';viewSwitch.setAttribute('role','group');viewSwitch.setAttribute('aria-label','기록 보기 방식');
-    [['date','날짜별'],['exercise','종목별']].forEach(function(pair){var b=document.createElement('button');b.type='button';b.textContent=pair[1];b.dataset.recordsView=pair[0];b.setAttribute('aria-pressed',String(recordsViewMode===pair[0]));b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsViewMode=pair[0];renderRecords();};viewSwitch.appendChild(b);});scope.appendChild(viewSwitch);
+    var viewSwitch=document.createElement('div');viewSwitch.className='records-view-tabs';viewSwitch.setAttribute('role','tablist');viewSwitch.setAttribute('aria-label','기록 보기 방식');
+    [['date','날짜별','하루의 운동 흐름'],['exercise','종목별','종목의 변화와 누적']].forEach(function(pair){
+      var b=document.createElement('button');b.type='button';b.id='recordsTab-'+pair[0];b.dataset.recordsView=pair[0];b.setAttribute('role','tab');b.setAttribute('aria-controls','recordsList');b.setAttribute('aria-selected',String(recordsViewMode===pair[0]));b.tabIndex=recordsViewMode===pair[0]?0:-1;
+      b.innerHTML='<strong>'+pair[1]+'</strong><small>'+pair[2]+'</small>';
+      b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsViewMode=pair[0];renderRecords();document.getElementById('recordsTab-'+pair[0]).focus({preventScroll:true});};
+      b.onkeydown=function(e){if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();var target=e.key==='Home'?'date':e.key==='End'?'exercise':pair[0]==='date'?'exercise':'date';scope.querySelector('[data-records-view="'+target+'"]').click();};
+      viewSwitch.appendChild(b);
+    });scope.prepend(viewSwitch);
+    recordsListEl.setAttribute('role','tabpanel');recordsListEl.setAttribute('aria-labelledby','recordsTab-'+recordsViewMode);recordsListEl.tabIndex=0;
     scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;renderRecords();};});
     document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'날짜 옆에 소속 플랜을 표시해요.':'현재 플랜의 기록을 표시해요.';
     var sourceRecords=recordsSource().filter(function(r){return r.date<=todayStr();});

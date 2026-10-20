@@ -1,7 +1,7 @@
 name: Integration and release Chromium and PWA
 on:
   push:
-    branches: [test/WORKOUT-20261018-001-integration, work/WORKOUT-20261019-001, release/WORKOUT-20261020-001]
+    branches: [test/WORKOUT-20261018-001-integration, work/WORKOUT-20261019-001, release/WORKOUT-20261020-001, work/WORKOUT-20261020-003]
   pull_request:
     branches: [test/WORKOUT-20261018-001-integration, main]
 permissions:
@@ -33,7 +33,9 @@ jobs:
           node --check sw.js
           base="${{ github.event.pull_request.base.sha }}"
           if [ -z "$base" ]; then
-            if [ "$GITHUB_REF_NAME" = release/WORKOUT-20261020-001 ]; then
+            if [ "$GITHUB_REF_NAME" = work/WORKOUT-20261020-003 ]; then
+              base=4cc4ff80e6b647317211959d30421d684b065ab9
+            elif [ "$GITHUB_REF_NAME" = release/WORKOUT-20261020-001 ]; then
               base=1b0486e920a5f24cd07c9ad2a693dabb6639a1cb
             else
               base=9591e342b8e61e6bab13f052d59d9bdae2e11c88
@@ -60,6 +62,7 @@ jobs:
           mkdir -p test-results
           set -o pipefail
           npm run test:pwa 2>&1 | tee test-results/pwa.log
+          PWA_BASELINE=4cc4ff80e6b647317211959d30421d684b065ab9 npm run test:pwa 2>&1 | tee test-results/pwa-v154.log
       - name: Preserve evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
