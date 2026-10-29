@@ -2952,3 +2952,30 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
   .bulk-app .ai-schedule-row select{width:100%;min-width:0;min-height:44px;padding:8px;font-size:13px}
 }
 .bulk-app .rep-ex-name,.bulk-app .exercise-name-read{word-break:keep-all;overflow-wrap:anywhere}
+
+/* WORKOUT-20261020-002: reading first, viewport-aware editing, focused navigation. */
+.exercise-note-dialog [hidden],.bulk-app .record-filter-panel[hidden]{display:none!important}
+.exercise-note-read{padding:8px 20px 24px;white-space:pre-wrap;overflow-wrap:anywhere;overflow-y:auto;min-height:0;font:16px/1.75 var(--ui);color:#243047}
+.exercise-note-read.is-empty{color:#738097}
+.exercise-note-actions [data-edit]{background:#315bea;color:white;min-width:76px}
+.exercise-note-help,.exercise-note-help small{font-size:12px}
+.exercise-note-dialog .exercise-note-content{display:flex;flex-direction:column}
+.exercise-note-dialog textarea{min-height:64px;flex:1;max-height:38dvh;resize:vertical}
+.exercise-note-help{flex:none}
+.bulk-app .record-date-tools [data-date-picker]{font:700 18px var(--ui);min-height:48px;border:1px solid #dde5f1;border-radius:14px;background:#f1f5fc;color:#253e72}
+.workout-date-dialog{border:1px solid #e0e7f0;border-radius:24px;padding:20px;box-shadow:0 20px 70px #1d355733}
+.workout-date-head h2{font-size:19px;letter-spacing:-.4px}
+.workout-date-nav{padding:12px 0}
+.workout-date-grid button{border-radius:12px;min-height:40px}
+.workout-date-grid button[aria-current=date]{box-shadow:inset 0 0 0 1px #6485e5}
+.workout-date-grid button[aria-pressed=true]{background:#315bea;color:white}
+.workout-date-actions button{min-height:44px;border-radius:12px}
+.ai-step-title{display:flex;align-items:center;gap:10px;margin:20px 0 12px;font:700 15px var(--ui);color:#315bea}
+.ai-step-title span{color:#26364f}
+.ai-base-survey .ai-base-fields,.ai-base-survey .ai-day-details,.ai-base-survey .ai-base-notes{padding:14px;border:1px solid #e4eaf3;border-radius:16px;background:#f8faff}
+.ai-base-survey .ai-base-notes{display:block}
+.ai-base-survey .ai-day-picker{margin-top:12px}
+.bulk-app .ai-survey-section{position:relative;border:1px solid #e1e8f2;border-radius:18px;background:linear-gradient(145deg,#f8faff,#fff);padding:16px;margin:12px 0}
+.bulk-app .ai-survey-section>h3{font-size:16px;color:#263e72;margin-top:0}
+@media(max-height:500px){.exercise-note-heading{padding-top:10px;padding-bottom:6px}.exercise-note-heading p{margin-top:2px}.exercise-note-actions{padding-top:8px;padding-bottom:8px}.exercise-note-dialog textarea{min-height:48px}}
+@media(max-width:360px){.workout-date-dialog{padding:12px}.workout-date-grid button{min-height:38px}}
