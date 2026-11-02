@@ -10,7 +10,7 @@ for(const width of [320,390])for(const scenario of ['empty','partial','full']){
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.evaluate(({scenario,keys,name})=>{
- localStorage.setItem('bulk-routine-v9',JSON.stringify(keys.map((key,i)=>({key,letter:['월','화','수','목','금','토','일'][i],title:'기존 '+key,cardio:false,ex:scenario==='empty'||scenario==='partial'&&i!==1?[]:[{uid:'old-'+key,n:name,m:'삼두',s:3,r:'8~12',rir:'2'}]}))));
+ localStorage.setItem('bulk-routine-v9',JSON.stringify(keys.map((key,i)=>({key,letter:['월','화','수','목','금','토','일'][i],title:'기존 '+key,cardio:false,ex:scenario==='empty'||scenario==='partial'&&i!==1?[]:[{uid:'old-'+key,n:name,m:'삼두',s:3,r:'8~12',rir:'2'},...(scenario==='full'?[{uid:'second-'+key,n:'시티드 케이블 푸시다운(로프)',m:'삼두',s:2,r:'12',rir:'3'}]:[])]}))));
  localStorage.setItem('bulk-routine-log-v1',JSON.stringify([{date:'2026-10-01',dayKey:'mon',entries:[{id:'private-record',n:name,m:'삼두',w:'30',reps:'8'}]}]));
  localStorage.setItem('geunlog-athlete-info-v1',JSON.stringify({goal:'hypertrophy',experience:'one3',equipment:'덤벨',excluded:'',preferences:''}));
  localStorage.setItem('bulk-routine-memos-v1',JSON.stringify([{title:'private memo',body:'DO_NOT_EXPORT_MEMO'}]));
@@ -23,17 +23,21 @@ for(const width of [320,390])for(const scenario of ['empty','partial','full']){
  async function open(){await page.locator('#btnRoutineEdit').click();await page.locator('#btnAiMenu').click();await page.locator('#btnBaseAi').click();}
  await open();const survey=page.locator('.ai-base-survey');await survey.locator('[data-day-chip="0"]').click();await survey.locator('[data-day-chip="2"]').click();
  const before=await snapshot();await survey.locator('[data-exchange-copy]').click();const prompt=await survey.locator('[data-exchange-prompt]').inputValue();assert.equal(prompt,await page.evaluate(()=>window.copied));assert(!prompt.includes('DO_NOT_EXPORT'));assert(!prompt.includes('private-record'));assert(!prompt.includes('recentTraining'));assert.deepEqual(await snapshot(),before);
- const start=prompt.indexOf('[반환 형식]\n')+'[반환 형식]\n'.length,end=prompt.indexOf('\n[사용자가');const json=JSON.parse(prompt.slice(start,end));for(const d of json.days){d.title='새 기본 '+d.key;d.exercises=[{name,muscle:'삼두',sets:4,reps:'10~12',rir:'1~2'}];}
+ const start=prompt.indexOf('[반환 형식]\n')+'[반환 형식]\n'.length,end=prompt.indexOf('\n[사용자가');const json=JSON.parse(prompt.slice(start,end));for(const d of json.days){d.title='새 기본 '+d.key;d.exercises=[...(scenario==='full'?[{name:'시티드 케이블 푸시다운(로프)',muscle:'삼두',sets:2,reps:'12~15',rir:'3'}]:[]),{name,muscle:'삼두',sets:4,reps:'10~12',rir:'1~2'}];}
  const input=survey.locator('[data-exchange-json]'),check=survey.locator('[data-exchange-preview]');
  await input.fill('{bad');await check.click();assert((await survey.locator('[data-exchange-status]').textContent()).includes('JSON'));assert.deepEqual(await snapshot(),before);
- await input.fill(JSON.stringify(json));await check.click();const preview=page.locator('.ai-base-preview');await preview.waitFor();assert.deepEqual(await snapshot(),before);assert((await preview.textContent()).includes('임시 루틴이 우선'));assert((await preview.textContent()).includes('변경 전'));
+ await input.fill(JSON.stringify(json));
+ if(scenario==='empty'){await page.setViewportSize({width,height:360});await input.focus();await input.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,`base-exchange-paste-${width}.png`)});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.setViewportSize({width,height:844});}
+ await check.click();const preview=page.locator('.ai-base-preview');await preview.waitFor();assert.deepEqual(await snapshot(),before);assert((await preview.textContent()).includes('임시 루틴이 우선'));assert((await preview.textContent()).includes('변경 전'));
  await preview.locator('[data-day="1"] summary').first().click();await preview.locator('[data-day="1"] [data-day-select]').uncheck();
  if(scenario==='full'){
+  await page.evaluate(()=>{const d=JSON.parse(localStorage.getItem('bulk-routine-v9'));d[1].title='changed while preview';localStorage.setItem('bulk-routine-v9',JSON.stringify(d));});
+  await preview.locator('[data-yes]').click();assert((await preview.locator('[data-error]').textContent()).includes('바뀌'));await page.evaluate(raw=>localStorage.setItem('bulk-routine-v9',raw),before['bulk-routine-v9']);pass(width+'px stale preview apply blocked');
   await page.evaluate(()=>{const original=Storage.prototype.setItem;window.restoreStore=()=>Storage.prototype.setItem=original;Storage.prototype.setItem=function(k,v){if(k==='geunlog-ai-proposal-history-v1')throw Error('synthetic quota');return original.call(this,k,v);};});
   await preview.locator('[data-yes]').click();assert((await preview.locator('[data-error]').textContent()).includes('저장하지'));assert.deepEqual(await snapshot(),before);await page.evaluate(()=>window.restoreStore());pass(width+'px transaction failure rollback');
  }
  await page.setViewportSize({width,height:360});await preview.locator('[data-yes]').scrollIntoViewIfNeeded();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.join(out,`base-exchange-${scenario}-${width}.png`)});await page.setViewportSize({width,height:844});
- await preview.locator('[data-yes]').click();await preview.waitFor({state:'detached'});const after=await snapshot(),saved=JSON.parse(after['bulk-routine-v9']),prior=JSON.parse(before['bulk-routine-v9']);assert.equal(saved[0].ex[0].s,4);assert.equal(saved[0].title,'새 기본 mon');for(let i=1;i<7;i++)assert.deepEqual(saved[i],prior[i]);
+ await preview.locator('[data-yes]').click();await preview.waitFor({state:'detached'});const after=await snapshot(),saved=JSON.parse(after['bulk-routine-v9']),prior=JSON.parse(before['bulk-routine-v9']);assert.equal(saved[0].ex[saved[0].ex.length-1].s,4);if(scenario==='full')assert.equal(saved[0].ex[0].n,'시티드 케이블 푸시다운(로프)');assert.equal(saved[0].title,'새 기본 mon');for(let i=1;i<7;i++)assert.deepEqual(saved[i],prior[i]);
  for(const k of Object.keys(before))if(!['bulk-routine-v9','geunlog-ai-proposal-history-v1'].includes(k))assert.equal(after[k],before[k],k);
  // Compare with the actual manual save() path, same resulting fields. IDs are row identity, not content.
  const app=fs.readFileSync(path.join(root,'app.js'),'utf8');function fn(n){const a=app.indexOf('  function '+n+'(');return app.slice(a,app.indexOf('\n  }',a)+4);}
