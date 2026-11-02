@@ -2979,3 +2979,15 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app .ai-survey-section>h3{font-size:16px;color:#263e72;margin-top:0}
 @media(max-height:500px){.exercise-note-heading{padding-top:10px;padding-bottom:6px}.exercise-note-heading p{margin-top:2px}.exercise-note-actions{padding-top:8px;padding-bottom:8px}.exercise-note-dialog textarea{min-height:48px}}
 @media(max-width:360px){.workout-date-dialog{padding:12px}.workout-date-grid button{min-height:38px}}
+
+/* External AI exchange: confined to the base-routine survey and preview. */
+.base-exchange{border-top:1px solid var(--line,#d6dce5);margin-top:20px;padding-top:16px;min-width:0}
+.base-exchange label{display:flex;flex-direction:column;gap:6px;margin:12px 0;font-weight:600}
+.base-exchange textarea{box-sizing:border-box;width:100%;min-width:0;max-width:100%;font:inherit;font-size:16px;padding:10px;resize:vertical}
+.base-exchange p,.base-exchange-diff{overflow-wrap:anywhere}
+.base-exchange button{min-height:44px;white-space:normal;padding:10px 14px}
+.base-exchange [data-exchange-prompt]{max-height:240px}
+.base-exchange [data-exchange-json]{max-height:320px}
+.base-exchange-diff{margin:16px 0;padding:12px;border:1px solid var(--line,#d6dce5);border-radius:12px}
+.base-exchange-diff ol{list-style:none;padding-left:0}
+.base-exchange-diff li{padding:4px 0}

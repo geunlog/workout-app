@@ -67,6 +67,7 @@ jobs:
           npm run test:pwa 2>&1 | tee test-results/pwa.log
           PWA_BASELINE=4cc4ff80e6b647317211959d30421d684b065ab9 npm run test:pwa 2>&1 | tee test-results/pwa-v154.log
           PWA_BASELINE=1a7df1a6a5bb02e85f11839821bda489dfa46c8e npm run test:pwa 2>&1 | tee test-results/pwa-v155.log
+          PWA_BASELINE=2ddde8baee557c14c219c21faccffed1eca992f8 npm run test:pwa 2>&1 | tee test-results/pwa-v156.log
       - name: Preserve evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
