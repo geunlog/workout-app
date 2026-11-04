@@ -4611,7 +4611,7 @@ function estimateSession(day) {
       if(!slots.some(function(s){return s.mode!=='keep';}))throw new Error('변경할 요일을 하나 이상 선택해주세요.');
       if(slots.some(function(s){return s.mode==='generate'&&![30,45,60,75,90,120].includes(s.minutes);}))throw new Error('요일별 운동 시간을 확인해주세요.');
       var data={goal:goal,experience:experience,slots:slots,notes:dialog.querySelector('[data-notes]').value.trim()};
-      section.querySelectorAll('[data-exchange-field]').forEach(function(el){data[el.dataset.exchangeField]=el.value.trim();});return data;
+      dialog.querySelectorAll('[data-exchange-field]').forEach(function(el){data[el.dataset.exchangeField]=el.value.trim();});return data;
     }
     section.querySelector('[data-exchange-copy]').onclick=async function(){try{
       var conditions=survey(),fingerprint=baseExchangeFingerprint(),requestId=crypto.randomUUID(),saved=readRoutineForProfile(activeProfile);
