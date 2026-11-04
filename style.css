@@ -2991,3 +2991,16 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .base-exchange-diff{margin:16px 0;padding:12px;border:1px solid var(--line,#d6dce5);border-radius:12px}
 .base-exchange-diff ol{list-style:none;padding-left:0}
 .base-exchange-diff li{padding:4px 0}
+
+/* Independent manual exchange; reuse app controls and modal. */
+.ai-manual-survey textarea,.ai-manual-survey select{font-size:16px;max-width:100%;box-sizing:border-box}
+.ai-manual-survey button,.ai-manual-survey summary{min-height:44px}
+.ai-manual-survey .base-exchange{min-width:0;overflow-wrap:anywhere}
+.ai-manual-survey textarea{width:100%;border:1px solid #dbe2ea;border-radius:12px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ai-manual-survey [data-exchange-prompt]{max-height:180px}
+.ai-manual-survey .base-exchange button{width:100%;margin:12px 0;border-radius:12px;padding:12px}
+.ai-manual-survey details{margin:12px 0}
+.ai-manual-survey .data-confirm-actions{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.ai-manual-survey [hidden]{display:none!important}
+.ai-manual-survey .base-exchange .btn-save-now{background:#2563eb;color:#fff;border:1px solid #2563eb;font:inherit;font-weight:700;box-shadow:0 2px 5px #2563eb20}
+.ai-manual-survey .base-exchange .btn-save-now:focus-visible{outline:3px solid #93c5fd;outline-offset:3px}
