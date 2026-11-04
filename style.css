@@ -3004,3 +3004,22 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .ai-manual-survey [hidden]{display:none!important}
 .ai-manual-survey .base-exchange .btn-save-now{background:#2563eb;color:#fff;border:1px solid #2563eb;font:inherit;font-weight:700;box-shadow:0 2px 5px #2563eb20}
 .ai-manual-survey .base-exchange .btn-save-now:focus-visible{outline:3px solid #93c5fd;outline-offset:3px}
+
+/* v159: manual exchange only; no changes to shared recommendation calculations. */
+.exchange-progress{font:600 12px/1.6 var(--ui);color:#315bea;background:#eff4ff;padding:8px 12px;border-radius:12px;margin:0 0 8px;flex:none}
+.ai-manual-survey .exchange-advanced summary small{display:block;font-weight:400;color:#526078;line-height:1.5;overflow-wrap:anywhere}
+.ai-manual-survey .ai-base-day{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.ai-manual-survey .ai-base-day-label{grid-column:1/-1;flex-direction:row;gap:8px}
+.ai-manual-survey .ai-base-day select{min-height:44px;font-size:16px;padding:8px 4px}
+.ai-manual-survey .exchange-show-days{width:100%;border:1px solid #dbe2ea;background:white;color:#315bea;border-radius:12px;font:600 14px var(--ui);padding:8px}
+.ai-manual-survey [data-day-chip][data-mode=rest]{background:#f1f4f8;box-shadow:inset 0 0 0 2px #6b7890;color:#34435d}
+.exchange-result-summary{border:1px solid #dce6fa;background:#f7faff;border-radius:16px;padding:12px;margin-bottom:12px}
+.exchange-result-summary h3{margin:0 0 8px;font-size:16px}
+.exchange-result-day{padding:8px 0;border-top:1px solid #e1e8f2}
+.exchange-result-day .ai-time-note{margin:6px 0}
+.ai-exchange-preview .ai-edit-exercise{padding:10px}
+.ai-exchange-preview .ai-edit-pair{grid-template-columns:minmax(0,1fr)}
+.ai-exchange-preview input,.ai-exchange-preview select{font-size:16px;min-height:44px;max-width:100%;min-width:0}
+.ai-exchange-preview button,.ai-exchange-preview summary{min-height:44px}
+.ai-exchange-preview .exchange-analysis>summary{padding:12px;border:1px solid #dbe2ea;border-radius:12px;color:#315bea;font-weight:600}
+.ai-exchange-preview .data-confirm-actions{padding-bottom:max(12px,env(safe-area-inset-bottom))}
