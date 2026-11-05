@@ -3023,3 +3023,11 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .ai-exchange-preview button,.ai-exchange-preview summary{min-height:44px}
 .ai-exchange-preview .exchange-analysis>summary{padding:12px;border:1px solid #dbe2ea;border-radius:12px;color:#315bea;font-weight:600}
 .ai-exchange-preview .data-confirm-actions{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+
+/* v160 external time choice and original measurement navigation */
+.exchange-time-choice{padding:12px;margin:12px 0;border:1px solid #e6c98c;border-radius:12px;background:#fff8ed;overflow-wrap:anywhere}
+.exchange-time-choice textarea{width:100%;box-sizing:border-box;min-width:0;font-size:16px;max-height:180px}
+.exchange-time-choice button,.body-point-picker button{min-height:44px}
+.body-point-picker{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.body-point-picker label,.body-point-picker span{width:100%;overflow-wrap:anywhere}
+.body-point-picker input{width:100%;min-height:44px}
