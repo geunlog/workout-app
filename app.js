@@ -4693,7 +4693,7 @@ function estimateSession(day) {
         overview.innerHTML='<h3>적용할 요일 · '+chosen.length+'일</h3>'+chosen.map(function(day){return '<div class="exchange-result-day"><strong>'+['일','월','화','수','목','금','토'][new Date(day.date+'T00:00:00Z').getUTCDay()]+'요일 · '+aiDaySummary(day)+'</strong>'+(day.rest?'':'<p>예상 '+estimateSession(day)+'분 / 설정 '+day.requestedMinutes+'분 · 시간 활용 '+Math.round(estimateSession(day)/day.requestedMinutes*100)+'%</p>'+(estimateSession(day)>day.requestedMinutes?'<p class="ai-allocation-warning">설정시간을 초과해요.</p>':''))+'</div>';}).join('')+(!chosen.length?'<p>적용할 요일을 선택해주세요.</p>':'');
         var allocation=dialog.querySelector('[data-compare]');
         if(!allocation.querySelector('.exchange-analysis')){
-          var detail=document.createElement('details');detail.className='exchange-analysis';detail.open=analysisOpen;detail.ontoggle=function(){analysisOpen=detail.open;};detail.innerHTML='<summary>주간 전체 루틴·운동량·회복 상세</summary>';
+          var detail=document.createElement('details');detail.className='exchange-analysis';detail.open=analysisOpen;detail.ontoggle=function(){if(detail.isConnected)analysisOpen=detail.open;};detail.innerHTML='<summary>주간 전체 루틴·운동량·회복 상세</summary>';
           while(allocation.firstChild)detail.appendChild(allocation.firstChild);
           allocation.appendChild(detail);
         }
@@ -4722,7 +4722,11 @@ function estimateSession(day) {
           heading.textContent='연속 운동 배치 '+overlaps.length+'건 · '+[...affectedDays].join('·')+'요일 · '+[...muscles].join('·');
           overview.appendChild(group);
         }
-      };refresh();
+      };
+      function rememberAnalysis(){var detail=dialog.querySelector('.exchange-analysis');if(detail)analysisOpen=detail.open;}
+      dialog.querySelector('[data-preview]').addEventListener('change',rememberAnalysis,true);
+      dialog.querySelector('[data-preview]').addEventListener('click',rememberAnalysis,true);
+      refresh();
       dialog.querySelector('[data-preview]').addEventListener('change',refresh);dialog.querySelector('[data-preview]').addEventListener('click',refresh);
     }
     addTemporaryClose(dialog);watchAiFeedback(dialog.querySelector('[data-error]'));dialog.addEventListener('keydown',function(e){e.stopPropagation();});dialog.onclose=function(){dialog.remove();};dialog.querySelector('[data-no]').onclick=function(){dialog.close();};
