@@ -3031,3 +3031,6 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .body-point-picker{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
 .body-point-picker label,.body-point-picker span{width:100%;overflow-wrap:anywhere}
 .body-point-picker input{width:100%;min-height:44px}
+.exchange-time-choice .ai-day-actions{display:flex;flex-wrap:wrap;gap:8px}
+.exchange-time-choice button{border:1px solid #d8dfed;border-radius:12px;padding:10px 14px;background:#f3f5fa;color:#33435f;font:inherit;font-size:16px;font-weight:600;cursor:pointer}
+.exchange-time-choice button.btn-save-now{background:#315bea;color:#fff;border-color:#315bea}
