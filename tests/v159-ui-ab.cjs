@@ -28,6 +28,7 @@ for(const width of [320,360,390,430])for(const scenario of ['empty','partial','f
  for(const [field,value] of Object.entries({equipment:'덤벨·케이블',preferences:'푸시다운',excluded:'딥스',required:name}))await survey.locator('[data-exchange-field="'+field+'"]').fill(value);
  await survey.locator('.exchange-advanced summary').click();
  if(isB){assert.equal(await survey.locator('[data-base-day]:visible').count(),2);assert((await survey.locator('[data-advanced-summary]').textContent()).includes('필수:'));}
+ const fixed=await survey.locator('[data-exchange-json]').isHidden();
  const before=await snapshot();
  const geometry=()=>survey.evaluate(d=>{const b=d.querySelector('.temporary-dialog-body');return {scrollHeight:b.scrollHeight,clientHeight:b.clientHeight,scrollRange:b.scrollHeight-b.clientHeight,overflow:document.documentElement.scrollWidth>innerWidth,modalOverflow:b.scrollWidth>b.clientWidth};});
  const initial=await geometry();
@@ -48,10 +49,28 @@ for(const width of [320,360,390,430])for(const scenario of ['empty','partial','f
  const previewAt=performance.now();await survey.locator('[data-exchange-preview]').click();const preview=page.locator('.ai-base-preview');await preview.waitFor();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));const previewMs=performance.now()-previewAt;
  const result=await preview.evaluate(d=>{const b=d.querySelector('.temporary-dialog-body');return {scrollHeight:b.scrollHeight,clientHeight:b.clientHeight,scrollRange:b.scrollHeight-b.clientHeight,overflow:document.documentElement.scrollWidth>innerWidth,modalOverflow:b.scrollWidth>b.clientWidth};});
  if(isB){assert.equal(await preview.locator('.exchange-analysis').getAttribute('open'),null);assert((await preview.locator('.exchange-result-summary').textContent()).includes('2일'));assert.equal(await preview.locator('.base-exchange-diff').getAttribute('open'),null);}
+ async function checkWarnings(){
+  const original=await preview.locator('.ai-week-row small').allTextContents();
+  if(fixed){
+   const grouped=preview.locator('.exchange-overlaps');
+   assert.equal(await grouped.count(),original.length?1:0);
+   if(original.length){
+    assert(await grouped.locator('summary').isVisible());
+    await grouped.locator('summary').click();
+    const rows=await grouped.locator('p').allTextContents();
+    assert.deepEqual(rows.map(s=>s.split('요일 · ').slice(1).join('요일 · ')),original);
+    assert(await grouped.locator('p').first().isVisible());
+    await grouped.locator('summary').click();
+   }
+  }
+  return original;
+ }
+ const warnings=await checkWarnings();
  if(isB){
   const details=preview.locator('.exchange-analysis');await details.locator('summary').first().click();
-  await preview.locator('[data-day="0"] [data-ex-sets]').first().fill('5');await preview.locator('[data-day="0"] [data-ex-sets]').first().press('Tab');
-  assert((await preview.locator('.exchange-result-summary').textContent()).includes('5세트'));
+  await preview.locator('[data-day="0"] [data-ex-sets]').first().fill('1');await preview.locator('[data-day="0"] [data-ex-sets]').first().press('Tab');
+  assert((await preview.locator('.exchange-result-summary').textContent()).includes('1세트'));
+  const edited=await checkWarnings();if(scenario==='full')assert(edited.length<warnings.length);
   assert.equal(await preview.locator('.exchange-analysis').getAttribute('open'),'');
   await preview.locator('.exchange-analysis>summary').click();
   await preview.locator('[data-day="0"] [data-ex-sets]').first().fill('4');await preview.locator('[data-day="0"] [data-ex-sets]').first().press('Tab');
@@ -59,7 +78,7 @@ for(const width of [320,360,390,430])for(const scenario of ['empty','partial','f
  assert.deepEqual(await snapshot(),before);
  await preview.evaluate(d=>d.querySelector('.temporary-dialog-body').scrollTop=0);
  await preview.screenshot({path:path.join(out,`v159-${process.env.AB_LABEL}-${width}-${scenario}-preview.png`)});
- evidence.push({width,scenario,initial,editing,after,result,openMs,copyMs,previewMs,prompt:normalized,storageUnchanged:true,externalRequests:external,errors});
+ evidence.push({width,scenario,initial,editing,after,result,openMs,copyMs,previewMs,warnings,prompt:normalized,storageUnchanged:true,externalRequests:external,errors});
  assert.equal(external,0);assert.deepEqual(errors,[]);assert(!initial.overflow&&!after.overflow&&!result.overflow&&!result.modalOverflow);
  await context.close();
 }
