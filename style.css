@@ -3034,3 +3034,55 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .exchange-time-choice .ai-day-actions{display:flex;flex-wrap:wrap;gap:8px}
 .exchange-time-choice button{border:1px solid #d8dfed;border-radius:12px;padding:10px 14px;background:#f3f5fa;color:#33435f;font:inherit;font-size:16px;font-weight:600;cursor:pointer}
 .exchange-time-choice button.btn-save-now{background:#315bea;color:#fff;border-color:#315bea}
+
+/* WORKOUT-20261106-001: scoped density changes; calculations and storage unchanged. */
+.ai-exchange-preview .temporary-dialog-header{padding-bottom:8px}
+.ai-exchange-preview .temporary-dialog-body{padding:0 6px 12px 0;scroll-padding-block:12px}
+.ai-exchange-preview .ai-preview-meta{margin:4px 0 10px;font-size:13px;line-height:1.5}
+.ai-exchange-preview .ai-editor-intro{font-size:13px;margin:8px 0}
+.ai-exchange-preview .exchange-result-summary{padding:10px;margin:8px 0;background:#f5f8ff}
+.ai-exchange-preview .exchange-result-day{padding:6px 0}
+.ai-exchange-preview .exchange-result-day p{margin:4px 0;font-size:13px}
+.ai-exchange-preview .exchange-time-choice{margin:6px 0;padding:10px}
+.ai-exchange-preview .exchange-time-choice h3{margin:0 0 6px;font-size:16px}
+.ai-exchange-preview .exchange-time-choice p{margin:6px 0;font-size:13px;line-height:1.5}
+.ai-exchange-preview .exchange-time-choice.is-accepted{background:#edf8f3;border-color:#71b497}
+.ai-exchange-preview .exchange-time-choice.is-accepted h3{color:#166344}
+.ai-exchange-preview [data-time-accept][aria-pressed=true]{background:#166344;border-color:#166344}
+.ai-exchange-preview .ai-edit-day{margin:8px 0}
+.ai-exchange-preview .ai-edit-day-body{padding:8px}
+.ai-exchange-preview .ai-edit-day>summary small,
+.ai-exchange-preview [data-timing]>.ai-time-note:first-child,
+.ai-exchange-preview [data-timing]>.ai-session-time{display:none}
+.ai-exchange-preview .ai-edit-exercise{padding:8px;margin:6px 0;border:1px solid #e2e8f2;box-shadow:none}
+.ai-exchange-preview .ai-edit-pair{grid-template-columns:86px minmax(0,1fr);gap:6px}
+.ai-exchange-preview .ai-edit-pair>label:first-child{flex-direction:column;align-items:stretch;gap:4px}
+.ai-exchange-preview .ai-edit-pair>label:first-child select{width:100%}
+.ai-exchange-preview .ai-edit-pair label,.ai-exchange-preview .ai-edit-spec label{font-size:12px;margin:0}
+.ai-exchange-preview .ai-edit-row-actions{margin-top:6px}
+.ai-exchange-preview .exchange-analysis>summary,.ai-exchange-preview .base-exchange-diff>summary{padding:8px;align-content:center}
+.ai-exchange-preview .base-exchange-diff{margin:8px 0;padding:4px}
+.ai-exchange-preview [data-compare]{margin:8px 0}
+.ai-exchange-preview .data-confirm-actions{position:static;flex-shrink:0;padding:8px 0 max(8px,env(safe-area-inset-bottom));gap:8px}
+.bulk-app .ai-adjustment .ai-survey-section{padding:12px 0;margin:10px 0;border:0;border-top:1px solid var(--line);border-radius:0;background:none;box-shadow:none}
+.bulk-app .ai-adjustment .ai-survey-section h3{margin:4px 0 10px;font-size:16px}
+.bulk-app .ai-adjustment .adjustment-note{font-size:13px;line-height:1.5;margin:6px 0}
+.bulk-app .ai-adjustment .ai-record-summary{display:grid;gap:4px;margin:8px 0;padding:0;list-style:none}
+.bulk-app .ai-adjustment .ai-record-summary li{display:grid;grid-template-columns:84px minmax(0,1fr);gap:8px;padding:8px;background:var(--sunken);border-radius:8px;font-size:13px}
+.bulk-app .ai-adjustment .ai-record-summary li span{overflow-wrap:anywhere}
+.bulk-app .ai-adjustment .ai-schedule-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
+.bulk-app .ai-adjustment .ai-schedule-row>strong{grid-column:1/-1;font-size:14px}
+.bulk-app .ai-adjustment select,.bulk-app .ai-adjustment textarea,.bulk-app .ai-adjustment input{font-size:16px;min-height:44px;max-width:100%;min-width:0}
+.bulk-app .ai-adjustment #aiBulkMinutes{padding:8px;background:var(--sunken);border-radius:12px}
+.bulk-app .weekly-plan-card .bar-label,.bulk-app .weekly-plan-card .bar-val{font-size:14px}
+.bulk-app .weekly-plan-card .bar-track{height:10px}
+.bulk-app .app-guide-body.guide-tiles{gap:0}
+.bulk-app .app-guide .guide-tile{padding:12px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;box-shadow:none}
+.bulk-app .app-guide .guide-tile h4{margin:0 0 4px}
+.bulk-app .app-guide .guide-tile p{font-size:14px;line-height:1.6}
+.body-graph-detail:has(.body-day-heading){padding:8px;background:#f5f8ff}
+.body-graph-detail .body-day-record{padding:6px 0 6px 8px}
+.body-graph-detail .body-day-record dl{gap:4px 12px;margin-top:6px}
+.body-graph-detail .body-day-record dt,.body-chart .body-muted{font-size:12px}
+.body-point-picker{padding:8px;border:1px solid #dfe6f2;border-radius:12px;background:#fff;gap:6px}
+.body-point-picker button{min-width:64px;border:1px solid #d8dfed;border-radius:10px;background:#f3f6fc;color:#315bea;font:600 14px var(--ui)}

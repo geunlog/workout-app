@@ -23,6 +23,11 @@ jobs:
           node-version: '22.14.0'
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Use Ubuntu archive for test dependencies
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
       - run: npx --no-install playwright install --with-deps chromium
       - run: sudo apt-get install -y fonts-noto-cjk
       - name: Static regression

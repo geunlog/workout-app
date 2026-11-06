@@ -1,0 +1,37 @@
+// Real Chromium clicks/keyboard on the same body calendar; synthetic data only.
+const fs=require('fs'),path=require('path'),os=require('os'),cp=require('child_process'),http=require('http'),assert=require('assert/strict'),{chromium}=require('playwright');
+const root=path.resolve('.'),base='ad6978476b7242caf9cc95cff552091aa6745aa0',a=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-A-')),out=path.join(root,'test-results/calendar-review');fs.mkdirSync(out,{recursive:true});
+for(const f of ['index.html','app.js','style.css','sw.js','manifest.webmanifest'])fs.writeFileSync(path.join(a,f),cp.execFileSync('git',['show',base+':'+f],{maxBuffer:5e6}));
+const server=http.createServer((req,res)=>{try{const parts=new URL(req.url,'http://localhost').pathname.split('/').filter(Boolean),arm=parts.shift(),f=parts.join('/')||'index.html';if(!/^[\w.-]+$/.test(f))throw Error();res.setHeader('Content-Type',f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(path.join(arm==='A'?a:root,f)));}catch{res.writeHead(404).end();}});
+const report={baseline:base,environment:{node:process.version,platform:process.platform,timeZone:'Asia/Seoul',viewportHeight:844,notes:'Real Chromium calendar clicks and keyboard. No latency benchmark. Android keyboard NOT_RUN.'},cases:[]};
+const snapshot=p=>p.evaluate(()=>Object.fromEntries(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)])));
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch();report.environment.chromium=browser.version();try{
+for(const arm of ['A','B'])for(const width of [320,360,390,430])for(const route of ['add','edit','range','history']){
+ const row={arm,width,route,opens:0,closes:0,dateSelections:0,dateCorrect:0,preSaveChanges:0,overflow:0,errors:[]};report.cases.push(row);
+ const p=await browser.newPage({viewport:{width,height:844},timezoneId:'Asia/Seoul',serviceWorkers:'block'});p.on('pageerror',e=>row.errors.push({name:e.name,message:e.message}));await p.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());await p.goto('http://127.0.0.1:'+server.address().port+'/'+arm+'/');
+ await p.evaluate(()=>{const records=['2026-01-15T10:00','2026-01-31T10:00','2026-02-12T10:00'].map((at,i)=>({id:'calendar-synthetic-'+i,at,device:'synthetic',note:'',waistUnit:'cm',weight:80+i/10,muscle:40,fatPercent:20,fatMass:null,waist:85,createdAt:at+'Z',updatedAt:at+'Z'}));localStorage.setItem('geunlog-body-v1',JSON.stringify({version:1,records,baseline:null}));document.body.innerHTML='<main class="bulk-app" id="bodyTest"></main>';BodyTracker.mount(document.querySelector('#bodyTest'));});
+ const before=await snapshot(p),original=JSON.parse(before['geunlog-body-v1']);await p.locator('[data-period]').selectOption('all');
+ if(route==='add')await p.locator('[data-add]').click();
+ if(route==='edit')await p.locator('[data-graph-edit]').first().click();
+ if(route==='range')await p.locator('[data-period]').selectOption('custom');
+ if(route==='history')await p.locator('.body-history-tools>summary').click();
+ const selector=route==='add'||route==='edit'?'.body-dialog input[name=date]':route==='range'?'[data-from]':'[data-hfrom]';
+ const input=()=>p.locator(selector),trigger=()=>input().locator('..').locator('.body-date-button');
+ async function open(keyboard=false){if(keyboard){await trigger().focus();await trigger().press('Enter');}else await trigger().click();await p.locator('.body-calendar').waitFor();row.opens++;const g=await p.locator('.body-calendar').evaluate(e=>({overflow:e.scrollWidth>e.clientWidth+1,viewportOverflow:document.documentElement.scrollWidth>innerWidth+1}));row.overflow+=Number(g.overflow||g.viewportOverflow);if(arm==='B')assert(!g.overflow&&!g.viewportOverflow);}
+ async function close(){await p.locator('.body-calendar [data-close]').click();await p.locator('.body-calendar').waitFor({state:'detached'});row.closes++;}
+ const initial=await input().inputValue();await open();await p.screenshot({path:path.join(out,`${arm}-${width}-${route}-open.png`),fullPage:true});await close();assert.equal(await input().inputValue(),initial);assert.deepEqual(await snapshot(p),before);
+ await open(true);const cal=p.locator('.body-calendar');await cal.locator('[data-year]').selectOption('2026');await cal.locator('[data-month]').selectOption('1');await cal.locator('[data-prev]').click();assert.equal(await cal.locator('[data-month]').inputValue(),'0');await cal.locator('[data-next]').click();assert.equal(await cal.locator('[data-month]').inputValue(),'1');
+ await cal.locator('[data-day="2026-02-12"]').focus();await cal.locator('[data-day="2026-02-12"]').press('Enter');await cal.locator('[data-apply]').focus();await cal.locator('[data-apply]').press('Enter');await cal.waitFor({state:'detached'});row.closes++;row.dateSelections++;assert.equal(await input().inputValue(),'2026-02-12');row.dateCorrect++;assert.deepEqual(await snapshot(p),before);
+ await open();assert.equal(await p.locator('.body-calendar [data-day="2026-02-12"]').getAttribute('aria-pressed'),'true');await close();
+ if(route==='add'||route==='edit'){
+  const form=p.locator('.body-dialog');await form.locator('[name=time]').fill('10:30');await form.locator('[name=weight]').fill('80.3');await form.locator('button[type=submit]').click();await form.waitFor({state:'detached'});const saved=await snapshot(p),body=JSON.parse(saved['geunlog-body-v1']);assert.equal(body.records.length,original.records.length+(route==='add'?1:0));const changed=body.records.find(r=>r.at==='2026-02-12T10:30');assert(changed);assert.equal(changed.weight,80.3);for(const record of original.records)if(record.id!==changed.id)assert.deepEqual(body.records.find(r=>r.id===record.id),record);for(const [k,v]of Object.entries(before))if(k!=='geunlog-body-v1')assert.equal(saved[k],v,k);
+  await p.reload();await p.evaluate(()=>{document.body.innerHTML='<main class="bulk-app" id="bodyTest"></main>';BodyTracker.mount(document.querySelector('#bodyTest'));});assert.deepEqual(await snapshot(p),saved);assert.equal((await p.evaluate(()=>BodyTracker.read())).records.find(r=>r.id===changed.id).at,'2026-02-12T10:30');
+  await p.locator('[data-add]').click();await p.locator('.body-dialog [name=weight]').fill('81');await p.locator('.body-dialog header [data-close]').click();await p.locator('.body-confirm [data-confirm]').click();await p.locator('.body-dialog').waitFor({state:'detached'});assert.deepEqual(await snapshot(p),saved);row.savedAndReloaded=true;row.cancelPreserved=true;
+ }else{
+  if(route==='range'){assert.equal(await p.locator('[data-point]').count(),1);assert((await p.locator('.body-day-heading').textContent()).includes('2026.02.12'));}else{await p.locator('[data-search-apply]').click();assert.equal(await p.locator('.body-history article').count(),1);}
+  assert.deepEqual(await snapshot(p),before);row.filterCorrect=true;
+ }
+ if(arm==='A'){assert.equal(row.errors.length,row.opens);assert(row.errors.every(e=>e.name==='TypeError'&&/scrollTop/.test(e.message)));}else assert.deepEqual(row.errors,[]);
+ assert.equal(row.opens,row.closes);console.log('PASS calendar '+arm+'/'+width+'/'+route+' opens='+row.opens+' date='+row.dateCorrect+'/'+row.dateSelections+' errors='+row.errors.length);await p.close();
+}
+}finally{fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(report,null,2));await browser.close();server.close();fs.rmSync(a,{recursive:true,force:true});}})().catch(e=>{console.error(e);process.exitCode=1});
