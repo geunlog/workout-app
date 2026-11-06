@@ -45,7 +45,7 @@ function calendar(input,max=''){
   const choose=day=>{input.value=day;input.dispatchEvent(new Event('change',{bubbles:true}));close();};
   dialog.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{selected=b.dataset.day;draw();dialog.querySelector('[data-day="'+selected+'"]').focus();});dialog.querySelector('[data-today]').onclick=()=>{selected=today;[year,month]=today.split('-').map(Number);month--;draw();};dialog.querySelector('[data-apply]').onclick=()=>choose(selected);
  }
- draw();document.body.append(dialog);dialog.showModal();dialog.querySelector('[data-close]').focus({preventScroll:true});dialog.querySelector('.body-form-scroll').scrollTop=0;
+ draw();document.body.append(dialog);dialog.showModal();dialog.querySelector('[data-close]').focus({preventScroll:true});
 }
 function dateControls(root,max=''){
  root.querySelectorAll('input[type="date"]').forEach(input=>{input.type='hidden';const b=document.createElement('button');b.type='button';b.className='body-date-button';b.setAttribute('aria-haspopup','dialog');const sync=()=>{b.innerHTML='<span>'+(input.value?esc(input.value.replaceAll('-','.')):'날짜 선택')+'</span>'+calendarIcon;b.setAttribute('aria-label',(input.parentElement.firstChild.textContent||'날짜')+': '+(input.value||'선택 안 함'));};sync();input.after(b);input.addEventListener('change',sync);b.onclick=()=>calendar(input,max);});

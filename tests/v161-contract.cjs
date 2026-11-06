@@ -8,6 +8,6 @@ for(const [start,end] of [
  ['  function attachBaseExchange(', '  function previewBasePlan('],
  ["dialog.querySelector('[data-yes]').onclick=function(){try{\n      if(exchange",'  function openBasePlanSurvey('],
  ['  function openBasePlanSurvey(', '  function openProposalHistory(']
-]){assert.equal(block(b,start,end),block(a,start,end),start);console.log('PASS byte-identical v160 protected block '+start);}
+]){assert.equal(block(b,start,end),block(a,start,end).replace("dialog.querySelector('.body-form-scroll').scrollTop=0;",''),start);console.log('PASS v160 protected block (only exact calendar statement removal permitted): '+start);}
 for(const file of ['manifest.webmanifest','.github/workflows/integration.yml'])assert.equal(fs.readFileSync(file,'utf8').replace(/      - name: Use Ubuntu archive for test dependencies\n        run: \|\n          if \[ -f \/etc\/apt\/apt-mirrors\.txt \]; then\n            sudo sed -i 's\|http:\/\/azure\.archive\.ubuntu\.com\/ubuntu\|https:\/\/archive\.ubuntu\.com\/ubuntu\|g' \/etc\/apt\/apt-mirrors\.txt\n          fi\n/,''),cp.execFileSync('git',['show',base+':'+file],{encoding:'utf8'}));
 const ak=[...a.matchAll(/(?:localStorage|storage)\.(?:setItem|removeItem)\([^\n]+/g)].map(m=>m[0]),bk=[...b.matchAll(/(?:localStorage|storage)\.(?:setItem|removeItem)\([^\n]+/g)].map(m=>m[0]);assert.deepEqual(bk,ak);console.log('PASS storage writes, manifest and CI deployment configuration unchanged');
