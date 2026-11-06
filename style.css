@@ -3074,7 +3074,7 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app .ai-adjustment .ai-schedule-row>strong{grid-column:1/-1;font-size:14px}
 .bulk-app .ai-adjustment select,.bulk-app .ai-adjustment textarea,.bulk-app .ai-adjustment input{font-size:16px;min-height:44px;max-width:100%;min-width:0}
 .bulk-app .ai-adjustment #aiBulkMinutes{padding:8px;background:var(--sunken);border-radius:12px}
-.bulk-app .weekly-plan-card .bar-label,.bulk-app .weekly-plan-card .bar-value{font-size:13px}
+.bulk-app .weekly-plan-card .bar-label,.bulk-app .weekly-plan-card .bar-val{font-size:14px}
 .bulk-app .weekly-plan-card .bar-track{height:10px}
 .bulk-app .app-guide-body.guide-tiles{gap:0}
 .bulk-app .app-guide .guide-tile{padding:12px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;box-shadow:none}

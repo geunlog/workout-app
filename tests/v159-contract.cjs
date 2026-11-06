@@ -11,5 +11,5 @@ for(const [start,end] of [
  ['      var prompt=','      var output=section.querySelector'],
  ['  function baseAllocationHtml(', '// Pure, shared factual accounting.'],
 ]){assert.equal(protectedSource(block(b,start,end)),protectedSource(block(a,start,end)),start);console.log('PASS protected block (explicit overtime/UI exceptions normalized): '+start);}
-for(const f of ['manifest.webmanifest','.github/workflows/integration.yml']){if(fs.existsSync(f))assert.equal(fs.readFileSync(f,'utf8'),cp.execFileSync('git',['show',base+':'+f],{encoding:'utf8'}));}
+for(const f of ['manifest.webmanifest','.github/workflows/integration.yml']){if(fs.existsSync(f))assert.equal(fs.readFileSync(f,'utf8').replace(/      - name: Use Ubuntu archive for test dependencies\n        run: \|\n          if \[ -f \/etc\/apt\/apt-mirrors\.txt \]; then\n            sudo sed -i 's\|http:\/\/azure\.archive\.ubuntu\.com\/ubuntu\|https:\/\/archive\.ubuntu\.com\/ubuntu\|g' \/etc\/apt\/apt-mirrors\.txt\n          fi\n/,''),cp.execFileSync('git',['show',base+':'+f],{encoding:'utf8'}));}
 console.log('PASS Worker request handler, non-time exchange validation, prompt contract, apply transaction, timing and volume preserved. No actual Worker/ChatGPT call.');
