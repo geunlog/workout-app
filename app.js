@@ -1392,7 +1392,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       row.appendChild(d);row.appendChild(value);list.appendChild(row);
     });
     modal.appendChild(list);modal.appendChild(prDetails);
-    var allButton=document.createElement('button');allButton.type='button';allButton.className='btn-reset recent-history-all';allButton.textContent='전체 기록 보기 ↗';allButton.onclick=function(){close();viewExerciseRecords(name,muscle,date);};modal.appendChild(allButton);
+    var allButton=document.createElement('button');allButton.type='button';allButton.className='btn-reset recent-history-all';allButton.textContent='전체 기록 보기 ›';allButton.onclick=function(){close();viewExerciseRecords(name,muscle,date);};modal.appendChild(allButton);
     overlay.appendChild(modal);
 
     function close(){
