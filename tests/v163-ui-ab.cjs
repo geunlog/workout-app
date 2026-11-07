@@ -99,7 +99,7 @@ async function main(){let browser;try{
    await p.locator('#btnSaveNow').click();
    const afterFields=splitStorage(await raw()).protected;
    for(const [k,v] of Object.entries(beforeFields))if(k!=='bulk-routine-v9'&&!k.includes('draft')&&!k.includes('pending'))assert.equal(afterFields[k],v,'protected while editing '+k);
-   const edited=JSON.parse(afterFields['bulk-routine-v9']).find(d=>d.key==='sat').ex[0];assert.equal(edited.m,'등');assert.equal(edited.n,options[options.length-1]);assert.equal(edited.s,5);assert.equal(edited.r,'6~8');assert.equal(edited.rir,'1');
+   const edited=JSON.parse(afterFields['bulk-routine-v9']).find(d=>d.key==='sat').ex[0];assert.equal(edited.m,'등');assert.equal(edited.n,options[options.length-1]);assert.equal(edited.s,'5');assert.equal(edited.r,'6~8');assert.equal(edited.rir,'1');
    sample.editValues=edited;sample.actions={saveSet:1,enterEdit:1,reorder:1,saveRoutine:1,recentToRecords:2};
    assert.deepEqual(errors,[]);sample.status='PASS';
   }catch(e){sample.status='FAIL';sample.error=e.stack;throw e;}finally{await ctx.close();}
