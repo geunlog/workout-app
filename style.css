@@ -1657,7 +1657,7 @@ html {height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 .bulk-app #dayView:not(.routine-editing) .routine-edit-only,
 .bulk-app #dayView.routine-editing .routine-read-only{display:none!important;}
 .bulk-app #dayView:not(.routine-editing) .ex-row,
-.bulk-app #dayView:not(.routine-editing) .ex-row:last-child{padding-left:16px!important;}
+.bulk-app #dayView:not(.routine-editing) .ex-row:last-child{padding:12px!important;border-radius:14px;box-shadow:none;}
 .bulk-app #btnSaveNow[hidden]{display:none!important;}
 .bulk-app #dayPanel .ex-fields{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:8px 6px;align-items:center;margin-top:10px;max-width:350px;}
 .bulk-app #dayPanel .ex-fields .muscle-field{grid-column:1 / -1;}
@@ -3086,3 +3086,35 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .body-graph-detail .body-day-record dt,.body-chart .body-muted{font-size:12px}
 .body-point-picker{padding:8px;border:1px solid #dfe6f2;border-radius:12px;background:#fff;gap:6px}
 .body-point-picker button{min-width:64px;border:1px solid #d8dfed;border-radius:10px;background:#f3f6fc;color:#315bea;font:600 14px var(--ui)}
+
+/* v162 scoped UI presentation; storage and state rules unchanged. */
+.bulk-app{padding-top:12px;padding-inline:12px}
+.bulk-app .masthead{margin-bottom:12px}
+.bulk-app .masthead h1{font-size:20px}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .exercise-goal-read{margin:4px 0;gap:4px}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .log-fields{padding-top:8px;margin-top:8px;gap:8px}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .prev-hint{margin:4px 0}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .btn-record-one{min-height:48px;margin-top:0;border-radius:12px}
+.bulk-app .stamp-row{padding:10px!important;gap:8px}
+.bulk-app .settings-view>.settings-card,.bulk-app #statsView .stats-card,.bulk-app .weekly-plan-card{padding:14px;margin-block:10px;box-shadow:none;border-radius:14px}
+.bulk-app #recordsView .rec-filter:not(.record-filter-panel .rec-filter){padding:12px;gap:8px}
+.bulk-app .records-disclosure-actions{gap:8px;margin-block:10px}
+.bulk-app .ai-adjustment .ai-survey-section{padding:8px 0;margin:8px 0}
+.bulk-app .ai-adjustment .ai-schedule-row{padding:6px 0;gap:8px}
+.bulk-app .ai-adjustment .ai-record-summary li{padding:8px}
+.body-dialog header [data-close],.direct-record-close{min-width:44px;min-height:44px}
+.body-filters button,.body-history-tools button,.body-history article button{min-height:44px}
+.body-dialog input,.body-dialog select,.body-dialog textarea{font-size:16px}
+.body-dialog,.direct-record-modal{border-radius:16px}
+.body-graph-detail{padding:10px}
+.ai-manual-survey .ai-survey-section{padding:10px;margin-block:8px}
+.ai-manual-survey [data-day-chip]{min-height:44px}
+.ai-exchange-preview .exchange-result-summary{margin:6px 0;padding:10px}
+.ai-exchange-preview .ai-edit-exercise{margin:6px 0;padding:8px}
+.ai-exchange-preview .exchange-analysis>summary{padding:8px;min-height:44px}
+/* Keep warning states, destructive colors, navigation safe area and calendars unchanged. */
+.direct-record-modal .recent-history-all{appearance:none;display:block;width:100%;min-height:44px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--sunken);color:var(--primary);font:600 15px var(--ui);cursor:pointer}
+.direct-record-modal .recent-history-all:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.direct-record-modal .recent-history-row{padding:8px 2px}
+.direct-record-modal .recent-history-pr{margin:8px 0}
+.bulk-app .rec-preset-btn,.bulk-app .stats-periods button{min-height:44px;border-radius:10px}
