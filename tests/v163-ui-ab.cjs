@@ -3,7 +3,8 @@
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert/strict');
 const {fixture,splitStorage}=require('./v162-fixtures.cjs');
 const root=path.resolve(__dirname,'..'),out=path.resolve(__dirname,'../test-results/v163');fs.mkdirSync(out,{recursive:true});
-const results={status:'NOT_RUN',samples:[],errors:[],android:'NOT_RUN',keyboard:'reduced viewport is not Android IME',environment:{node:process.version}};
+const reference=require('./v163-ab-reference.json');
+const results={sourceABRun:reference.sourceRun,status:'NOT_RUN',samples:[],errors:[],android:'NOT_RUN',keyboard:'reduced viewport is not Android IME',environment:{node:process.version}};
 const cp=require('child_process'),os=require('os');const baseline='da7a19eb257764dd6f02e548b8611cd5c7d31f4d',original=fs.mkdtempSync(path.join(os.tmpdir(),'v162-A-'));for(const f of ['index.html','app.js','style.css','sw.js','manifest.webmanifest'])fs.writeFileSync(path.join(original,f),cp.execFileSync('git',['show',baseline+':'+f],{maxBuffer:5e6}));let currentRoot=root;
 const server=http.createServer((req,res)=>{const rel=new URL(req.url,'http://localhost').pathname;const file=path.resolve(currentRoot,'.'+(rel==='/'?'/index.html':rel));if(!file.startsWith(currentRoot+path.sep))return res.writeHead(403).end();try{res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file));}catch{res.writeHead(404).end();}});
 async function main(){let browser;try{
@@ -11,7 +12,7 @@ async function main(){let browser;try{
  // No guessed browser path. Caller supplies a supported path or installed Playwright browser.
  browser=await pw.chromium.launch(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{});
  results.environment.browser=browser.version();await new Promise(r=>server.listen(0,'127.0.0.1',r));
- for(const width of [320,360,390,430])for(const state of ['empty','recorded'])for(const arm of ['A','B']){
+ for(const width of [320,360,390,430])for(const state of ['empty','recorded'])for(const arm of ['C']){
   currentRoot=arm==='A'?original:root;const sample={width,state,arm,status:'RUNNING',steps:[]};results.samples.push(sample);
   const ctx=await browser.newContext({viewport:{width,height:844},timezoneId:'Asia/Seoul',serviceWorkers:'block'});
   try{await ctx.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
@@ -21,7 +22,19 @@ async function main(){let browser;try{
 
    const raw=()=>p.evaluate(()=>Object.fromEntries(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)])));
    const baseline=splitStorage(await raw()).protected;
-   async function geometry(label){let g=await p.evaluate(()=>{const rect=e=>{let b=e.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom}};const cards=[...document.querySelectorAll('#dayPanel .ex-row')],nav=document.querySelector('#modeToggle'),modal=document.querySelector('.direct-record-modal');return {scrollY,viewport:{width:innerWidth,height:innerHeight},overflow:document.documentElement.scrollWidth>innerWidth+1,cards:cards.map(rect),nav:rect(nav),buttons:[...document.querySelectorAll('#dayPanel .btn-record-one,.direct-record-close,.recent-history-all')].filter(e=>e.checkVisibility()).map(e=>({label:e.textContent,disabled:e.disabled,...rect(e)})),inputs:[...document.querySelectorAll('#dayPanel .in-weight,#dayPanel .in-done')].map(rect),modal:modal?rect(modal):null,modalScroll:modal?modal.scrollHeight-modal.clientHeight:null,headerHeight:document.querySelector('#dayPanel').getBoundingClientRect().top+scrollY,exerciseListHeight:document.querySelector('#dayPanel .exercise-list').getBoundingClientRect().height,thirdScroll:cards[2]?Math.max(0,cards[2].getBoundingClientRect().bottom+scrollY-(innerHeight-nav.getBoundingClientRect().height)):null};});sample.steps.push({label,...g});await p.screenshot({path:path.join(out,`${arm}-${width}-${state}-${label}.png`),fullPage:true});assert(!g.overflow,'horizontal overflow');if(label==='main')assert(g.buttons.filter(b=>b.label.includes('저장')).every(b=>b.height>=48),'save minimum 48');}
+   async function geometry(label){let g=await p.evaluate(()=>{const rect=e=>{let b=e.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height,bottom:b.bottom}};const cards=[...document.querySelectorAll('#dayPanel .ex-row')],nav=document.querySelector('#modeToggle'),modal=document.querySelector('.direct-record-modal');return {scrollY,viewport:{width:innerWidth,height:innerHeight},overflow:document.documentElement.scrollWidth>innerWidth+1,cards:cards.map(rect),nav:rect(nav),buttons:[...document.querySelectorAll('#dayPanel .btn-record-one,.direct-record-close,.recent-history-all')].filter(e=>e.checkVisibility()).map(e=>({label:e.textContent,disabled:e.disabled,...rect(e)})),inputs:[...document.querySelectorAll('#dayPanel .in-weight,#dayPanel .in-done')].map(rect),modal:modal?rect(modal):null,modalScroll:modal?modal.scrollHeight-modal.clientHeight:null,headerHeight:document.querySelector('#dayPanel').getBoundingClientRect().top+scrollY,exerciseListHeight:document.querySelector('#dayPanel .exercise-list').getBoundingClientRect().height,thirdScroll:cards[2]?Math.max(0,cards[2].getBoundingClientRect().bottom+scrollY-(innerHeight-nav.getBoundingClientRect().height)):null};});sample.steps.push({label,...g});
+    if(arm==='C'){
+     if(label==='main'){
+      const previous=reference.samples.find(x=>x.width===width&&x.state===state&&x.arm==='B').steps.find(x=>x.label==='main');
+      for(const key of ['headerHeight','thirdScroll'])assert(g[key]<=previous[key]+1,'v1.9 improvement retained '+key);
+      assert(g.cards[0].height<=previous.cards[0].height+1,'normal card improvement retained');
+     }
+     if(label==='edit3'||label==='edit8'){
+      assert(g.cards.every(c=>c.height<=184),'edit card <=184px');
+      assert(g.exerciseListHeight<=(label==='edit3'?576:1556),'editing list height limit');
+     }
+    }
+    await p.screenshot({path:path.join(out,`${arm}-${width}-${state}-${label}.png`),fullPage:true});assert(!g.overflow,'horizontal overflow');if(label==='main')assert(g.buttons.filter(b=>b.label.includes('저장')).every(b=>b.height>=48),'save minimum 48');}
    await geometry('main');assert.equal(await p.locator('#dayPanel .ex-row').count(),3);
    // Synthetic input drafts may change, but logs/routine/notes must not until Save.
    await p.locator('#dayPanel .in-weight').first().fill('60');await p.locator('#dayPanel .in-done').first().fill('10');
@@ -49,7 +62,9 @@ async function main(){let browser;try{
    // Restore only isolated synthetic routine so recent-history target remains first.
    await p.evaluate(r=>localStorage.setItem('bulk-routine-v9',r),beforeEdit['bulk-routine-v9']);
    await p.reload();
-   const trigger=p.locator('#dayPanel .history-tappable').first();await trigger.click();await p.locator('.direct-record-modal').waitFor({state:'visible'});
+   const trigger=p.locator('#dayPanel .history-tappable').first();await trigger.click();
+   await p.locator('.direct-record-close').click();assert(await trigger.evaluate(e=>document.activeElement===e),'recent close focus restore');
+   await trigger.click();await p.locator('.direct-record-modal').waitFor({state:'visible'});
    const recent=await p.locator('.recent-history-list').innerText();sample.recentText=recent;assert(recent.includes('60kg'),'saved value visible');
 
    await geometry('recent');const beforeNavigation=splitStorage(await raw()).protected;
@@ -60,7 +75,32 @@ async function main(){let browser;try{
    await p.evaluate(()=>{const r=JSON.parse(localStorage.getItem('bulk-routine-v9'));r.forEach(d=>{d.ex=Array.from({length:8},(_,i)=>({...d.ex[i%3],uid:'eight-'+d.key+'-'+i}));});localStorage.setItem('bulk-routine-v9',JSON.stringify(r));localStorage.setItem('bulk-routine-active-mode-v1',JSON.stringify('day'));});
    await p.reload();await p.locator('#modeToggle [aria-controls=dayView]').click();await p.locator('#btnRoutineEdit').click();await geometry('edit8');
    assert.equal(await p.locator('#dayPanel .ex-row').count(),8);
-   if(arm==='B'){const targets=await p.locator('#dayPanel .reorder-step,#dayPanel .btn-del,#dayPanel .exercise-note-button').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.width,r.height]}));assert(targets.every(([w,h])=>w>=44&&h>=44));}
+   if(arm==='C'){const targets=await p.locator('#dayPanel .reorder-step,#dayPanel .btn-del,#dayPanel .exercise-note-button').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return [r.width,r.height]}));assert(targets.every(([w,h])=>w>=44&&h>=44));}
+   // Focus follows original DOM order. CSS does not alter tabindex or interaction handlers.
+   const second=p.locator('#dayPanel .ex-row').nth(1);
+   await second.evaluate(e=>e.scrollIntoView({block:'center'}));
+   await second.locator('.move-up').focus();
+   const sequence=['.move-down','.exercise-note-button','.in-name','.btn-del','.in-muscle','.in-sets','.in-reps','.in-rir'];
+   sample.focusSequence=[];
+   for(const selector of sequence){await p.keyboard.press('Tab');assert(await second.locator(selector).evaluate(e=>document.activeElement===e),'tab focus '+selector);sample.focusSequence.push(selector);}
+   const selected=await second.locator('.in-name option:checked').textContent();assert(selected.includes('합성 긴 운동명'),'full native option name preserved');sample.longName=selected;
+   // Native select retains all text and can be operated with keyboard, including the long option.
+   await second.locator('.in-name').focus();await p.keyboard.press('ArrowDown');await p.keyboard.press('Home');
+   await p.keyboard.press('Escape');
+   const beforeFields=splitStorage(await raw()).protected;
+   const first=p.locator('#dayPanel .ex-row').first();
+   await first.locator('.in-muscle').selectOption('등');
+   const options=await first.locator('.in-name option').evaluateAll(es=>es.filter(e=>!e.disabled).map(e=>e.value));assert(options.length);
+   await first.locator('.in-name').selectOption(options[options.length-1]);
+   await first.locator('.in-sets').fill('5');await first.locator('.in-reps').fill('6~8');await first.locator('.in-rir').fill('1');await first.locator('.in-rir').press('Tab');
+   assert.equal((await raw())['bulk-routine-v9'],beforeFields['bulk-routine-v9'],'field edits not saved implicitly');
+   await first.locator('.in-name').evaluate(e=>e.scrollIntoView({block:'center'}));
+   const visibility=await first.locator('.in-name').evaluate(e=>{const r=e.getBoundingClientRect();return e===document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)});assert(visibility,'name selection reachable, not covered');
+   await p.locator('#btnSaveNow').click();
+   const afterFields=splitStorage(await raw()).protected;
+   for(const [k,v] of Object.entries(beforeFields))if(k!=='bulk-routine-v9'&&!k.includes('draft')&&!k.includes('pending'))assert.equal(afterFields[k],v,'protected while editing '+k);
+   const edited=JSON.parse(afterFields['bulk-routine-v9']).find(d=>d.key==='sat').ex[0];assert.equal(edited.m,'등');assert.equal(edited.n,options[options.length-1]);assert.equal(edited.s,5);assert.equal(edited.r,'6~8');assert.equal(edited.rir,'1');
+   sample.editValues=edited;sample.actions={saveSet:1,enterEdit:1,reorder:1,saveRoutine:1,recentToRecords:2};
    assert.deepEqual(errors,[]);sample.status='PASS';
   }catch(e){sample.status='FAIL';sample.error=e.stack;throw e;}finally{await ctx.close();}
  }

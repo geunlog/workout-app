@@ -10,9 +10,8 @@ function cssContract(s){
  const marker='\n/* v163 exercise-tab candidate: presentation only; preserve input and storage behavior. */\n';
  const parts=s.split(marker);assert.equal(parts.length,2);
  assert.equal(hash(parts[0]),'4215f5021220704af6d67671180873e30f306fa2f2eed8c75d5b8c5c896546a1');
- const rules=[...parts[1].matchAll(/([^{}]+)\{([^{}]+)\}/g)];assert.equal(rules.length,37);
- for(const [,selector,body]of rules){assert(/^(\.bulk-app #dayView |\.bulk-app #dayView\.routine-editing #dayPanel |\.bulk-app:has\(#dayView:not\(\[hidden\]\)\) \.masthead$|\.ai-quick-menu[ >])/.test(selector.trim()),selector);assert(!/display\s*:\s*none|visibility|pointer-events|opacity/.test(body));}
- assert.equal(parts[1].replace(/[^{}]+\{[^{}]+\}/g,'').trim(),'');
+ assert.equal(hash(read('tests/v163-approved-style.css')),'32c3134001b96c35e17f70dc1665ac0e076459d9ead5e56fee0dcebf2fe8a3c9','fixed v2.0 presentation contract');
+ assert.equal(marker+parts[1],read('tests/v163-approved-style.css'),'exact v2.0 reviewed selector/property/value delta');
 }
 function swContract(s){const hashes=JSON.parse(s.match(/const ASSET_HASHES = (\{[^\n]+\});/)[1]);for(const f of ['index.html','app.js','style.css'])assert.equal(hashes[f],hash(read(f)));assert.equal(Object.keys(hashes).length,3);const normalize=t=>t.replace(/const ASSET_HASHES = \{[^\n]+\};/,'const ASSET_HASHES = {};').replace("'v163-release-163'","'v161-release-161'");assert.equal(normalize(s),normalize(original('sw.js')));assert(s.includes("'v163-release-163'"))}
 appContract(read('app.js'));htmlContract(read('index.html'));cssContract(read('style.css'));swContract(read('sw.js'));
@@ -26,4 +25,6 @@ assert.throws(()=>appContract(read('app.js').replace('전체 기록 보기 ›',
 assert.throws(()=>cssContract(read('style.css')+'\nbutton{display:none}'));
 assert.throws(()=>htmlContract(read('index.html').replace('v=163','v=164')));
 assert.throws(()=>swContract(read('sw.js').replace(/(index.html":")[a-f0-9]{8}/,'$100000000')));
-console.log('PASS 6 negative mutations rejected: calendar bug/storage/label/CSS/version/hash');
+assert.throws(()=>cssContract(read('style.css').replace('left:10px;top:60px','left:11px;top:60px')));
+assert.throws(()=>cssContract(read('style.css').replace('padding-left:96px','padding-right:96px')));
+console.log('PASS 8 negative mutations rejected: calendar bug/storage/label/CSS/version/hash');

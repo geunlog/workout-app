@@ -1,0 +1,28 @@
+
+/* v163 exercise-tab candidate: presentation only; preserve input and storage behavior. */
+.bulk-app:has(#dayView:not([hidden])) .masthead{margin-bottom:10px}
+.bulk-app #dayView .day-tabs{gap:4px;margin-bottom:8px}
+.bulk-app #dayView .day-tab{min-height:44px;padding:8px 0}
+.bulk-app #dayView .routine-mode-bar{gap:8px;margin:6px 0}
+.bulk-app #dayView .routine-mode-bar button{min-height:44px;padding:8px 12px}
+.bulk-app #dayView .stamp-row{margin-block:6px 10px;gap:6px}
+.bulk-app #dayView .stamp-read{font-size:18px;line-height:1.4}
+.bulk-app #dayView .exercise-list{gap:8px}
+.bulk-app #dayView #dayPanel .ex-row{padding:10px!important}
+.bulk-app #dayView #dayPanel .ex-top{gap:6px}
+.bulk-app #dayView #dayPanel .exercise-name-read{font-size:16px;line-height:1.45;margin:0}
+.bulk-app #dayView #dayPanel .exercise-goal-read{margin:4px 0;gap:4px}
+.bulk-app #dayView #dayPanel .weight-source-note{margin:4px 0;line-height:1.5}
+.bulk-app #dayView #dayPanel .log-fields{margin-top:4px;padding-top:4px;gap:6px}
+.bulk-app #dayView #dayPanel .btn-record-one{min-height:48px}
+.bulk-app #dayView #dayPanel .suggest-details{margin-top:4px;padding:0}
+.bulk-app #dayView #dayPanel .suggest-details p{margin:4px 0 6px}
+.bulk-app #dayView #dayPanel .suggest-records{margin:0 0 6px}
+/* Keep the original top/name row and three editing rows. */
+.bulk-app #dayView.routine-editing #dayPanel .ex-row{padding:10px!important}
+.bulk-app #dayView.routine-editing #dayPanel .exercise-note-button{width:44px;min-width:44px;min-height:44px}
+.bulk-app #dayView.routine-editing #dayPanel .reorder-controls{left:10px;top:60px;transform:none;flex-direction:row;gap:4px}
+.bulk-app #dayView.routine-editing #dayPanel .reorder-step{width:44px;min-width:44px;height:44px}
+.bulk-app #dayView.routine-editing #dayPanel .ex-fields{max-width:none;margin-top:6px;gap:6px}
+.bulk-app #dayView.routine-editing #dayPanel .muscle-field{padding-left:96px}
+.bulk-app #dayView.routine-editing #dayPanel .muscle-field select{flex:1;width:0;min-width:0}

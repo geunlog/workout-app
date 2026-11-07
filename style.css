@@ -3138,22 +3138,11 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app #dayView #dayPanel .suggest-details{margin-top:4px;padding:0}
 .bulk-app #dayView #dayPanel .suggest-details p{margin:4px 0 6px}
 .bulk-app #dayView #dayPanel .suggest-records{margin:0 0 6px}
+/* Keep the original top/name row and three editing rows. */
 .bulk-app #dayView.routine-editing #dayPanel .ex-row{padding:10px!important}
-.bulk-app #dayView.routine-editing #dayPanel .ex-top{display:grid;grid-template-columns:26px minmax(92px,1fr) 44px 44px;gap:6px}
-.bulk-app #dayView.routine-editing #dayPanel .ex-num{grid-column:1;grid-row:1}
-.bulk-app #dayView.routine-editing #dayPanel .exercise-note-button{grid-column:3;grid-row:1;width:44px;min-height:44px}
-.bulk-app #dayView.routine-editing #dayPanel .btn-del{grid-column:4;grid-row:1}
-.bulk-app #dayView.routine-editing #dayPanel .in-name{grid-column:1 / -1;grid-row:2;width:100%;min-width:0}
-.bulk-app #dayView.routine-editing #dayPanel .reorder-controls{left:42px;top:10px;transform:none;flex-direction:row;gap:4px}
+.bulk-app #dayView.routine-editing #dayPanel .exercise-note-button{width:44px;min-width:44px;min-height:44px}
+.bulk-app #dayView.routine-editing #dayPanel .reorder-controls{left:10px;top:60px;transform:none;flex-direction:row;gap:4px}
 .bulk-app #dayView.routine-editing #dayPanel .reorder-step{width:44px;min-width:44px;height:44px}
 .bulk-app #dayView.routine-editing #dayPanel .ex-fields{max-width:none;margin-top:6px;gap:6px}
-.bulk-app #dayView.routine-editing #dayPanel .muscle-field select{flex:1;width:auto}
-.bulk-app #dayView .routine-advanced-options>summary{min-height:44px;display:flex;align-items:center}
-.bulk-app #dayView .weekly-record-summary{padding:10px}
-.bulk-app #dayView .weekly-record-caption{margin-bottom:8px}
-.bulk-app #dayView .weekly-record-grid{gap:5px}
-.bulk-app #dayView .weekly-record-tile{padding:7px 6px}
-.bulk-app #dayView .weekly-record-count{margin-top:3px}
-.ai-quick-menu>p{margin-bottom:10px}
-.ai-quick-menu .ai-day-actions button{min-height:60px;padding-block:9px}
-.ai-quick-menu .ai-menu-close{margin-top:10px;min-height:44px}
+.bulk-app #dayView.routine-editing #dayPanel .muscle-field{padding-left:96px}
+.bulk-app #dayView.routine-editing #dayPanel .muscle-field select{flex:1;width:0;min-width:0}
