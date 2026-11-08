@@ -1,9 +1,9 @@
-// Actual v164/v165, synthetic data, isolated Chromium. Reduced viewport is NOT Android IME.
+// Actual v165/v166, synthetic data, isolated Chromium. Reduced viewport is NOT Android IME.
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert/strict'),cp=require('child_process'),os=require('os');
 const {fixture,splitStorage}=require('./v162-fixtures.cjs');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'test-results/v164');fs.mkdirSync(out,{recursive:true});
 const original=fs.mkdtempSync(path.join(os.tmpdir(),'v164-A-'));
-for(const f of ['index.html','app.js','style.css','sw.js','manifest.webmanifest'])fs.writeFileSync(path.join(original,f),cp.execFileSync('git',['show','4e3c271cc067795fe03498e41fb823f4aca6e8a7:'+f],{maxBuffer:5e6}));
+for(const f of ['index.html','app.js','style.css','sw.js','manifest.webmanifest'])fs.writeFileSync(path.join(original,f),cp.execFileSync('git',['show','a2065f998a32f1210d2d4ce7d4a1bcd3986e4d23:'+f],{maxBuffer:5e6}));
 let currentRoot=root;const server=http.createServer((req,res)=>{const rel=new URL(req.url,'http://localhost').pathname,f=path.resolve(currentRoot,'.'+(rel==='/'?'/index.html':rel));if(!f.startsWith(currentRoot+path.sep))return res.writeHead(403).end();try{res.setHeader('Content-Type',f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(f));}catch{res.writeHead(404).end();}});
 const results={status:'NOT_RUN',samples:[],android:'NOT_RUN',IME:'NOT_RUN',environment:{node:process.version,viewportHeight:844,samplesPerCondition:1}};
 async function main(){let browser;try{
@@ -18,7 +18,7 @@ async function main(){let browser;try{
    const raw=()=>p.evaluate(()=>Object.fromEntries(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)])));
    const initial=splitStorage(await raw()).protected;
    async function measure(label){sample.geometry[label]=await p.evaluate(()=>{const rect=e=>{if(!e)return null;const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom}};const c=[...document.querySelectorAll('#dayPanel .ex-row')],nav=document.querySelector('#modeToggle');return{cards:c.map(rect),firstY:c[0].getBoundingClientRect().top+scrollY,thirdScroll:Math.max(0,c[2].getBoundingClientRect().bottom+scrollY-(innerHeight-nav.getBoundingClientRect().height)),overflow:document.documentElement.scrollWidth>innerWidth+1,save:rect(document.querySelector('#dayPanel .btn-record-one')),popup:rect(document.querySelector('.direct-record-modal')),ai:rect(document.querySelector('#aiQuickMenu'))};});assert(!sample.geometry[label].overflow,'horizontal overflow '+label);await p.screenshot({path:path.join(out,`${arm}-${width}-${state}-${label}.png`),fullPage:true});}
-   await measure('main');assert(sample.geometry.main.save.height>=48);
+   await measure('main');if(arm==='B'&&state==='recorded'){assert(await p.locator('.record-compare-hint').first().evaluate(e=>{const d=e.querySelector('.exercise-recent-date').getBoundingClientRect(),a=e.querySelector('.prev-history-arrow').getBoundingClientRect();return d.right+4<=a.left;}),'recent date and arrow must not overlap');}assert(sample.geometry.main.save.height>=48);
    const card=p.locator('#dayPanel .ex-row').first();await card.locator('.in-weight').fill('60');await card.locator('.in-done').fill('10');
    const beforeSave=await raw();for(const[k,v]of Object.entries(initial))if(!k.includes('draft'))assert.equal(beforeSave[k],v,'input preserves '+k);
    await card.locator('.btn-record-one').click();const after=await raw();const count=s=>JSON.parse(s||'[]').reduce((n,r)=>n+r.entries.length,0);assert.equal(count(after['bulk-routine-log-v1']),count(initial['bulk-routine-log-v1'])+1);
