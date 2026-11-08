@@ -3196,3 +3196,4 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .direct-entry-modal .direct-search-option>span{min-width:0;flex:1}
 .direct-entry-modal .direct-search-option>small{flex-shrink:0}
 .direct-entry-modal .direct-search-results{max-height:min(240px,40dvh)}
+.direct-entry-modal .direct-record-actions button{scroll-margin-block:8px}

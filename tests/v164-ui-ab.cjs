@@ -1,9 +1,9 @@
-// Actual v163/v164, synthetic data, isolated Chromium. Reduced viewport is NOT Android IME.
+// Actual v164/v165, synthetic data, isolated Chromium. Reduced viewport is NOT Android IME.
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert/strict'),cp=require('child_process'),os=require('os');
 const {fixture,splitStorage}=require('./v162-fixtures.cjs');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'test-results/v164');fs.mkdirSync(out,{recursive:true});
-const original=fs.mkdtempSync(path.join(os.tmpdir(),'v163-A-'));
-for(const f of ['index.html','app.js','style.css','sw.js','manifest.webmanifest'])fs.writeFileSync(path.join(original,f),cp.execFileSync('git',['show','acbcd27f7c1e234ef91dc51856f5a0f79768578d:'+f],{maxBuffer:5e6}));
+const original=fs.mkdtempSync(path.join(os.tmpdir(),'v164-A-'));
+for(const f of ['index.html','app.js','style.css','sw.js','manifest.webmanifest'])fs.writeFileSync(path.join(original,f),cp.execFileSync('git',['show','4e3c271cc067795fe03498e41fb823f4aca6e8a7:'+f],{maxBuffer:5e6}));
 let currentRoot=root;const server=http.createServer((req,res)=>{const rel=new URL(req.url,'http://localhost').pathname,f=path.resolve(currentRoot,'.'+(rel==='/'?'/index.html':rel));if(!f.startsWith(currentRoot+path.sep))return res.writeHead(403).end();try{res.setHeader('Content-Type',f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(f));}catch{res.writeHead(404).end();}});
 const results={status:'NOT_RUN',samples:[],android:'NOT_RUN',IME:'NOT_RUN',environment:{node:process.version,viewportHeight:844,samplesPerCondition:1}};
 async function main(){let browser;try{
@@ -30,8 +30,8 @@ async function main(){let browser;try{
    await p.locator('#btnDirectRecord').click();const modal=p.locator('.direct-record-modal'),search=modal.locator('input[type=search]'),muscle=modal.locator('select');
    await measure('direct');await muscle.selectOption('');await search.fill('프레스');
    sample.searchCount=await modal.locator('small[role=status]').innerText();
-   const oldOptions=arm==='A'?await p.locator('#directRecordExerciseList option').evaluateAll(es=>es.map(e=>({name:e.value,muscle:e.label}))):await p.locator('.direct-search-option').evaluateAll(es=>es.map(e=>({name:e.querySelector('span').textContent,muscle:e.querySelector('small').textContent})));
-   sample.searchOptions=oldOptions;assert(oldOptions.length>1);
+   const oldOptions=(await p.locator('#directRecordExerciseList option').count())?await p.locator('#directRecordExerciseList option').evaluateAll(es=>es.map(e=>({name:e.value,muscle:e.label}))):await p.locator('.direct-search-option').evaluateAll(es=>es.map(e=>({name:e.querySelector('span').textContent,muscle:e.querySelector('small').textContent})));
+   sample.searchOptions=oldOptions;assert(oldOptions.length>1);await measure('search');
    if(arm==='B'){
     const a=results.samples.find(s=>s.width===width&&s.state===state&&s.arm==='A');assert.deepEqual(oldOptions,a.searchOptions,'identical filter/order');
     const dims=await p.locator('.direct-search-option').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height}}));assert(dims.every(d=>d.w>=44&&d.h>=44));assert(dims.slice(1).every((d,i)=>d.y>=dims[i].y+dims[i].h-1));sample.listDirection='vertical';

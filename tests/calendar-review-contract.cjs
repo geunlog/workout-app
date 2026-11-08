@@ -11,7 +11,7 @@ function appContract(s){
  for(const {before,after} of JSON.parse(read('tests/v165-display-delta.json'))){assert.equal(expected.split(before).length-1,1);expected=expected.replace(before,after);}
  assert.equal(s,expected,'only explicit reviewed rendering/focus changes permitted');
 }
-function htmlContract(s){let a=baseline('index.html');for(const [x,y]of [['content="163"','content="165"'],['style.css?v=163','style.css?v=165'],['app.js?v=163','app.js?v=165'],['앱 버전 163 · 2026-11-08','앱 버전 165 · 2026-11-08']]){assert.equal(a.split(x).length-1,1);a=a.replace(x,y)}assert.equal(s,a)}
+function htmlContract(s){let a=baseline('index.html');for(const [x,y]of [['content="163"','content="165"'],['style.css?v=163','style.css?v=165'],['app.js?v=163','app.js?v=165'],['앱 버전 163 · 2026-11-08','앱 버전 165 · 2026-11-09']]){assert.equal(a.split(x).length-1,1);a=a.replace(x,y)}assert.equal(s,a)}
 function cssContract(s){assert.equal(s,baseline('style.css')+read('tests/v164-style-delta.css')+read('tests/v165-style-delta.css'),'exact scoped selector/property/value delta');}
 function swContract(s){const hashes=JSON.parse(s.match(/const ASSET_HASHES = (\{[^\n]+\});/)[1]);for(const f of ['index.html','app.js','style.css'])assert.equal(hashes[f],hash(read(f)));assert.equal(Object.keys(hashes).length,3);const normalize=t=>t.replace(/const ASSET_HASHES = \{[^\n]+\};/,'const ASSET_HASHES = {};').replace("'v165-release-165'","'v163-release-163'");assert.equal(normalize(s),normalize(baseline('sw.js')));assert(s.includes("'v165-release-165'"))}
 appContract(read('app.js'));htmlContract(read('index.html'));cssContract(read('style.css'));swContract(read('sw.js'));
@@ -35,4 +35,4 @@ assert.equal(hash(read('tests/v164-style-delta.css')),'8da96a8eca4426c37dbf642e1
 
 assert.equal(hash(read('tests/v165-display-delta.json')),'cad4291f719c2bb89ccc332cac5313f5472ba6c774516509104b5d05c5e2770d');
 
-assert.equal(hash(read('tests/v165-style-delta.css')),'a281f86c9fc900db6e5a278406713a466904fa2a07edcafddb9a12d45f005f0e');
+assert.equal(hash(read('tests/v165-style-delta.css')),'92f1e5745900347e8f03b42fc19ffc6b9bd761b9fb218f5d713efbc34110ac18');
