@@ -13,7 +13,7 @@ async function main(){let browser;try{
   const ctx=await browser.newContext({viewport:{width,height:844},timezoneId:'Asia/Seoul',serviceWorkers:'block'});
   try{
    await ctx.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
-   await ctx.addInitScript(f=>{if(sessionStorage.getItem('seed'))return;for(const[k,v]of Object.entries(f))localStorage.setItem(k,JSON.stringify(v));sessionStorage.setItem('seed','1');},Object.assign(fixture(state),{'bulk-routine-catalog-shared-v1':{가슴:[{n:'체스트 프레스'},{n:'유사 프레스'},{n:'유사 프레스 덤벨'}],등:[{n:'합성 긴 운동명 — 원암 덤벨 로우 (벤치 지지, 좌우 각각 수행)'},{n:'유사 프레스'}],하체:[{n:'레그 프레스'}],어깨:[],삼두:[],이두:[],복근:[]}}));
+   await ctx.addInitScript(f=>{if(sessionStorage.getItem('seed'))return;for(const[k,v]of Object.entries(f))localStorage.setItem(k,JSON.stringify(v));sessionStorage.setItem('seed','1');},Object.assign((()=>{const f=fixture(state);if(state==='recorded'){const prior=JSON.parse(JSON.stringify(f['bulk-routine-log-v1'][0]));prior.date='2026-11-01';prior.dayKey='sun';prior.entries.forEach(e=>e.id+='-prior');f['bulk-routine-log-v1'].unshift(prior);}return f;})(),{'bulk-routine-catalog-shared-v1':{가슴:[{n:'체스트 프레스'},{n:'유사 프레스'},{n:'유사 프레스 덤벨'}],등:[{n:'합성 긴 운동명 — 원암 덤벨 로우 (벤치 지지, 좌우 각각 수행)'},{n:'유사 프레스'}],하체:[{n:'레그 프레스'}],어깨:[],삼두:[],이두:[],복근:[]}}));
    const p=await ctx.newPage();p.setDefaultTimeout(6000);const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.clock.install({time:new Date('2026-11-07T12:00:00+09:00')});await p.goto('http://127.0.0.1:'+server.address().port);
    const raw=()=>p.evaluate(()=>Object.fromEntries(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)])));
    const initial=splitStorage(await raw()).protected;
