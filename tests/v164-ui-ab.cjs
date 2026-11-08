@@ -13,7 +13,7 @@ async function main(){let browser;try{
   const ctx=await browser.newContext({viewport:{width,height:844},timezoneId:'Asia/Seoul',serviceWorkers:'block'});
   try{
    await ctx.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
-   await ctx.addInitScript(f=>{if(sessionStorage.getItem('seed'))return;for(const[k,v]of Object.entries(f))localStorage.setItem(k,JSON.stringify(v));sessionStorage.setItem('seed','1');},fixture(state));
+   await ctx.addInitScript(f=>{if(sessionStorage.getItem('seed'))return;for(const[k,v]of Object.entries(f))localStorage.setItem(k,JSON.stringify(v));sessionStorage.setItem('seed','1');},Object.assign(fixture(state),{'bulk-routine-catalog-shared-v1':{가슴:[{n:'체스트 프레스'},{n:'유사 프레스'},{n:'유사 프레스 덤벨'}],등:[{n:'합성 긴 운동명 — 원암 덤벨 로우 (벤치 지지, 좌우 각각 수행)'},{n:'유사 프레스'}],하체:[{n:'레그 프레스'}],어깨:[],삼두:[],이두:[],복근:[]}}));
    const p=await ctx.newPage();p.setDefaultTimeout(6000);const errors=[];p.on('pageerror',e=>errors.push(e.message));await p.clock.install({time:new Date('2026-11-07T12:00:00+09:00')});await p.goto('http://127.0.0.1:'+server.address().port);
    const raw=()=>p.evaluate(()=>Object.fromEntries(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)])));
    const initial=splitStorage(await raw()).protected;
@@ -24,8 +24,8 @@ async function main(){let browser;try{
    await card.locator('.btn-record-one').click();const after=await raw();const count=s=>JSON.parse(s||'[]').reduce((n,r)=>n+r.entries.length,0);assert.equal(count(after['bulk-routine-log-v1']),count(initial['bulk-routine-log-v1'])+1);
    assert.equal(after['bulk-routine-v9'],initial['bulk-routine-v9']);assert.equal(after['bulk-exercise-notes-v1'],initial['bulk-exercise-notes-v1']);
    if(arm==='B')assert.equal(await card.locator('.exercise-saved-count').innerText(),state==='recorded'?'4/3 저장':'1/3 저장');
-   await measure('saved');await p.locator('#btnRoutineEdit').click();await measure('edit');assert(sample.geometry.edit.cards.every(c=>c.height<=184),'preserve three-row edit cards');await p.locator('#btnRoutineEdit').click();
-   await p.locator('#btnAiMenu').click();await measure('ai');assert.equal(await p.locator('#aiQuickMenu .ai-day-actions button').count(),4);const touch=await p.locator('#aiQuickMenu button').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return[r.width,r.height]}));assert(touch.every(([w,h])=>w>=44&&h>=44));await p.locator('[data-ai-menu-close]').click();
+   await measure('saved');await p.locator('#btnRoutineEdit').click();await measure('edit');assert(sample.geometry.edit.cards.every(c=>c.height<=184),'preserve three-row edit cards');
+   await p.locator('#btnAiMenu').click();await measure('ai');assert.equal(await p.locator('#aiQuickMenu .ai-day-actions button').count(),4);const touch=await p.locator('#aiQuickMenu button').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return[r.width,r.height]}));assert(touch.every(([w,h])=>w>=44&&h>=44));await p.locator('[data-ai-menu-close]').click();await p.locator('#btnRoutineEdit').click();
    const protectedBefore=splitStorage(await raw()).protected;
    await p.locator('#btnDirectRecord').click();const modal=p.locator('.direct-record-modal'),search=modal.locator('input[type=search]'),muscle=modal.locator('select');
    await measure('direct');await muscle.selectOption('');await search.fill('프레스');
