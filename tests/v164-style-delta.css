@@ -1,0 +1,38 @@
+
+/* v164: workout read cards and the direct-entry dialog only. */
+.bulk-app #dayView:not(.routine-editing) #dayPanel .rep-muscle-tag{display:none}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .exercise-goal-read{display:flex;align-items:center;gap:2px 4px;font-size:12px;line-height:1.5;margin:4px 0}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .exercise-goal-read>span{padding:0;background:none;border-radius:0}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .exercise-goal-read>span+span:not(.exercise-saved-count)::before{content:'·';margin-right:4px;color:var(--muted,#64748b)}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .exercise-goal-read>.exercise-saved-count{margin-left:auto;white-space:nowrap;color:#3156b9;font-weight:700}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .saved-set-summary{margin:4px 0;line-height:1.5}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .saved-set-summary[hidden]{display:none}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .record-compare-hint{margin:4px 0;min-height:44px;align-content:center;line-height:1.5}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .exercise-recent-date{float:right;margin-left:6px;font-size:12px}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .record-compare-change{display:block}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .record-more{margin-top:4px}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .record-more>summary,.bulk-app #dayView:not(.routine-editing) #dayPanel .suggest-details>summary{min-height:44px;padding-block:6px;box-sizing:border-box}
+.bulk-app #dayView.routine-editing .routine-mode-bar{margin:4px 0}
+.bulk-app #dayView.routine-editing .reset-row{margin-block:4px;gap:6px}
+.bulk-app #dayView.routine-editing .edit-action-row{margin-block:4px;padding-top:4px}
+.bulk-app #dayView.routine-editing .routine-advanced-options{margin-block:4px}
+.bulk-app #dayView.routine-editing .record-context{margin-block:4px}
+#aiQuickMenu{padding:12px 16px calc(12px + env(safe-area-inset-bottom));max-height:calc(100dvh - 24px);overflow-y:auto;box-sizing:border-box}
+#aiQuickMenu>p{margin-bottom:8px}
+#aiQuickMenu .ai-day-actions button{min-height:56px;padding-block:8px}
+#aiQuickMenu [data-ai-menu-close]{min-height:44px;margin-top:8px}
+.direct-entry-modal .direct-record-head{margin-bottom:8px}
+.direct-entry-modal .direct-record-form{gap:8px}
+.direct-entry-modal .direct-recent-chip{min-height:44px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.direct-entry-modal .muscle-search{display:flex;gap:6px;min-width:0}
+.direct-entry-modal .muscle-search input{min-width:0;flex:1;font-size:16px}
+.direct-entry-modal .muscle-search select{max-width:84px;font-size:16px}
+.direct-entry-modal .direct-search-toggle{flex:0 0 44px;min-height:44px;border:1px solid #d7dfea;background:#f5f7fc;border-radius:10px;color:#334155;font-size:18px}
+.direct-entry-modal .direct-search-results{max-height:min(280px,40dvh);overflow-y:auto;overscroll-behavior:contain;border:1px solid #d7dfea;border-radius:12px;min-width:0}
+.direct-entry-modal .direct-search-results[hidden]{display:none}
+.direct-entry-modal .direct-search-option{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:56px;padding:8px 12px;box-sizing:border-box;border:0;border-bottom:1px solid #e5eaf2;background:#fff;color:#172033;text-align:left;font:inherit;cursor:pointer}
+.direct-entry-modal .direct-search-option>span{line-height:1.4;overflow-wrap:anywhere}
+.direct-entry-modal .direct-search-option>small{color:#536278;font-size:12px}
+.direct-entry-modal .direct-search-option:focus-visible,.direct-entry-modal .direct-search-toggle:focus-visible{outline:2px solid #315bea;outline-offset:-3px}
+.direct-entry-modal .direct-search-option:hover{background:#f0f4ff}
+.direct-entry-modal .direct-record-close{min-width:44px;min-height:44px}

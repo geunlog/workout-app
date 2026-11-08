@@ -1,0 +1,70 @@
+[
+  {
+    "before": "doneIn.placeholder = '–';",
+    "after": "doneIn.placeholder = '횟수';"
+  },
+  {
+    "before": "[ex.s + '세트', ex.r ? ex.r + '회' : '반복수 미설정', ex.rir ? 'RIR ' + ex.rir : 'RIR 미설정']",
+    "after": "[ex.m, ex.s + '세트', ex.r ? ex.r + '회' : '반복수 미설정', ex.rir ? 'RIR ' + ex.rir : 'RIR 미설정']"
+  },
+  {
+    "before": "      var savedBox=document.createElement('div');savedBox.className='saved-set-summary routine-read-only';",
+    "after": "      var savedCount=document.createElement('span');savedCount.className='exercise-saved-count';savedCount.textContent=saved.length+'/'+ex.s+' 저장';goal.appendChild(savedCount);\n      var savedBox=document.createElement('div');savedBox.className='saved-set-summary routine-read-only';"
+  },
+  {
+    "before": "summary.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' '+saved.length+' / 계획 '+ex.s+'세트 · 마지막 저장 '",
+    "after": "summary.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' 마지막 저장 '"
+  },
+  {
+    "before": "      }else savedBox.textContent='저장 0세트';",
+    "after": "      }else savedBox.hidden=true;"
+  },
+  {
+    "before": "          decorateHistoryHint(hint,ex.n,selectedRecordDate);",
+    "after": "          decorateHistoryHint(hint,ex.n,selectedRecordDate);\n          // Compact only this card's presentation; comparison numbers remain untouched.\n          if(hint.firstChild && hint.firstChild.nodeType===3)hint.firstChild.textContent='최근 ';\n          var dateText=hint.querySelector('b + span');\n          if(dateText){dateText.classList.add('exercise-recent-date');dateText.title=prev.date;dateText.textContent=prev.date.slice(5).replace('-','/');}"
+  },
+  {
+    "before": "modal.className='direct-record-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','directRecordTitle');",
+    "after": "modal.className='direct-record-modal direct-entry-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','directRecordTitle');"
+  },
+  {
+    "before": "name.setAttribute('list','directRecordExerciseList');",
+    "after": "name.setAttribute('aria-controls','directRecordExerciseList');name.setAttribute('aria-expanded','false');"
+  },
+  {
+    "before": "    var datalist=document.createElement('datalist');datalist.id='directRecordExerciseList';\n    options.forEach(function(item){var o=document.createElement('option');o.value=item.name;o.label=item.muscle;datalist.appendChild(o);});\n    nameLabel.appendChild(datalist);form.appendChild(nameLabel);",
+    "after": "    var datalist=document.createElement('div');datalist.id='directRecordExerciseList';datalist.className='direct-search-results';datalist.hidden=true;datalist.setAttribute('role','list');datalist.setAttribute('aria-label','등록 운동 검색 결과');\n    form.appendChild(nameLabel);"
+  },
+  {
+    "before": "    function directOptions(){var matches=options.filter(function(item){return (!muscle.value || muscle.value===item.muscle) && item.name.toLocaleLowerCase('ko-KR').includes(name.value.trim().toLocaleLowerCase('ko-KR'));});datalist.replaceChildren();matches.forEach(function(item){var o=document.createElement('option');o.value=item.name;o.label=item.muscle;datalist.appendChild(o);});searchCount.textContent=matches.length+'개 종목';}",
+    "after": "    var listToggle=document.createElement('button');listToggle.type='button';listToggle.className='direct-search-toggle';listToggle.textContent='▾';listToggle.setAttribute('aria-label','등록 운동 목록 열기');listToggle.setAttribute('aria-controls',datalist.id);listToggle.setAttribute('aria-expanded','false');searchRow.appendChild(listToggle);\n    // Results are outside the input label so choosing a row does not reactivate the input.\n    form.appendChild(datalist);\n    function showDirectOptions(open){datalist.hidden=!open;name.setAttribute('aria-expanded',String(open));listToggle.setAttribute('aria-expanded',String(open));}\n    function directOptions(){var matches=options.filter(function(item){return (!muscle.value || muscle.value===item.muscle) && item.name.toLocaleLowerCase('ko-KR').includes(name.value.trim().toLocaleLowerCase('ko-KR'));});datalist.replaceChildren();matches.forEach(function(item){\n      var row=document.createElement('div');row.setAttribute('role','listitem');\n      var o=document.createElement('button');o.type='button';o.className='direct-search-option';o.title=item.name;o.setAttribute('aria-label',item.name+' · '+item.muscle);\n      var title=document.createElement('span');title.textContent=item.name;var group=document.createElement('small');group.textContent=item.muscle;o.appendChild(title);o.appendChild(group);\n      o.addEventListener('click',function(){name.value=item.name;name.dispatchEvent(new Event('change',{bubbles:true}));name.focus({preventScroll:true});showDirectOptions(false);});row.appendChild(o);datalist.appendChild(row);\n    });searchCount.textContent=matches.length+'개 종목';}\n    name.addEventListener('focus',function(){showDirectOptions(true);});\n    name.addEventListener('input',function(){showDirectOptions(true);});\n    listToggle.addEventListener('click',function(){showDirectOptions(datalist.hidden);});"
+  },
+  {
+    "before": "form._scrollT=setTimeout(function(){save.scrollIntoView({block:'end',behavior:'smooth'});},280);",
+    "after": "form._scrollT=setTimeout(function(){if(e.target.isConnected)e.target.scrollIntoView({block:'nearest',behavior:'smooth'});},280);"
+  },
+  {
+    "before": "    function close(){\n      document.removeEventListener('keydown',keydown);\n      if(window.visualViewport)",
+    "after": "    function close(){\n      clearTimeout(form._scrollT);\n      document.removeEventListener('keydown',keydown);\n      if(window.visualViewport)"
+  },
+  {
+    "before": "name.addEventListener('focus',function(){showDirectOptions(true);});",
+    "after": "name.addEventListener('focus',function(){directOptions();showDirectOptions(true);});"
+  },
+  {
+    "before": "listToggle.addEventListener('click',function(){showDirectOptions(datalist.hidden);});",
+    "after": "listToggle.addEventListener('click',function(){if(datalist.hidden)directOptions();showDirectOptions(datalist.hidden);});"
+  },
+  {
+    "before": "muscle.addEventListener('change',function(){directOptions();previousName='';refreshExercise();});name.addEventListener('input',directOptions);directOptions();",
+    "after": "muscle.addEventListener('change',function(){directOptions();previousName='';refreshExercise();});directOptions();"
+  },
+  {
+    "before": "if(item && !muscle.value)muscle.value=item.muscle;directOptions();",
+    "after": "if(item && !muscle.value)muscle.value=item.muscle;"
+  },
+  {
+    "before": "name.addEventListener('input',refreshExercise);name.addEventListener('change',refreshExercise);",
+    "after": "name.addEventListener('input',function(){refreshExercise();directOptions();});name.addEventListener('change',refreshExercise);"
+  }
+]

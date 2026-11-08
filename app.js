@@ -2031,7 +2031,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       var doneIn = makeNumberInput('in-done', dr.reps, 0, 100, 1, function (v,committed) { if(committed && li.dataset.touched!=='true')return;dr.reps = v;dr.w=wIn.value;dr.touched=true;li.dataset.touched='true';writeJSON(DRAFT_KEY, draft);updateSaveCount(); });
       doneIn.inputMode='numeric';
       doneIn.setAttribute('aria-label', '실제 반복수');
-      doneIn.placeholder = '–';
+      doneIn.placeholder = '횟수';
 
       var weightControl=document.createElement('div');weightControl.className='weight-control';
       weightControl.appendChild(wrapField('kg', wIn));
@@ -2052,7 +2052,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       var goal = document.createElement('div');
       goal.className = 'exercise-goal-read routine-read-only';
       goal.setAttribute('aria-label', '운동 목표');
-      [ex.s + '세트', ex.r ? ex.r + '회' : '반복수 미설정', ex.rir ? 'RIR ' + ex.rir : 'RIR 미설정'].forEach(function(text) {
+      [ex.m, ex.s + '세트', ex.r ? ex.r + '회' : '반복수 미설정', ex.rir ? 'RIR ' + ex.rir : 'RIR 미설정'].forEach(function(text) {
         var badge = document.createElement('span');badge.textContent = text;goal.appendChild(badge);
       });
       li.appendChild(goal);
@@ -2067,16 +2067,17 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         addRecordBtn.textContent=(saved.length+1)+'번째 세트 저장';
         addRecordBtn.setAttribute('aria-label',ex.n+' '+(saved.length+1)+'세트 기록 추가');
       }
+      var savedCount=document.createElement('span');savedCount.className='exercise-saved-count';savedCount.textContent=saved.length+'/'+ex.s+' 저장';goal.appendChild(savedCount);
       var savedBox=document.createElement('div');savedBox.className='saved-set-summary routine-read-only';
       if(saved.length){
         var lastSaved=saved[saved.length-1];
-        var summary=document.createElement('div');summary.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' '+saved.length+' / 계획 '+ex.s+'세트 · 마지막 저장 '+(lastSaved.w==='-'?'무게 미입력':lastSaved.w+'kg')+' × '+(lastSaved.reps==='-'?'횟수 미입력':lastSaved.reps+'회');savedBox.appendChild(summary);
+        var summary=document.createElement('div');summary.textContent=(selectedRecordDate===todayStr()?'오늘':'선택일')+' 마지막 저장 '+(lastSaved.w==='-'?'무게 미입력':lastSaved.w+'kg')+' × '+(lastSaved.reps==='-'?'횟수 미입력':lastSaved.reps+'회');savedBox.appendChild(summary);
         if(!prev){summary.className='history-tappable';summary.tabIndex=0;summary.setAttribute('role','button');summary.setAttribute('aria-label',ex.n+' 최근 기록 보기');summary.addEventListener('click',function(){openRecentHistoryModal(ex.n,selectedRecordDate,summary,ex.m);});summary.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openRecentHistoryModal(ex.n,selectedRecordDate,summary,ex.m);}});}
         var edit=document.createElement('button');edit.type='button';edit.className='btn-reset';edit.textContent='마지막 세트 수정';edit.onclick=function(){openRecordEditor(quick,lastSaved,edit,{card:li,title:moreTitle,number:saved.length});};quick.appendChild(edit);
         var undo=document.createElement('button');undo.type='button';undo.className='btn-reset';undo.textContent='마지막 저장 취소';undo.onclick=function(){
           requireSecondClick(undo,'되돌리기 확인',function(){var next=logs.map(function(g){return Object.assign({},g,{entries:g.entries.filter(function(e){return e.id!==lastSaved.id;})});}).filter(function(g){return g.entries.length;});if(!writeJSON(LOG_KEY,next)){showToast('저장 취소 실패 · 기존 기록 유지','error');return;}clearRecordUndo();logs=next;renderPanel();renderRecords();showToast('선택한 1세트 저장을 되돌렸어요.');});
         };quick.appendChild(undo);
-      }else savedBox.textContent='저장 0세트';
+      }else savedBox.hidden=true;
       li.appendChild(savedBox);
       if(saved.length)li.appendChild(more);
 
@@ -2086,6 +2087,10 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         function renderPreviousHint(){
           updatePreviousComparison(hint,prev,wIn.value,doneIn.value);
           decorateHistoryHint(hint,ex.n,selectedRecordDate);
+          // Compact only this card's presentation; comparison numbers remain untouched.
+          if(hint.firstChild && hint.firstChild.nodeType===3)hint.firstChild.textContent='최근 ';
+          var dateText=hint.querySelector('b + span');
+          if(dateText){dateText.classList.add('exercise-recent-date');dateText.title=prev.date;dateText.textContent=prev.date.slice(5).replace('-','/');}
         }
         renderPreviousHint();
         hint.addEventListener('click',function(){
@@ -2622,7 +2627,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     clearConfirmation();
     var options=catalogExerciseOptions();
     var overlay=document.createElement('div');overlay.className='direct-record-overlay';overlay.setAttribute('role','presentation');
-    var modal=document.createElement('section');modal.className='direct-record-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','directRecordTitle');
+    var modal=document.createElement('section');modal.className='direct-record-modal direct-entry-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','directRecordTitle');
     var handle=document.createElement('div');handle.className='direct-record-handle';handle.setAttribute('aria-hidden','true');modal.appendChild(handle);
     var head=document.createElement('div');head.className='direct-record-head';
     var title=document.createElement('h2');title.id='directRecordTitle';title.textContent='운동 기록 추가';
@@ -2653,17 +2658,28 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     }
 
     var nameLabel=document.createElement('label');nameLabel.textContent='운동 종목';
-    var name=document.createElement('input');name.type='search';name.autocomplete='off';name.placeholder='운동을 검색하거나 직접 입력';name.setAttribute('list','directRecordExerciseList');name.required=true;
-    var datalist=document.createElement('datalist');datalist.id='directRecordExerciseList';
-    options.forEach(function(item){var o=document.createElement('option');o.value=item.name;o.label=item.muscle;datalist.appendChild(o);});
-    nameLabel.appendChild(datalist);form.appendChild(nameLabel);
+    var name=document.createElement('input');name.type='search';name.autocomplete='off';name.placeholder='운동을 검색하거나 직접 입력';name.setAttribute('aria-controls','directRecordExerciseList');name.setAttribute('aria-expanded','false');name.required=true;
+    var datalist=document.createElement('div');datalist.id='directRecordExerciseList';datalist.className='direct-search-results';datalist.hidden=true;datalist.setAttribute('role','list');datalist.setAttribute('aria-label','등록 운동 검색 결과');
+    form.appendChild(nameLabel);
 
     var muscleLabel=document.createElement('label');muscleLabel.textContent='부위';
     var muscle=makeMuscleSelect();muscle.setAttribute('aria-label','검색 및 기록 부위');
     var searchRow=document.createElement('div');searchRow.className='muscle-search';searchRow.appendChild(muscle);searchRow.appendChild(name);nameLabel.appendChild(searchRow);
     var searchCount=document.createElement('small');searchCount.setAttribute('role','status');nameLabel.appendChild(searchCount);
-    function directOptions(){var matches=options.filter(function(item){return (!muscle.value || muscle.value===item.muscle) && item.name.toLocaleLowerCase('ko-KR').includes(name.value.trim().toLocaleLowerCase('ko-KR'));});datalist.replaceChildren();matches.forEach(function(item){var o=document.createElement('option');o.value=item.name;o.label=item.muscle;datalist.appendChild(o);});searchCount.textContent=matches.length+'개 종목';}
-    muscle.addEventListener('change',function(){directOptions();previousName='';refreshExercise();});name.addEventListener('input',directOptions);directOptions();
+    var listToggle=document.createElement('button');listToggle.type='button';listToggle.className='direct-search-toggle';listToggle.textContent='▾';listToggle.setAttribute('aria-label','등록 운동 목록 열기');listToggle.setAttribute('aria-controls',datalist.id);listToggle.setAttribute('aria-expanded','false');searchRow.appendChild(listToggle);
+    // Results are outside the input label so choosing a row does not reactivate the input.
+    form.appendChild(datalist);
+    function showDirectOptions(open){datalist.hidden=!open;name.setAttribute('aria-expanded',String(open));listToggle.setAttribute('aria-expanded',String(open));}
+    function directOptions(){var matches=options.filter(function(item){return (!muscle.value || muscle.value===item.muscle) && item.name.toLocaleLowerCase('ko-KR').includes(name.value.trim().toLocaleLowerCase('ko-KR'));});datalist.replaceChildren();matches.forEach(function(item){
+      var row=document.createElement('div');row.setAttribute('role','listitem');
+      var o=document.createElement('button');o.type='button';o.className='direct-search-option';o.title=item.name;o.setAttribute('aria-label',item.name+' · '+item.muscle);
+      var title=document.createElement('span');title.textContent=item.name;var group=document.createElement('small');group.textContent=item.muscle;o.appendChild(title);o.appendChild(group);
+      o.addEventListener('click',function(){name.value=item.name;name.dispatchEvent(new Event('change',{bubbles:true}));name.focus({preventScroll:true});showDirectOptions(false);});row.appendChild(o);datalist.appendChild(row);
+    });searchCount.textContent=matches.length+'개 종목';}
+    name.addEventListener('focus',function(){directOptions();showDirectOptions(true);});
+    name.addEventListener('input',function(){showDirectOptions(true);});
+    listToggle.addEventListener('click',function(){if(datalist.hidden)directOptions();showDirectOptions(datalist.hidden);});
+    muscle.addEventListener('change',function(){directOptions();previousName='';refreshExercise();});directOptions();
 
     var dateLabel=document.createElement('label');dateLabel.textContent='기록 날짜';
     var date=document.createElement('input');date.type='date';date.max=todayStr();date.value=selectedRecordDate;date.required=true;
@@ -2698,7 +2714,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     form.addEventListener('focusin',function(e){
       if(!/^(INPUT|SELECT)$/.test(e.target.tagName))return;
       clearTimeout(form._scrollT);
-      form._scrollT=setTimeout(function(){save.scrollIntoView({block:'end',behavior:'smooth'});},280);
+      form._scrollT=setTimeout(function(){if(e.target.isConnected)e.target.scrollIntoView({block:'nearest',behavior:'smooth'});},280);
     });
 
     var previous=null,previousName='',directTouched=false,weightWasSuggested=false;
@@ -2709,7 +2725,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     function refreshExercise(){
       var item=selectedCatalogItem();
       customNote.hidden=!name.value.trim() || !!item;
-      if(item && !muscle.value)muscle.value=item.muscle;directOptions();
+      if(item && !muscle.value)muscle.value=item.muscle;
       var trimmed=name.value.trim();
       if(!trimmed){previous=null;previousName='';prevHint.hidden=true;return;}
       if(trimmed!==previousName){
@@ -2721,11 +2737,12 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if(previous){prevHint.hidden=false;updatePreviousComparison(prevHint,previous,weight.value,reps.value);}
       else prevHint.hidden=true;
     }
-    name.addEventListener('input',refreshExercise);name.addEventListener('change',refreshExercise);
+    name.addEventListener('input',function(){refreshExercise();directOptions();});name.addEventListener('change',refreshExercise);
     date.addEventListener('change',function(){previousName='';refreshExercise();});
     weight.addEventListener('input',function(){directTouched=true;weightWasSuggested=false;refreshExercise();});reps.addEventListener('input',function(){directTouched=true;refreshExercise();});
 
     function close(){
+      clearTimeout(form._scrollT);
       document.removeEventListener('keydown',keydown);
       if(window.visualViewport)window.visualViewport.removeEventListener('resize',syncViewportHeight);
       overlay.remove();document.body.style.overflow='';
