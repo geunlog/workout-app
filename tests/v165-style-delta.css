@@ -1,0 +1,12 @@
+
+/* v165: exercise actions and direct-entry density; date controls unchanged. */
+.bulk-app #dayView #btnDirectRecord{border-color:#9aafe8;background:#f5f8ff;color:#234fc4}
+.bulk-app #dayView #btnRoutineEdit[aria-pressed=false]{background:#f3f4f8;color:#596276}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .stamp-row{padding-block:10px}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .record-compare-hint{background:transparent;padding-inline:0;margin-block:2px}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .suggest-details>summary{padding-block:0}
+.direct-entry-modal .direct-record-head{padding-block:0;margin-bottom:4px}
+.direct-entry-modal .direct-search-option{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:8px 12px}
+.direct-entry-modal .direct-search-option>span{min-width:0;flex:1}
+.direct-entry-modal .direct-search-option>small{flex-shrink:0}
+.direct-entry-modal .direct-search-results{max-height:min(240px,40dvh)}

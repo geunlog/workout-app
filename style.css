@@ -3184,3 +3184,15 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .direct-entry-modal .direct-search-option:focus-visible,.direct-entry-modal .direct-search-toggle:focus-visible{outline:2px solid #315bea;outline-offset:-3px}
 .direct-entry-modal .direct-search-option:hover{background:#f0f4ff}
 .direct-entry-modal .direct-record-close{min-width:44px;min-height:44px}
+
+/* v165: exercise actions and direct-entry density; date controls unchanged. */
+.bulk-app #dayView #btnDirectRecord{border-color:#9aafe8;background:#f5f8ff;color:#234fc4}
+.bulk-app #dayView #btnRoutineEdit[aria-pressed=false]{background:#f3f4f8;color:#596276}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .stamp-row{padding-block:10px}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .record-compare-hint{background:transparent;padding-inline:0;margin-block:2px}
+.bulk-app #dayView:not(.routine-editing) #dayPanel .suggest-details>summary{padding-block:0}
+.direct-entry-modal .direct-record-head{padding-block:0;margin-bottom:4px}
+.direct-entry-modal .direct-search-option{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:8px 12px}
+.direct-entry-modal .direct-search-option>span{min-width:0;flex:1}
+.direct-entry-modal .direct-search-option>small{flex-shrink:0}
+.direct-entry-modal .direct-search-results{max-height:min(240px,40dvh)}

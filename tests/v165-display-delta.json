@@ -1,0 +1,10 @@
+[
+  {
+    "before": "name.addEventListener('focus',function(){directOptions();showDirectOptions(true);});",
+    "after": "name.addEventListener('focus',function(){directOptions();showDirectOptions(Boolean(name.value.trim()));});"
+  },
+  {
+    "before": "name.addEventListener('input',function(){showDirectOptions(true);});",
+    "after": "name.addEventListener('input',function(){showDirectOptions(Boolean(name.value.trim()));});"
+  }
+]
