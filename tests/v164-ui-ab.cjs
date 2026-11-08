@@ -40,7 +40,10 @@ async function main(){let browser;try{
     await muscle.selectOption('');await search.fill('없는 합성 신규 운동');assert.equal(await p.locator('.direct-search-option').count(),0);assert(await modal.locator('.direct-record-custom-note').isVisible());
     await search.fill('');await muscle.selectOption('');assert((await p.locator('.direct-search-option').count())>1);
     await search.fill('합성 긴 운동명');assert.equal(await p.locator('.direct-search-option').count(),1);assert((await p.locator('.direct-search-option').innerText()).includes('좌우 각각 수행'));
-    await p.setViewportSize({width,height:420});await search.focus();await p.clock.runFor(400);await search.evaluate(e=>e.scrollIntoView({block:'nearest'}));
+    await p.setViewportSize({width,height:420});
+    // setViewportSize resolves before visualViewport resize delivery in Chromium.
+    // Wait for the existing app handler; retain strict visibility assertions.
+    await p.waitForFunction(()=>{const m=document.querySelector('.direct-entry-modal'),o=m&&m.parentElement;return o&&o.style.height===visualViewport.height+'px'&&m.getBoundingClientRect().bottom<=innerHeight;},null,{timeout:3000});await search.focus();await p.clock.runFor(400);await search.evaluate(e=>e.scrollIntoView({block:'nearest'}));
     sample.searchTrace=await search.evaluate(e=>{const r=e.getBoundingClientRect(),m=e.closest('.direct-record-modal');return{top:r.top,bottom:r.bottom,height:r.height,innerHeight,visualHeight:visualViewport.height,modalTop:m.getBoundingClientRect().top,modalBottom:m.getBoundingClientRect().bottom,scrollTop:m.scrollTop,scrollHeight:m.scrollHeight,clientHeight:m.clientHeight};});
     assert(await search.evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),'search reachable reduced viewport');
     await p.locator('.direct-search-option').click();await modal.locator('input[type=number]').last().fill('8');await modal.locator('button[type=submit]').scrollIntoViewIfNeeded();
