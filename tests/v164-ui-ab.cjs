@@ -43,6 +43,13 @@ async function main(){let browser;try{
     await p.setViewportSize({width,height:420});await search.focus();await p.clock.runFor(400);await search.evaluate(e=>e.scrollIntoView({block:'nearest'}));
     assert(await search.evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),'search reachable reduced viewport');
     await p.locator('.direct-search-option').click();await modal.locator('input[type=number]').last().fill('8');await modal.locator('button[type=submit]').scrollIntoViewIfNeeded();
+    sample.reducedTrace=[];
+    async function traceSave(label){sample.reducedTrace.push(await modal.evaluate((m,label)=>{const b=m.querySelector('button[type=submit]'),r=b.getBoundingClientRect(),o=m.parentElement;return{label,button:{top:r.top,bottom:r.bottom,height:r.height},innerHeight,visualHeight:visualViewport.height,overlayHeight:o.style.height,modalTop:m.getBoundingClientRect().top,modalBottom:m.getBoundingClientRect().bottom,scrollTop:m.scrollTop,scrollHeight:m.scrollHeight,clientHeight:m.clientHeight,active:document.activeElement.outerHTML};},label));}
+    await traceSave('immediate');
+    await p.clock.runFor(600);
+    await traceSave('after-focus-timer');
+    await modal.locator('button[type=submit]').scrollIntoViewIfNeeded();
+    await traceSave('after-user-scroll');
     assert(await modal.locator('button[type=submit]').evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),'save reachable reduced viewport');await measure('reduced');await p.setViewportSize({width,height:844});
    }
    await modal.locator('.direct-record-close').click();assert(await p.locator('#btnDirectRecord').evaluate(e=>document.activeElement===e));assert.deepEqual(splitStorage(await raw()).protected,protectedBefore,'cancel protects all stored data');
