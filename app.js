@@ -2676,8 +2676,8 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       var title=document.createElement('span');title.textContent=item.name;var group=document.createElement('small');group.textContent=item.muscle;o.appendChild(title);o.appendChild(group);
       o.addEventListener('click',function(){name.value=item.name;name.dispatchEvent(new Event('change',{bubbles:true}));name.focus({preventScroll:true});showDirectOptions(false);});row.appendChild(o);datalist.appendChild(row);
     });searchCount.textContent=matches.length+'개 종목';}
-    name.addEventListener('focus',function(){directOptions();showDirectOptions(true);});
-    name.addEventListener('input',function(){showDirectOptions(true);});
+    name.addEventListener('focus',function(){directOptions();showDirectOptions(Boolean(name.value.trim()));});
+    name.addEventListener('input',function(){showDirectOptions(Boolean(name.value.trim()));});
     listToggle.addEventListener('click',function(){if(datalist.hidden)directOptions();showDirectOptions(datalist.hidden);});
     muscle.addEventListener('change',function(){directOptions();previousName='';refreshExercise();});directOptions();
 
