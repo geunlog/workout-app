@@ -38,7 +38,7 @@ async function main(){let browser;try{
     sample.visibleCandidates=await p.locator('.direct-search-results').evaluate(e=>{const r=e.getBoundingClientRect();return[...e.querySelectorAll('button')].filter(b=>b.getBoundingClientRect().bottom<=r.bottom+1).length});
     await p.locator('.direct-search-option').first().click();assert.equal(await search.inputValue(),oldOptions[0].name);assert(await p.locator('.direct-search-results').isHidden());
     await muscle.selectOption('');await search.fill('없는 합성 신규 운동');assert.equal(await p.locator('.direct-search-option').count(),0);assert(await modal.locator('.direct-record-custom-note').isVisible());
-    await search.fill('');assert((await p.locator('.direct-search-option').count())>1);
+    await search.fill('');await muscle.selectOption('');assert((await p.locator('.direct-search-option').count())>1);
     await search.fill('합성 긴 운동명');assert.equal(await p.locator('.direct-search-option').count(),1);assert((await p.locator('.direct-search-option').innerText()).includes('좌우 각각 수행'));
     await p.setViewportSize({width,height:420});await search.focus();await p.clock.runFor(400);await search.evaluate(e=>e.scrollIntoView({block:'nearest'}));
     assert(await search.evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),'search reachable reduced viewport');
