@@ -1,0 +1,13 @@
+{
+  "replacements": [
+    {
+      "before": ".record-compare-hint{background:transparent;padding-inline:0;margin-block:2px}",
+      "after": ".record-compare-hint{background:transparent;padding:0 24px 0 0;margin-block:2px}"
+    },
+    {
+      "before": "#btnRoutineEdit[aria-pressed=false]{background:#f3f4f8;color:#596276}",
+      "after": "#btnRoutineEdit[aria-pressed=false]{background:#fff;color:#334155;border-color:#c3ccdc}"
+    }
+  ],
+  "append": "\n/* v166: reserve recent-history arrow space and compact read-card gaps. */\n.bulk-app #dayView:not(.routine-editing) #dayPanel .log-fields{margin-top:4px;padding-top:4px;gap:6px}\n.bulk-app #dayView:not(.routine-editing) #dayPanel .suggest-details{margin-top:0}\n.bulk-app #dayView:not(.routine-editing) #dayPanel .weight-source-note{margin-block:2px}\n"
+}
