@@ -32,7 +32,7 @@ async function main(){let browser;try{
    sample.searchCount=await modal.locator('small[role=status]').innerText();
    const oldOptions=(await p.locator('#directRecordExerciseList option').count())?await p.locator('#directRecordExerciseList option').evaluateAll(es=>es.map(e=>({name:e.value,muscle:e.label}))):await p.locator('.direct-search-option').evaluateAll(es=>es.map(e=>({name:e.querySelector('span').textContent,muscle:e.querySelector('small').textContent})));
    sample.searchOptions=oldOptions;assert(oldOptions.length>1);await measure('search');
-   if(arm==='B'){
+   if(arm==='A'||arm==='B'){
     const a=results.samples.find(s=>s.width===width&&s.state===state&&s.arm==='A');assert.deepEqual(oldOptions,a.searchOptions,'identical filter/order');
     const dims=await p.locator('.direct-search-option').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height}}));assert(dims.every(d=>d.w>=44&&d.h>=44));assert(dims.slice(1).every((d,i)=>d.y>=dims[i].y+dims[i].h-1));sample.listDirection='vertical';
     sample.visibleCandidates=await p.locator('.direct-search-results').evaluate(e=>{const r=e.getBoundingClientRect();return[...e.querySelectorAll('button')].filter(b=>b.getBoundingClientRect().bottom<=r.bottom+1).length});
@@ -41,6 +41,7 @@ async function main(){let browser;try{
     await search.fill('');await muscle.selectOption('');assert((await p.locator('.direct-search-option').count())>1);
     await search.fill('합성 긴 운동명');assert.equal(await p.locator('.direct-search-option').count(),1);assert((await p.locator('.direct-search-option').innerText()).includes('좌우 각각 수행'));
     await p.setViewportSize({width,height:420});await search.focus();await p.clock.runFor(400);await search.evaluate(e=>e.scrollIntoView({block:'nearest'}));
+    sample.searchTrace=await search.evaluate(e=>{const r=e.getBoundingClientRect(),m=e.closest('.direct-record-modal');return{top:r.top,bottom:r.bottom,height:r.height,innerHeight,visualHeight:visualViewport.height,modalTop:m.getBoundingClientRect().top,modalBottom:m.getBoundingClientRect().bottom,scrollTop:m.scrollTop,scrollHeight:m.scrollHeight,clientHeight:m.clientHeight};});
     assert(await search.evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),'search reachable reduced viewport');
     await p.locator('.direct-search-option').click();await modal.locator('input[type=number]').last().fill('8');await modal.locator('button[type=submit]').scrollIntoViewIfNeeded();
     sample.reducedTrace=[];
