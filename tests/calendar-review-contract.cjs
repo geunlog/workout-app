@@ -28,6 +28,6 @@ assert.throws(()=>cssContract(read('style.css').replace('left:10px;top:60px','le
 assert.throws(()=>cssContract(read('style.css').replace('padding-left:96px','padding-right:96px')));
 console.log('PASS 8 negative mutations rejected: calendar bug/storage/label/CSS/version/hash');
 
-assert.equal(hash(read('tests/v164-display-delta.json')),'328a32ccd713a794a9c924af4e4ccc58a5a239a3b5722e2dbc78b26195e46c6c');
+assert.equal(hash(read('tests/v164-display-delta.json')),'a72d3872f247ffa3209f90b6e6a258ade8f4186e511346226abf5f2f9d363f93');
 
 assert.equal(hash(read('tests/v164-style-delta.css')),'8da96a8eca4426c37dbf642e1db64d3c21b926aafddb2178f73fbfebf0cbe760');

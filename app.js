@@ -2676,10 +2676,10 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       var title=document.createElement('span');title.textContent=item.name;var group=document.createElement('small');group.textContent=item.muscle;o.appendChild(title);o.appendChild(group);
       o.addEventListener('click',function(){name.value=item.name;name.dispatchEvent(new Event('change',{bubbles:true}));name.focus({preventScroll:true});showDirectOptions(false);});row.appendChild(o);datalist.appendChild(row);
     });searchCount.textContent=matches.length+'개 종목';}
-    name.addEventListener('focus',function(){showDirectOptions(true);});
+    name.addEventListener('focus',function(){directOptions();showDirectOptions(true);});
     name.addEventListener('input',function(){showDirectOptions(true);});
-    listToggle.addEventListener('click',function(){showDirectOptions(datalist.hidden);});
-    muscle.addEventListener('change',function(){directOptions();previousName='';refreshExercise();});name.addEventListener('input',directOptions);directOptions();
+    listToggle.addEventListener('click',function(){if(datalist.hidden)directOptions();showDirectOptions(datalist.hidden);});
+    muscle.addEventListener('change',function(){directOptions();previousName='';refreshExercise();});directOptions();
 
     var dateLabel=document.createElement('label');dateLabel.textContent='기록 날짜';
     var date=document.createElement('input');date.type='date';date.max=todayStr();date.value=selectedRecordDate;date.required=true;
@@ -2725,7 +2725,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     function refreshExercise(){
       var item=selectedCatalogItem();
       customNote.hidden=!name.value.trim() || !!item;
-      if(item && !muscle.value)muscle.value=item.muscle;directOptions();
+      if(item && !muscle.value)muscle.value=item.muscle;
       var trimmed=name.value.trim();
       if(!trimmed){previous=null;previousName='';prevHint.hidden=true;return;}
       if(trimmed!==previousName){
@@ -2737,7 +2737,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if(previous){prevHint.hidden=false;updatePreviousComparison(prevHint,previous,weight.value,reps.value);}
       else prevHint.hidden=true;
     }
-    name.addEventListener('input',refreshExercise);name.addEventListener('change',refreshExercise);
+    name.addEventListener('input',function(){refreshExercise();directOptions();});name.addEventListener('change',refreshExercise);
     date.addEventListener('change',function(){previousName='';refreshExercise();});
     weight.addEventListener('input',function(){directTouched=true;weightWasSuggested=false;refreshExercise();});reps.addEventListener('input',function(){directTouched=true;refreshExercise();});
 
