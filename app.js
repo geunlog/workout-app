@@ -169,6 +169,18 @@ function mount(root,notice=''){
  const zoom=root.querySelector('[data-graph-zoom]');
  if(zoom){
   const scroller=root.querySelector('.body-graph-scroll'),svg=scroller.querySelector('svg');
+  // Keep Y-axis values readable while exploring the horizontal timeline.
+  const axisLabels=[...svg.querySelectorAll('text')].filter(label=>Number(label.getAttribute('y'))<200);
+  const pinAxis=()=>{
+   const scale=svg.getBoundingClientRect().width/svg.viewBox.baseVal.width;
+   axisLabels.forEach(label=>{
+    const original=label.getAttribute('data-original-x')||label.getAttribute('x');
+    label.setAttribute('data-original-x',original);
+    label.setAttribute('x',Number(original)+scroller.scrollLeft/scale);
+    label.style.paintOrder='stroke';label.style.stroke='white';label.style.strokeWidth='4px';
+   });
+  };
+  scroller.addEventListener('scroll',pinAxis);
   const revealLatest=()=>{
    openPoint(points.at(-1).id);
    const dot=svg.querySelector('[data-point="'+points.at(-1).id+'"]');
@@ -189,6 +201,7 @@ function mount(root,notice=''){
     }
    });
    scroller.scrollLeft=center*scroller.scrollWidth-scroller.clientWidth/2;
+   pinAxis();
   };
   root.querySelector('[data-graph-latest]').onclick=revealLatest;
  }
