@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="workout-app-version" content="166">
+<meta name="workout-app-version" content="167">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f5f6fa">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" sizes="192x192" href="/workout-app/icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/workout-app/icon-192.png">
 <title>운동 루틴 · Light</title>
-<link rel="stylesheet" href="style.css?v=166">
+<link rel="stylesheet" href="style.css?v=167">
 
 
 </head>
@@ -123,7 +123,7 @@
 
     <div class="settings-head">앱 정보</div>
     <div class="settings-card app-version-card">
-      <strong>앱 버전 166 · 2026-11-09</strong>
+      <strong>앱 버전 167 · 2026-11-09</strong>
       <button class="btn-reset" id="btnCheckUpdate" type="button">업데이트 확인</button>
       <p id="updateStatus" class="record-export-note" role="status"></p>
     </div>
@@ -144,6 +144,7 @@
         <button class="btn-reset btn-revert-now" id="btnRevertNow" type="button">변경 취소</button>
       </div>
       <div class="edit-action-row routine-edit-only" id="editActionRow"></div>
+      <div class="exercise-edit-tools routine-edit-only">
       <button class="btn-reset ai-menu-trigger routine-edit-only" id="btnAiMenu" type="button" aria-haspopup="dialog">AI 루틴 추천 <span aria-hidden="true">›</span></button>
       <dialog class="data-confirm-dialog ai-quick-menu" id="aiQuickMenu" aria-label="AI 루틴 추천"><h2>AI 루틴 추천</h2><p>어떤 계획을 만들까요?</p><div class="ai-day-actions"><button type="button" id="btnBaseAi"><strong>기본 루틴 만들기</strong><small>앱 AI가 매주 반복할 루틴을 추천해요.</small></button><button type="button" id="btnBaseChatGPT"><strong>외부 AI로 기본 루틴 만들기</strong><small>원하는 AI와 상담하고 JSON으로 루틴을 적용해요.</small></button><button type="button" id="btnWeekAiFromDay"><strong>이번 주 조정</strong><small>이번 주 남은 일정</small></button><button type="button" id="btnAiHistoryDay"><strong>이전 제안 보기</strong><small>저장된 제안 확인</small></button></div><button class="ai-menu-close" type="button" data-ai-menu-close>닫기</button></dialog>
       <details class="routine-advanced-options routine-edit-only">
@@ -153,6 +154,7 @@
           <button class="btn-reset" id="btnReset" type="button">기본 루틴 적용</button>
         </div>
       </details>
+      </div>
 
       <div class="record-date-row routine-read-only">
         <span id="recordDateLabel">기록 날짜</span><input type="hidden" id="recordDate"><button type="button" class="btn-reset record-date-picker" id="btnRecordDate" aria-haspopup="dialog" aria-labelledby="recordDateLabel btnRecordDate">날짜 선택</button>
@@ -215,7 +217,7 @@
 
 <nav class="tab-bar" id="modeToggle" role="tablist"></nav>
 
-<script src="app.js?v=166"></script>
+<script src="app.js?v=167"></script>
 
 
 
