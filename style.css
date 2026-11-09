@@ -3202,3 +3202,21 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app #dayView:not(.routine-editing) #dayPanel .log-fields{margin-top:4px;padding-top:4px;gap:6px}
 .bulk-app #dayView:not(.routine-editing) #dayPanel .suggest-details{margin-top:0}
 .bulk-app #dayView:not(.routine-editing) #dayPanel .weight-source-note{margin-block:2px}
+
+/* Body chart exploration stays inside its card. */
+.body-chart .body-graph-scroll{overflow-x:auto;overflow-y:hidden}
+.body-chart .body-graph-scroll svg{max-width:none;height:220px;aspect-ratio:auto}
+.body-graph-tools{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
+.body-graph-tools label{display:grid;gap:4px}
+.body-graph-tools select,.body-graph-tools button{min-height:44px}
+
+/* v167 exercise-only toolbar and suggestion-source presentation. */
+.bulk-app #dayView.routine-editing .exercise-edit-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:start;margin:4px 0}
+.bulk-app #dayView .exercise-edit-tools .ai-menu-trigger{margin:0;min-height:44px}
+.bulk-app #dayView.routine-editing .exercise-edit-tools .routine-advanced-options{margin:0;min-width:0}
+.bulk-app #dayView .exercise-edit-tools .routine-advanced-options>summary{min-height:44px;padding:0 8px;white-space:nowrap}
+.bulk-app #dayView .exercise-edit-tools:has(.routine-advanced-options[open]){grid-template-columns:1fr}
+.bulk-app #dayView #dayPanel .record-compare-hint .weight-source-note{display:inline;margin:0 0 0 8px;font-size:12px;line-height:1.4}
+.bulk-app #dayView #dayPanel .saved-set-summary .weight-source-note{display:inline;margin:0 8px 0 0;font-size:12px}
+.bulk-app #dayView #dayPanel .saved-set-summary:has(.weight-source-note)>div{display:inline}
+.bulk-app #dayView #dayPanel .weight-source-note[hidden]{display:none}

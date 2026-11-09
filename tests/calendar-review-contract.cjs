@@ -1,7 +1,7 @@
 // v1.7: immutable v161 baseline + explicitly reviewed v1.6 display delta.
 const fs=require('fs'),cp=require('child_process'),assert=require('assert/strict'),crypto=require('crypto');
 const base='1621e0c1db66eed0b3fc9e9956546e13079b59f9';
-const read=f=>fs.readFileSync(f,'utf8'),original=f=>cp.execFileSync('git',['show',base+':'+f],{encoding:'utf8',maxBuffer:5e6});
+const read=require('./v168-integrated-contract.cjs').read,original=f=>cp.execFileSync('git',['show',base+':'+f],{encoding:'utf8',maxBuffer:5e6});
 const hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const currentBase='acbcd27f7c1e234ef91dc51856f5a0f79768578d';
 const baseline=f=>cp.execFileSync('git',['show',currentBase+':'+f],{encoding:'utf8',maxBuffer:5e6});
