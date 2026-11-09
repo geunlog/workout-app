@@ -2096,7 +2096,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         var badge = document.createElement('span');badge.textContent = text;goal.appendChild(badge);
       });
       li.appendChild(goal);
-      if(autoWeight){var autoNote=document.createElement('small');autoNote.className='weight-source-note routine-read-only';autoNote.textContent=weightSource.sameDay?'중량 제안 · 선택일 마지막 세트':'중량 제안 · 최근 기록';li.appendChild(autoNote);wIn.addEventListener('input',function(){autoNote.hidden=true;},{once:true});}
+      if(autoWeight){var autoNote=document.createElement('small');autoNote.className='weight-source-note routine-read-only';autoNote.id='weight-source-'+idx;autoNote.textContent=weightSource.sameDay?'제안 · 선택일 직전 세트':'제안 · 이전 회차';wIn.setAttribute('aria-describedby',autoNote.id);li.appendChild(autoNote);wIn.addEventListener('input',function(){autoNote.hidden=true;wIn.removeAttribute('aria-describedby');},{once:true});}
       li.appendChild(logRow);
       var more=document.createElement('details');more.className='record-more routine-read-only';
       var moreTitle=document.createElement('summary');moreTitle.textContent='최근 저장 기록 관리';more.appendChild(moreTitle);
@@ -2118,6 +2118,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
           requireSecondClick(undo,'되돌리기 확인',function(){var next=logs.map(function(g){return Object.assign({},g,{entries:g.entries.filter(function(e){return e.id!==lastSaved.id;})});}).filter(function(g){return g.entries.length;});if(!writeJSON(LOG_KEY,next)){showToast('저장 취소 실패 · 기존 기록 유지','error');return;}clearRecordUndo();logs=next;renderPanel();renderRecords();showToast('선택한 1세트 저장을 되돌렸어요.');});
         };quick.appendChild(undo);
       }else savedBox.hidden=true;
+      if(autoNote && weightSource.sameDay && saved.length)savedBox.insertBefore(autoNote,savedBox.firstChild);
       li.appendChild(savedBox);
       if(saved.length)li.appendChild(more);
 
@@ -2127,6 +2128,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         function renderPreviousHint(){
           updatePreviousComparison(hint,prev,wIn.value,doneIn.value);
           decorateHistoryHint(hint,ex.n,selectedRecordDate);
+          if(autoNote && !weightSource.sameDay)hint.appendChild(autoNote);
           // Compact only this card's presentation; comparison numbers remain untouched.
           if(hint.firstChild && hint.firstChild.nodeType===3)hint.firstChild.textContent='최근 ';
           var dateText=hint.querySelector('b + span');
