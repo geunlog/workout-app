@@ -1,0 +1,46 @@
+{
+  "app.js": [
+    {
+      "before": " return '<div class=\"body-graph-summary\"><span>'+fields[metric][0]+' · '+points.length+'회 측정</span><strong><span class=\"body-latest-label\">최근 측정</span>'+fmt(value(latest,metric),metric)+'</strong><small>'+latest.at.replace('T',' ')+'</small></div><div class=\"body-graph-scroll\" tabindex=\"0\" aria-label=\"실제 측정일시 간격 변화 그래프\"><svg viewBox=\"0 0 '+width+' 220\" aria-label=\"'+fields[metric][0]+' 변화 그래프\"><text x=\"8\" y=\"18\">'+fields[metric][1]+'</text>'+ticks.map(v=>{const y=bottom-(v-low)/(high-low)*(bottom-top);return '<line x1=\"'+left+'\" x2=\"'+right+'\" y1=\"'+y+'\" y2=\"'+y+'\" stroke=\"#dce3ee\"/><text x=\"'+(left-8)+'\" y=\"'+(y+4)+'\" text-anchor=\"end\">'+String(v)+'</text>';}).join('')+segments.map(segment=>'<polyline fill=\"none\" stroke=\"#315bea\" stroke-width=\"2\" points=\"'+segment.map(p=>p.join(',')).join(' ')+'\"/>').join('')+points.map((r,i)=>shown.has(i)?'<circle tabindex=\"0\" role=\"button\" aria-label=\"'+esc(r.at+' '+fmt(vals[i],metric))+'\" data-point=\"'+r.id+'\" cx=\"'+xy[i][0]+'\" cy=\"'+xy[i][1]+'\" r=\"3.5\" stroke=\"transparent\" stroke-width=\"16\" style=\"paint-order:stroke fill\" fill=\"#315bea\"><title>'+esc(r.at+' '+fmt(vals[i],metric))+'</title></circle>':'').join('')+[...new Set(span===0?[0]:points.length>4&&xy[Math.floor((points.length-1)/2)][0]-left>70&&right-xy[Math.floor((points.length-1)/2)][0]>70?[0,Math.floor((points.length-1)/2),points.length-1]:[0,points.length-1])].map(i=>'<text x=\"'+xy[i][0]+'\" y=\"213\" text-anchor=\"'+(i===0?'start':i===points.length-1?'end':'middle')+'\">'+points[i].at.slice(5,10).replace('-','/')+'</text>').join('')+'</svg></div><div data-graph-detail class=\"body-graph-detail\" aria-live=\"polite\">점을 누르면 그날의 전체 측정값을 확인해요.</div><p class=\"body-muted\">실제 날짜 간격 · 30일 넘는 공백은 선을 끊어요. 밀집한 점은 아래 원본 선택기로 확인하세요.'+'</p><div class=\"body-point-picker\"><label>원본 측정 선택<input type=\"range\" data-graph-index min=\"0\" max=\"'+span+'\" value=\"'+span+'\" aria-label=\"원본 측정 선택\"></label><button type=\"button\" data-point-prev>이전</button><button type=\"button\" data-point-next>다음</button><span data-point-position></span></div>';\n",
+      "after": " return '<div class=\"body-graph-summary\"><span>'+fields[metric][0]+' · '+points.length+'회 측정</span><strong><span class=\"body-latest-label\">최근 측정</span>'+fmt(value(latest,metric),metric)+'</strong><small>'+latest.at.replace('T',' ')+'</small></div><div class=\"body-graph-tools\"><label>그래프 확대<select data-graph-zoom><option value=\"1\">전체 개요</option><option value=\"4\">4배 확대</option><option value=\"12\">12배 확대</option><option value=\"32\">32배 확대</option></select></label><button type=\"button\" data-graph-latest>최근 측정으로</button></div><p data-graph-help class=\"body-muted\">확대하면 좌우로 스크롤할 수 있어요. 같은 시각의 측정은 원본 선택기로 확인하세요.</p><div class=\"body-graph-scroll\" tabindex=\"0\" aria-label=\"실제 측정일시 간격 변화 그래프\"><svg viewBox=\"0 0 '+width+' 220\" aria-label=\"'+fields[metric][0]+' 변화 그래프\"><text x=\"8\" y=\"18\">'+fields[metric][1]+'</text>'+ticks.map(v=>{const y=bottom-(v-low)/(high-low)*(bottom-top);return '<line x1=\"'+left+'\" x2=\"'+right+'\" y1=\"'+y+'\" y2=\"'+y+'\" stroke=\"#dce3ee\"/><text x=\"'+(left-8)+'\" y=\"'+(y+4)+'\" text-anchor=\"end\">'+String(v)+'</text>';}).join('')+segments.map(segment=>'<polyline fill=\"none\" stroke=\"#315bea\" stroke-width=\"2\" points=\"'+segment.map(p=>p.join(',')).join(' ')+'\"/>').join('')+points.map((r,i)=>shown.has(i)?'<circle tabindex=\"0\" role=\"button\" aria-label=\"'+esc(r.at+' '+fmt(vals[i],metric))+'\" data-point=\"'+r.id+'\" cx=\"'+xy[i][0]+'\" cy=\"'+xy[i][1]+'\" r=\"3.5\" stroke=\"transparent\" stroke-width=\"16\" style=\"paint-order:stroke fill\" fill=\"#315bea\"><title>'+esc(r.at+' '+fmt(vals[i],metric))+'</title></circle>':'').join('')+[...new Set(span===0?[0]:points.length>4&&xy[Math.floor((points.length-1)/2)][0]-left>70&&right-xy[Math.floor((points.length-1)/2)][0]>70?[0,Math.floor((points.length-1)/2),points.length-1]:[0,points.length-1])].map(i=>'<text x=\"'+xy[i][0]+'\" y=\"213\" text-anchor=\"'+(i===0?'start':i===points.length-1?'end':'middle')+'\">'+points[i].at.slice(5,10).replace('-','/')+'</text>').join('')+'</svg></div><div data-graph-detail class=\"body-graph-detail\" aria-live=\"polite\">점을 누르면 그날의 전체 측정값을 확인해요.</div><p class=\"body-muted\">실제 날짜 간격 · 30일 넘는 공백은 선을 끊어요. 밀집한 점은 아래 원본 선택기로 확인하세요.'+'</p><div class=\"body-point-picker\"><label>원본 측정 선택<input type=\"range\" data-graph-index min=\"0\" max=\"'+span+'\" value=\"'+span+'\" aria-label=\"원본 측정 선택\"></label><button type=\"button\" data-point-prev>이전</button><button type=\"button\" data-point-next>다음</button><span data-point-position></span></div>';\n"
+    },
+    {
+      "before": "",
+      "after": " const zoom=root.querySelector('[data-graph-zoom]');\n if(zoom){\n  const scroller=root.querySelector('.body-graph-scroll'),svg=scroller.querySelector('svg');\n  const revealLatest=()=>{openPoint(points.at(-1).id);scroller.scrollLeft=scroller.scrollWidth;};\n  zoom.onchange=()=>{\n   const factor=Number(zoom.value);\n   const center=(scroller.scrollLeft+scroller.clientWidth/2)/scroller.scrollWidth;\n   svg.style.width=(factor*100)+'%';\n   svg.setAttribute('viewBox','0 0 '+(360*factor)+' 220');\n   svg.querySelectorAll('[x],[x1],[x2],[cx],[points]').forEach(element=>{\n    for(const attribute of ['x','x1','x2','cx','points']){\n     if(!element.hasAttribute(attribute))continue;\n     const key='original-'+attribute;\n     if(!element.hasAttribute('data-'+key))element.setAttribute('data-'+key,element.getAttribute(attribute));\n     const original=element.getAttribute('data-'+key);\n     element.setAttribute(attribute,attribute==='points'?original.split(' ').map(pair=>{const [x,y]=pair.split(',');return Number(x)*factor+','+y;}).join(' '):Number(original)*factor);\n    }\n   });\n   scroller.scrollLeft=center*scroller.scrollWidth-scroller.clientWidth/2;\n  };\n  root.querySelector('[data-graph-latest]').onclick=revealLatest;\n }\n"
+    }
+  ],
+  "style.css": [
+    {
+      "before": "",
+      "after": "\n/* Body chart exploration stays inside its card. */\n.body-chart .body-graph-scroll{overflow-x:auto;overflow-y:hidden}\n.body-chart .body-graph-scroll svg{max-width:none;height:220px;aspect-ratio:auto}\n.body-graph-tools{display:flex;align-items:end;gap:8px;flex-wrap:wrap}\n.body-graph-tools label{display:grid;gap:4px}\n.body-graph-tools select,.body-graph-tools button{min-height:44px}\n"
+    }
+  ],
+  "index.html": [
+    {
+      "before": "<meta name=\"workout-app-version\" content=\"166\">\n",
+      "after": "<meta name=\"workout-app-version\" content=\"168\">\n"
+    },
+    {
+      "before": "<link rel=\"stylesheet\" href=\"style.css?v=166\">\n",
+      "after": "<link rel=\"stylesheet\" href=\"style.css?v=168\">\n"
+    },
+    {
+      "before": "      <strong>앱 버전 166 · 2026-11-09</strong>\n",
+      "after": "      <strong>앱 버전 168 · 2026-11-09</strong>\n"
+    },
+    {
+      "before": "<script src=\"app.js?v=166\"></script>\n",
+      "after": "<script src=\"app.js?v=168\"></script>\n"
+    }
+  ],
+  "sw.js": [
+    {
+      "before": "const CACHE_NAME = CACHE_PREFIX + 'v166-release-166';\n",
+      "after": "const CACHE_NAME = CACHE_PREFIX + 'v168-release-168';\n"
+    },
+    {
+      "before": "const ASSET_HASHES = {\"index.html\":\"2230b31cb4b9736621fd581203c43d2154cecf67e498eb0ec344bd145ac123d0\",\"app.js\":\"7d133c55cee80ad8544192700da3a138be5810cae2a554391fb23ed4cd26e940\",\"style.css\":\"0f55abf1ff8df2f147336b735a8100d6d6fa517e408d32498a8500bb1b14999a\"};\n",
+      "after": "const ASSET_HASHES = {\"index.html\":\"cc9f3697c42742b2df1c286287d6fb04bae554d3e608895034efc867530cf751\",\"app.js\":\"6bf83d99ae1edd62b9e40ca6de8365b4cee178a542bffe948d91488a3a0bc974\",\"style.css\":\"d76ca49a38c12dca5d0919b48553fc3f7807e9fb419362fd803063acd83a24ab\"};\n"
+    }
+  ]
+}

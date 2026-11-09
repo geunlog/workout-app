@@ -3202,3 +3202,10 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app #dayView:not(.routine-editing) #dayPanel .log-fields{margin-top:4px;padding-top:4px;gap:6px}
 .bulk-app #dayView:not(.routine-editing) #dayPanel .suggest-details{margin-top:0}
 .bulk-app #dayView:not(.routine-editing) #dayPanel .weight-source-note{margin-block:2px}
+
+/* Body chart exploration stays inside its card. */
+.body-chart .body-graph-scroll{overflow-x:auto;overflow-y:hidden}
+.body-chart .body-graph-scroll svg{max-width:none;height:220px;aspect-ratio:auto}
+.body-graph-tools{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
+.body-graph-tools label{display:grid;gap:4px}
+.body-graph-tools select,.body-graph-tools button{min-height:44px}
