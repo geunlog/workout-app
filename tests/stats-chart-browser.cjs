@@ -41,6 +41,7 @@ const server = http.createServer((req,res) => {
      await page.locator('[data-graph-latest]').click();
      assert((await page.locator('[data-point-position]').innerText()).startsWith(`${count} /`));
      assert(await page.locator('[data-point]').last().evaluate(e=>{const p=e.getBoundingClientRect(),s=e.closest('.body-graph-scroll').getBoundingClientRect();return p.left>=s.left&&p.right<=s.right;}),'latest point visible');
+     if(count===38)console.log(JSON.stringify(await page.locator('.body-graph-scroll').evaluate(e=>({scroll:e.scrollLeft,rect:e.getBoundingClientRect().toJSON(),svg:e.querySelector('svg').getBoundingClientRect().toJSON(),dot:e.querySelector('circle:last-of-type').getBoundingClientRect().toJSON(),view:e.querySelector('svg').getAttribute('viewBox'),html:e.querySelector('polyline').outerHTML.slice(0,400)}))));
      if(count===38)assert(expanded.points[37].x-expanded.points[36].x>30);
      results.push({width,count,overview,expanded});
      await page.screenshot({path:`test-results/stats-${width}-${count}.png`,fullPage:true});
