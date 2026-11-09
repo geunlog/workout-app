@@ -95,7 +95,18 @@ const server = http.createServer((req,res) => {
     }
     for(const metric of ['weight','muscle','fatPercent','fatMass','waist']) {
      await page.locator('[data-metric]').selectOption(metric);
-     for(const period of ['30','90','180','all','custom'])await page.locator('[data-period]').selectOption(period);
+     for(const period of ['30','90','180','all','custom']){
+      await page.locator('[data-period]').selectOption(period);
+      if(arm==='B' && await page.locator('[data-graph-zoom]').count()){
+       await page.locator('[data-graph-zoom]').selectOption('32');
+       await page.locator('[data-graph-latest]').click();
+       await page.locator('.body-graph-scroll').scrollIntoViewIfNeeded();
+       await page.waitForFunction(()=>{
+        const box=document.querySelector('.body-graph-scroll').getBoundingClientRect();
+        return [...document.querySelectorAll('.body-graph-scroll svg text')].filter(e=>Number(e.getAttribute('y'))<200).every(e=>{const r=e.getBoundingClientRect();return r.left>=box.left-1&&r.right<=box.right+1&&r.top>=box.top-1&&r.bottom<=box.bottom+1;});
+       });
+      }
+     }
     }
     await page.locator('[data-period]').selectOption('all');
     await page.locator('[data-device]').selectOption('A');
