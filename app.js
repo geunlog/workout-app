@@ -190,6 +190,7 @@ function mount(root,notice=''){
    const factor=Number(zoom.value);
    const center=(scroller.scrollLeft+scroller.clientWidth/2)/scroller.scrollWidth;
    svg.style.width=(factor*100)+'%';
+   svg.setAttribute('preserveAspectRatio','none');
    svg.setAttribute('viewBox','0 0 '+(360*factor)+' 220');
    svg.querySelectorAll('[x],[x1],[x2],[cx],[points]').forEach(element=>{
     for(const attribute of ['x','x1','x2','cx','points']){
