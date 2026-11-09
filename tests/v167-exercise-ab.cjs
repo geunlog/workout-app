@@ -25,7 +25,7 @@ async function main(){let browser;try{
     assert(await p.locator('.in-weight').first().getAttribute('aria-describedby'));
    }
 if(arm==='B'&&state==='recorded'){assert(await p.locator('.record-compare-hint').first().evaluate(e=>{const d=e.querySelector('.exercise-recent-date').getBoundingClientRect(),a=e.querySelector('.prev-history-arrow').getBoundingClientRect();return d.right+4<=a.left;}),'recent date and arrow must not overlap');}assert(sample.geometry.main.save.height>=48);
-   const card=p.locator('#dayPanel .ex-row').first();await card.locator('.in-weight').fill('60');await card.locator('.in-done').fill('10');if(arm==='B')assert(await card.locator('.weight-source-note').isHidden());
+   const card=p.locator('#dayPanel .ex-row').first();await card.locator('.in-weight').fill('60');await card.locator('.in-done').fill('10');if(arm==='B'){assert(await card.locator('.weight-source-note').isHidden());assert.equal(await card.locator('.in-weight').getAttribute('aria-describedby'),null);}
    const beforeSave=await raw();for(const[k,v]of Object.entries(initial))if(!k.includes('draft'))assert.equal(beforeSave[k],v,'input preserves '+k);
    await card.locator('.btn-record-one').click();const after=await raw();const count=s=>JSON.parse(s||'[]').reduce((n,r)=>n+r.entries.length,0);assert.equal(count(after['bulk-routine-log-v1']),count(initial['bulk-routine-log-v1'])+1);
    assert.equal(after['bulk-routine-v9'],initial['bulk-routine-v9']);assert.equal(after['bulk-exercise-notes-v1'],initial['bulk-exercise-notes-v1']);

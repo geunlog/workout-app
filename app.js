@@ -2056,7 +2056,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         var badge = document.createElement('span');badge.textContent = text;goal.appendChild(badge);
       });
       li.appendChild(goal);
-      if(autoWeight){var autoNote=document.createElement('small');autoNote.className='weight-source-note routine-read-only';autoNote.id='weight-source-'+idx;autoNote.textContent=weightSource.sameDay?'제안 · 선택일 직전 세트':'제안 · 이전 회차';wIn.setAttribute('aria-describedby',autoNote.id);li.appendChild(autoNote);wIn.addEventListener('input',function(){autoNote.hidden=true;},{once:true});}
+      if(autoWeight){var autoNote=document.createElement('small');autoNote.className='weight-source-note routine-read-only';autoNote.id='weight-source-'+idx;autoNote.textContent=weightSource.sameDay?'제안 · 선택일 직전 세트':'제안 · 이전 회차';wIn.setAttribute('aria-describedby',autoNote.id);li.appendChild(autoNote);wIn.addEventListener('input',function(){autoNote.hidden=true;wIn.removeAttribute('aria-describedby');},{once:true});}
       li.appendChild(logRow);
       var more=document.createElement('details');more.className='record-more routine-read-only';
       var moreTitle=document.createElement('summary');moreTitle.textContent='최근 저장 기록 관리';more.appendChild(moreTitle);
