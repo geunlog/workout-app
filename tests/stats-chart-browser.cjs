@@ -40,6 +40,7 @@ const server = http.createServer((req,res) => {
      const expanded=await geometry();assert(expanded.svg>overview.svg*31);assert(!expanded.overflow);
      await page.locator('[data-graph-latest]').click();
      assert((await page.locator('[data-point-position]').innerText()).startsWith(`${count} /`));
+     assert(await page.locator('[data-point]').last().evaluate(e=>{const p=e.getBoundingClientRect(),s=e.closest('.body-graph-scroll').getBoundingClientRect();return p.left>=s.left&&p.right<=s.right;}),'latest point visible');
      if(count===38)assert(expanded.points[37].x-expanded.points[36].x>30);
      results.push({width,count,overview,expanded});
      await page.screenshot({path:`test-results/stats-${width}-${count}.png`,fullPage:true});

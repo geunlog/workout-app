@@ -169,7 +169,11 @@ function mount(root,notice=''){
  const zoom=root.querySelector('[data-graph-zoom]');
  if(zoom){
   const scroller=root.querySelector('.body-graph-scroll'),svg=scroller.querySelector('svg');
-  const revealLatest=()=>{openPoint(points.at(-1).id);scroller.scrollLeft=scroller.scrollWidth;};
+  const revealLatest=()=>{
+   openPoint(points.at(-1).id);
+   const dot=svg.querySelector('[data-point="'+points.at(-1).id+'"]');
+   if(dot)scroller.scrollLeft+=dot.getBoundingClientRect().left-scroller.getBoundingClientRect().left-scroller.clientWidth/2;
+  };
   zoom.onchange=()=>{
    const factor=Number(zoom.value);
    const center=(scroller.scrollLeft+scroller.clientWidth/2)/scroller.scrollWidth;
