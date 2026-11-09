@@ -44,9 +44,55 @@ const server = http.createServer((req,res) => {
      if(count===38)console.log(JSON.stringify(await page.locator('.body-graph-scroll').evaluate(e=>({scroll:e.scrollLeft,rect:e.getBoundingClientRect().toJSON(),svg:e.querySelector('svg').getBoundingClientRect().toJSON(),dot:e.querySelector('circle:last-of-type').getBoundingClientRect().toJSON(),view:e.querySelector('svg').getAttribute('viewBox'),html:e.querySelector('polyline').outerHTML.slice(0,400)}))));
      if(count===38)assert(expanded.points[37].x-expanded.points[36].x>30);
      results.push({width,count,overview,expanded});
+     await page.locator('.body-graph-scroll').scrollIntoViewIfNeeded();
+     const chartImage=await page.locator('.body-graph-scroll').screenshot({path:`test-results/stats-visible-${width}-${count}.png`});
+     const bluePixels=await page.evaluate(async data=>{
+      const image=new Image();image.src='data:image/png;base64,'+data;await image.decode();
+      const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
+      const context=canvas.getContext('2d');context.drawImage(image,0,0);
+      const pixels=context.getImageData(0,0,canvas.width,canvas.height).data;
+      let blue=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i+2]>100&&pixels[i+2]>pixels[i]+50&&pixels[i+2]>pixels[i+1]+30)blue++;
+      return blue;
+     },chartImage.toString('base64'));
+     assert(bluePixels>5,'graph must paint blue point/line pixels');
+     console.log('PAINT '+JSON.stringify({width,count,bluePixels}));
      await page.screenshot({path:`test-results/stats-${width}-${count}.png`,fullPage:true});
      await page.locator('[data-graph-zoom]').selectOption('1');
     }else results.push({width,count,overview});
+    if(arm==='B' && count===38){
+     const snapshot=()=>page.evaluate(()=>localStorage.getItem('geunlog-body-v1'));
+     const enlarge=async()=>{await page.locator('[data-graph-zoom]').selectOption('32');await page.locator('[data-graph-latest]').click();};
+     await enlarge();
+     await page.locator('[data-graph-edit]').last().click();
+     await page.locator('.body-dialog [name=weight]').fill('83.8');
+     await page.locator('.body-dialog footer [data-close]').click();
+     await page.locator('.body-confirm [data-confirm]').click();
+     assert.equal(await snapshot(),before,'edit cancel preserves source');
+     await page.locator('[data-graph-edit]').last().click();
+     await page.locator('.body-dialog [name=weight]').fill('83.8');
+     await page.evaluate(()=>{window.savedSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='geunlog-body-v1')throw Error('synthetic quota');return window.savedSetItem.call(this,key,value);};});
+     await page.locator('.body-dialog button[type=submit]').click();
+     assert((await page.locator('.body-dialog [data-error]').innerText()).includes('quota'));
+     assert.equal(await snapshot(),before,'failed save preserves source');
+     await page.evaluate(()=>Storage.prototype.setItem=window.savedSetItem);
+     await page.locator('.body-dialog button[type=submit]').click();
+     await page.locator('.body-dialog').waitFor({state:'detached'});
+     const edited=await snapshot();assert.equal(JSON.parse(edited).records.find(r=>r.id==='synthetic-37').weight,83.8);
+     await enlarge();
+     await page.locator('[data-graph-delete]').last().click();
+     await page.locator('.body-confirm [data-cancel]').click();
+     assert.equal(await snapshot(),edited,'delete cancel preserves source');
+     await page.locator('[data-graph-delete]').last().click();
+     await page.locator('.body-confirm [data-confirm]').click();
+     await page.waitForFunction(()=>JSON.parse(localStorage.getItem('geunlog-body-v1')).records.length===37);
+     await page.locator('[data-import]').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({format:'geunlog-body',...JSON.parse(edited)}))});
+     await page.locator('.body-confirm [data-confirm]').click();
+     await page.waitForFunction(()=>JSON.parse(localStorage.getItem('geunlog-body-v1')).records.length===38);
+     const restored=JSON.parse(await snapshot());assert.deepEqual(restored,JSON.parse(edited));
+     // Return the fixture to its initial bytes only after the end-to-end assertions.
+     await page.evaluate(raw=>{localStorage.setItem('geunlog-body-v1',raw);BodyTracker.mount(document.querySelector('main'));},before);
+     console.log('PASS expanded edit/cancel/quota/delete/cancel/restore '+width);
+    }
     for(const metric of ['weight','muscle','fatPercent','fatMass','waist']) {
      await page.locator('[data-metric]').selectOption(metric);
      for(const period of ['30','90','180','all','custom'])await page.locator('[data-period]').selectOption(period);
