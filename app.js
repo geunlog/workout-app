@@ -163,7 +163,21 @@ function mount(root,notice=''){
  historyView(root,data);dateControls(root);
  const draw=()=>{let cutoff='';if(period!=='all'&&period!=='custom'){const d=new Date();d.setDate(d.getDate()-Number(period));cutoff=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}const points=filtered.filter(r=>value(r,metric)!=null&&(period==='custom'?(!from||r.at.slice(0,10)>=from)&&(!to||r.at.slice(0,10)<=to):!cutoff||r.at.slice(0,10)>=cutoff));root.querySelector('[data-graph]').innerHTML=from&&to&&period==='custom'&&from>to?'<p>시작일이 종료일보다 늦어요.</p>':graph(points);const openPoint=id=>{const r=all.find(r=>r.id===id),detail=root.querySelector('[data-graph-detail]');graphSelectedId=r.id;detail.innerHTML=dayDetail(filtered,r);detail.querySelectorAll('[data-graph-edit]').forEach(button=>button.onclick=()=>editor(root,all.find(item=>item.id===button.dataset.graphEdit)));detail.querySelectorAll('[data-graph-delete]').forEach(button=>button.onclick=async()=>{const id=button.dataset.graphDelete;try{const current=read(),target=current.records.find(item=>item.id===id);if(!target)return;if(!await confirmBodyDelete(target.at.replace('T',' ')+' 측정 기록을 삭제할까요?'+(current.baseline===id?' 비교 기준도 해제돼요.':'')+'\n복원하려면 삭제 전 백업 파일이 필요해요.'))return;current.records=current.records.filter(item=>item.id!==id);if(current.baseline===id)current.baseline=null;write(current);historySelected.delete(id);if(graphSelectedId===id){const next=dayRecords(current.records.filter(item=>(!device||item.device===device)&&value(item,metric)!=null),target.at);graphSelectedId=next.length?next[0].id:null;}mount(root,'측정 기록을 삭제했어요.');}catch(error){bodyNotice('삭제 실패: '+error.message);}});root.querySelectorAll('[data-point]').forEach(dot=>{dot.setAttribute('r',dot.dataset.point===id?'4.5':'3.5');dot.setAttribute('fill',dot.dataset.point===id?'#142e86':'#315bea');dot.setAttribute('aria-pressed',String(dot.dataset.point===id)); });const index=points.findIndex(item=>item.id===id);root.querySelector('[data-point-position]').textContent=(index+1)+' / '+points.length+' · '+r.at.replace('T',' ');root.querySelector('[data-point-prev]').disabled=index===0;root.querySelector('[data-point-next]').disabled=index===points.length-1;
  };
- root.querySelectorAll('[data-point]').forEach(p=>{p.onclick=()=>openPoint(p.dataset.point);p.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();p.onclick();}};});
+ const dots=[...root.querySelectorAll('[data-point]')];
+ for(const dot of dots){
+  dot.onclick=e=>{
+   if(e.detail===0){openPoint(dot.dataset.point);return;}
+   // Overlapping hit areas use the closest visible center, not SVG paint order.
+   let nearest=dot,best=Infinity;
+   for(const candidate of dots){
+    const box=candidate.getBoundingClientRect();
+    const distance=(e.clientX-box.left-box.width/2)**2+(e.clientY-box.top-box.height/2)**2;
+    if(distance<best){nearest=candidate;best=distance;}
+   }
+   openPoint(nearest.dataset.point);
+  };
+  dot.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openPoint(dot.dataset.point);}};
+ }
  if(points.length){
   const navigate=offset=>{
    const index=points.findIndex(item=>item.id===graphSelectedId);

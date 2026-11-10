@@ -18,7 +18,7 @@ const server = http.createServer((req,res) => {
  const browser=await chromium.launch();
  try {
  for(const width of [320,360,390,430]) for(const arm of ['A','B']) {
-  const page=await browser.newPage({viewport:{width,height:844},serviceWorkers:'block'});
+  const page=await browser.newPage({viewport:{width,height:844},hasTouch:true,serviceWorkers:'block'});
   await page.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
   await page.goto(`http://127.0.0.1:${server.address().port}/${arm}/`);
   for(const count of [0,1,2,5,38]) {
@@ -46,6 +46,22 @@ const server = http.createServer((req,res) => {
      assert(expanded.points.every(p=>p.x>expanded.left&&p.x<expanded.left+expanded.width),'all points are visible together');
      results.push({width,count,overview,expanded});
      await page.locator('.body-graph-scroll').scrollIntoViewIfNeeded();
+     if(count===38){
+      const centers=await page.locator('[data-point]').evaluateAll(dots=>dots.map(dot=>{
+       const box=dot.getBoundingClientRect();
+       return {x:box.left+box.width/2,y:box.top+box.height/2,id:dot.dataset.point};
+      }));
+      const selected=()=>page.locator('[data-point][aria-pressed=true]').getAttribute('data-point');
+      for(const point of centers){
+       await page.mouse.click(point.x,point.y);
+       assert.equal(await selected(),point.id,'mouse center at '+width+'px');
+      }
+      for(const point of centers){
+       await page.touchscreen.tap(point.x,point.y);
+       assert.equal(await selected(),point.id,'touch center at '+width+'px');
+      }
+      console.log('PASS '+width+'px: 38 mouse and 38 touch selections');
+     }
      const chartImage=await page.locator('.body-graph-scroll').screenshot({path:`test-results/stats-visible-${width}-${count}.png`});
      const bluePixels=await page.evaluate(async data=>{
       const image=new Image();image.src='data:image/png;base64,'+data;await image.decode();
