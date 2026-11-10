@@ -17,7 +17,7 @@ expected['index.html']=expected['index.html'].replace(/앱 버전 168 · \d{4}-\
 const hashes=Object.fromEntries(['index.html','app.js','style.css'].map(f=>[f,hash(expected[f])]));
 expected['sw.js']=expected['sw.js'].replace(/const ASSET_HASHES = \{[^\n]*\};/,'const ASSET_HASHES = '+JSON.stringify(hashes)+';');
 function check(f,s){assert.equal(s,expected[f],f+' approved A+B and v168 metadata only');return source(base,f);}
-function read(f){const s=fs.readFileSync(f,'utf8');return Object.hasOwn(expected,f)?check(f,s):s;}
+function read(f){const s=require('./v169-display-contract.cjs').read(f);return Object.hasOwn(expected,f)?check(f,s):s;}
 for(const f of Object.keys(expected)){read(f);assert.throws(()=>check(f,expected[f]+'\n/* unexpected mutation */'));}
 console.log('PASS v168 integrated exact A+B contract, asset hashes and mutation rejection');
 module.exports={read};
