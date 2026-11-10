@@ -3,7 +3,7 @@ const http = require('http');
 const assert = require('assert/strict');
 const {chromium} = require('playwright');
 const cp = require('child_process');
-const base = '5003895daa03176dbf0ed0976b237b324405c29c';
+const base = 'e8e6a0ff0c654492a5bd560e7dbadf5c3517df19';
 const results = [];
 const server = http.createServer((req,res) => {
  const [arm,file='index.html'] = req.url.slice(1).split('/');
@@ -24,6 +24,7 @@ const server = http.createServer((req,res) => {
   for(const count of [0,1,2,5,38]) {
    await page.evaluate(count=>{
     const dates=Array.from({length:count},(_,i)=>i<3?`2026-0${5+i}-01T10:00`:new Date(Date.UTC(2026,9,1+i-3)).toISOString().slice(0,16));
+    if(count>4)dates[4]=dates[3];
     const records=dates.map((at,i)=>({id:'synthetic-'+i,at,device:i%2?'B':'A',note:'',waistUnit:'cm',weight:80+i/10,muscle:i===4?null:40,fatPercent:20,fatMass:null,waist:85,createdAt:at+'Z',updatedAt:at+'Z'}));
     localStorage.setItem('geunlog-body-v1',JSON.stringify({version:1,records,baseline:null}));
     document.body.innerHTML='<main class="bulk-app" id="test"></main>';BodyTracker.mount(document.querySelector('main'));
@@ -36,8 +37,8 @@ const server = http.createServer((req,res) => {
     const geometry=()=>page.locator('.body-graph-scroll').evaluate(e=>({width:e.clientWidth,svg:e.querySelector('svg').getBoundingClientRect().width,overflow:document.documentElement.scrollWidth>innerWidth+1,points:[...e.querySelectorAll('[data-point]')].map(p=>({x:p.getBoundingClientRect().x,id:p.dataset.point}))}));
     const overview=await geometry();assert(!overview.overflow);
     if(arm==='B') {
-     await page.locator('[data-graph-zoom]').selectOption('32');
-     const expanded=await geometry();assert(expanded.svg>overview.svg*31);assert(!expanded.overflow);
+     await page.locator('[data-graph-latest]').click();
+     const expanded=await geometry();assert(expanded.svg>=overview.width);assert(!expanded.overflow);
      await page.locator('[data-graph-latest]').click();
      assert((await page.locator('[data-point-position]').innerText()).startsWith(`${count} /`));
      assert(await page.locator('[data-point]').last().evaluate(e=>{const p=e.getBoundingClientRect(),s=e.closest('.body-graph-scroll').getBoundingClientRect();return p.left>=s.left&&p.right<=s.right;}),'latest point visible');
@@ -57,11 +58,17 @@ const server = http.createServer((req,res) => {
      assert(bluePixels>5,'graph must paint blue point/line pixels');
      console.log('PAINT '+JSON.stringify({width,count,bluePixels}));
      await page.screenshot({path:`test-results/stats-${width}-${count}.png`,fullPage:true});
-     await page.locator('[data-graph-zoom]').selectOption('1');
+     assert.equal(await page.locator('[data-graph-index],[data-graph-zoom]').count(),0);
+     const buttons=await page.locator('.body-graph-tools button').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {y:r.y,h:r.height};}));
+     assert(buttons.every(b=>b.h>=44&&Math.abs(b.y-buttons[0].y)<1));
+     for(let i=count-1;i>=0;i--){assert((await page.locator('[data-point-position]').innerText()).startsWith((i+1)+' /'));assert.equal(await page.locator('[data-point][aria-pressed=true]').getAttribute('data-point'),'synthetic-'+i);if(i)await page.locator('[data-point-prev]').click();}
+     assert(await page.locator('[data-point-prev]').isDisabled());
+     await page.locator('[data-graph-latest]').click();assert(await page.locator('[data-point-next]').isDisabled());
+     const xs=expanded.points.map(p=>p.x);if(xs.length>2){const gap=xs[1]-xs[0];assert(gap>=47);assert(xs.slice(1).every((x,i)=>Math.abs(x-xs[i]-gap)<.1));}
     }else results.push({width,count,overview});
     if(arm==='B' && count===38){
      const snapshot=()=>page.evaluate(()=>localStorage.getItem('geunlog-body-v1'));
-     const enlarge=async()=>{await page.locator('[data-graph-zoom]').selectOption('32');await page.locator('[data-graph-latest]').click();};
+     const enlarge=async()=>{await page.locator('[data-graph-latest]').click();await page.locator('[data-graph-latest]').click();};
      await enlarge();
      await page.locator('[data-graph-edit]').last().click();
      await page.locator('.body-dialog [name=weight]').fill('83.8');
@@ -97,8 +104,8 @@ const server = http.createServer((req,res) => {
      await page.locator('[data-metric]').selectOption(metric);
      for(const period of ['30','90','180','all','custom']){
       await page.locator('[data-period]').selectOption(period);
-      if(arm==='B' && await page.locator('[data-graph-zoom]').count()){
-       await page.locator('[data-graph-zoom]').selectOption('32');
+      if(arm==='B' && await page.locator('[data-graph-latest]').count()){
+       await page.locator('[data-graph-latest]').click();
        await page.locator('[data-graph-latest]').click();
        await page.locator('.body-graph-scroll').scrollIntoViewIfNeeded();
        await page.waitForFunction(()=>{

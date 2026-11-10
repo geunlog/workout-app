@@ -3220,3 +3220,7 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app #dayView #dayPanel .saved-set-summary .weight-source-note{display:inline;margin:0 8px 0 0;font-size:12px}
 .bulk-app #dayView #dayPanel .saved-set-summary:has(.weight-source-note)>div{display:inline}
 .bulk-app #dayView #dayPanel .weight-source-note[hidden]{display:none}
+
+/* Measurement navigation shares one aligned row at narrow mobile widths. */
+.body-chart .body-graph-tools{display:grid;grid-template-columns:1fr 1fr 1.4fr;align-items:stretch;gap:8px}
+.body-chart .body-graph-tools button{width:100%;min-height:44px;margin:0;white-space:nowrap}
