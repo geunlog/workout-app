@@ -150,7 +150,7 @@ function graphScale(vals){
 
 function graph(points){
  if(!points.length)return '<div class="body-empty"><strong>선택한 기간에 기록이 없어요</strong><button type="button" data-show-all>전체 기간 보기</button></div>';
- const vals=points.map(r=>value(r,metric)),{low,high,ticks}=graphScale(vals),width=360,left=48,right=width-48,top=30,bottom=188;
+ const vals=points.map(r=>value(r,metric)),{low,high,ticks}=graphScale(vals),width=360,left=44,right=width-12,top=30,bottom=188;
  const span=points.length-1;
  const xy=points.map((r,i)=>[span===0?(left+right)/2:left+i/span*(right-left),bottom-(vals[i]-low)/(high-low)*(bottom-top)]),latest=points.at(-1);
  const segments=[xy];
@@ -2378,15 +2378,15 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   function weeklyPlanBarsHtml(vol) {
     return vol?volumeBarsHtml(vol):'<p role="status">확정 계획 확인 불가 · 저장된 루틴을 읽지 못했어요. 원본 데이터를 확인해주세요.</p>';
   }
-  function weeklyPlanCardHtml(vol,opened) {
-    return '<details id="weeklyPlanCard" class="principle fixed-guide weekly-plan-card"' + (opened ? ' open' : '') + '>' +
-        '<summary>주간 계획 세트<span class="chev"></span></summary>' +
+  function weeklyPlanCardHtml(vol) {
+    return '<section id="weeklyPlanCard" class="principle weekly-plan-card" aria-labelledby="weeklyPlanTitle">' +
+        '<h2 id="weeklyPlanTitle">주간 계획 세트</h2>' +
         '<div class="principle-body">' +
           '<p class="bar-legend">근비대 참고구간 · 가슴/등/어깨/하체 12–16 · 이두/삼두 6–10</p>' +
           '<div id="weeklyPlanBars" class="bars">' + weeklyPlanBarsHtml(vol) + '</div>' +
           '<p class="bar-legend">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +
         '</div>' +
-      '</details>';
+      '</section>';
   }
   function renderPrinciplesBase() {
     document.getElementById('principles').innerHTML='<section id="weeklyRecordedSummary" class="weekly-record-summary" aria-label="이번 주 기록 현황"></section>';
@@ -5025,8 +5025,6 @@ function estimateSession(day) {
 
   function renderReport() {
     var committed = committedWeek(),vol = committed ? weeklyVolume(committed) : null;
-    var existingPlan=document.getElementById('weeklyPlanCard');
-    if(existingPlan)renderReport.planOpened=existingPlan.open;
     var week = effectiveWeek();
 
     if (reportSelectedDay === undefined) reportSelectedDay = todayIndex;
@@ -5078,7 +5076,7 @@ function estimateSession(day) {
       : dayCardHtml(week[reportSelectedDay]);
 
     reportViewEl.innerHTML = temporaryStatusHtml()+dayTabsHtml+daysHtml+
-      weeklyPlanCardHtml(vol,renderReport.planOpened===true) +
+      weeklyPlanCardHtml(vol) +
       adjustmentHtml();
     reportViewEl.querySelectorAll('[data-record-ex]').forEach(function(button){button.onclick=function(){
       activeIndex=Number(button.dataset.recordDay);

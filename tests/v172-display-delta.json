@@ -1,0 +1,54 @@
+{
+  "app.js": [
+    {
+      "before": "function graph(points){\n if(!points.length)return '<div class=\"body-empty\"><strong>선택한 기간에 기록이 없어요</strong><button type=\"button\" data-show-all>전체 기간 보기</button></div>';\n const vals=points.map(r=>value(r,metric)),{low,high,ticks}=graphScale(vals),width=360,left=48,right=width-48,top=30,bottom=188;\n const span=points.length-1;\n const xy=points.map((r,i)=>[span===0?(left+right)/2:left+i/span*(right-left),bottom-(vals[i]-low)/(high-low)*(bottom-top)]),latest=points.at(-1);\n",
+      "after": "function graph(points){\n if(!points.length)return '<div class=\"body-empty\"><strong>선택한 기간에 기록이 없어요</strong><button type=\"button\" data-show-all>전체 기간 보기</button></div>';\n const vals=points.map(r=>value(r,metric)),{low,high,ticks}=graphScale(vals),width=360,left=44,right=width-12,top=30,bottom=188;\n const span=points.length-1;\n const xy=points.map((r,i)=>[span===0?(left+right)/2:left+i/span*(right-left),bottom-(vals[i]-low)/(high-low)*(bottom-top)]),latest=points.at(-1);\n"
+    },
+    {
+      "before": "    return vol?volumeBarsHtml(vol):'<p role=\"status\">확정 계획 확인 불가 · 저장된 루틴을 읽지 못했어요. 원본 데이터를 확인해주세요.</p>';\n  }\n  function weeklyPlanCardHtml(vol,opened) {\n    return '<details id=\"weeklyPlanCard\" class=\"principle fixed-guide weekly-plan-card\"' + (opened ? ' open' : '') + '>' +\n        '<summary>주간 계획 세트<span class=\"chev\"></span></summary>' +\n        '<div class=\"principle-body\">' +\n          '<p class=\"bar-legend\">근비대 참고구간 · 가슴/등/어깨/하체 12–16 · 이두/삼두 6–10</p>' +\n",
+      "after": "    return vol?volumeBarsHtml(vol):'<p role=\"status\">확정 계획 확인 불가 · 저장된 루틴을 읽지 못했어요. 원본 데이터를 확인해주세요.</p>';\n  }\n  function weeklyPlanCardHtml(vol) {\n    return '<section id=\"weeklyPlanCard\" class=\"principle weekly-plan-card\" aria-labelledby=\"weeklyPlanTitle\">' +\n        '<h2 id=\"weeklyPlanTitle\">주간 계획 세트</h2>' +\n        '<div class=\"principle-body\">' +\n          '<p class=\"bar-legend\">근비대 참고구간 · 가슴/등/어깨/하체 12–16 · 이두/삼두 6–10</p>' +\n"
+    },
+    {
+      "before": "          '<p class=\"bar-legend\">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +\n        '</div>' +\n      '</details>';\n  }\n  function renderPrinciplesBase() {\n",
+      "after": "          '<p class=\"bar-legend\">두 세로선 사이는 근비대 참고구간입니다.<br>적정 훈련량은 개인의 회복 수준에 따라 달라집니다.</p>' +\n        '</div>' +\n      '</section>';\n  }\n  function renderPrinciplesBase() {\n"
+    },
+    {
+      "before": "  function renderReport() {\n    var committed = committedWeek(),vol = committed ? weeklyVolume(committed) : null;\n    var existingPlan=document.getElementById('weeklyPlanCard');\n    if(existingPlan)renderReport.planOpened=existingPlan.open;\n    var week = effectiveWeek();\n\n",
+      "after": "  function renderReport() {\n    var committed = committedWeek(),vol = committed ? weeklyVolume(committed) : null;\n    var week = effectiveWeek();\n\n"
+    },
+    {
+      "before": "\n    reportViewEl.innerHTML = temporaryStatusHtml()+dayTabsHtml+daysHtml+\n      weeklyPlanCardHtml(vol,renderReport.planOpened===true) +\n      adjustmentHtml();\n    reportViewEl.querySelectorAll('[data-record-ex]').forEach(function(button){button.onclick=function(){\n",
+      "after": "\n    reportViewEl.innerHTML = temporaryStatusHtml()+dayTabsHtml+daysHtml+\n      weeklyPlanCardHtml(vol) +\n      adjustmentHtml();\n    reportViewEl.querySelectorAll('[data-record-ex]').forEach(function(button){button.onclick=function(){\n"
+    }
+  ],
+  "style.css": [
+    {
+      "before": "/* Weekly plan card retains the former workout-tab design. */\n.bulk-app #weeklyPlanCard {margin:14px 0;border-radius:18px;overflow:hidden;background:#f0f4ff;border:1px solid #c4d1f5;border-top:4px solid var(--primary);box-shadow:0 4px 16px #315bea0a;}\n.bulk-app .weekly-record-summary {background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px;min-width:0;}\n.bulk-app .weekly-record-summary h2 {font-size:14px;margin:0 0 4px;}\n",
+      "after": "/* Weekly plan card retains the former workout-tab design. */\n.bulk-app #weeklyPlanCard {margin:14px 0;border-radius:18px;overflow:hidden;background:#f0f4ff;border:1px solid #c4d1f5;border-top:4px solid var(--primary);box-shadow:0 4px 16px #315bea0a;}\n.bulk-app #weeklyPlanCard{padding:12px 14px}\n.bulk-app #weeklyPlanTitle{font-size:16px;line-height:1.3;margin:0 0 6px}\n.bulk-app #weeklyPlanCard .principle-body{padding:0}\n.bulk-app #weeklyPlanCard .bar-legend{margin:0;line-height:1.45}\n.bulk-app #weeklyPlanBars{margin:8px 0}\n.bulk-app #weeklyPlanBars .bar-row{margin-bottom:6px}\n.bulk-app #weeklyPlanBars .bar-row:last-child{margin-bottom:0}\n.bulk-app .weekly-record-summary {background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px;min-width:0;}\n.bulk-app .weekly-record-summary h2 {font-size:14px;margin:0 0 4px;}\n"
+    }
+  ],
+  "index.html": [
+    {
+      "before": "<head>\n<meta charset=\"UTF-8\">\n<meta name=\"workout-app-version\" content=\"171\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover\">\n<meta name=\"theme-color\" content=\"#f5f6fa\">\n",
+      "after": "<head>\n<meta charset=\"UTF-8\">\n<meta name=\"workout-app-version\" content=\"172\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover\">\n<meta name=\"theme-color\" content=\"#f5f6fa\">\n"
+    },
+    {
+      "before": "<link rel=\"icon\" type=\"image/png\" sizes=\"192x192\" href=\"/workout-app/icon-192.png\">\n<title>운동 루틴 · Light</title>\n<link rel=\"stylesheet\" href=\"style.css?v=171\">\n\n\n",
+      "after": "<link rel=\"icon\" type=\"image/png\" sizes=\"192x192\" href=\"/workout-app/icon-192.png\">\n<title>운동 루틴 · Light</title>\n<link rel=\"stylesheet\" href=\"style.css?v=172\">\n\n\n"
+    },
+    {
+      "before": "    <div class=\"settings-head\">앱 정보</div>\n    <div class=\"settings-card app-version-card\">\n      <strong>앱 버전 171 · 2026-11-10</strong>\n      <button class=\"btn-reset\" id=\"btnCheckUpdate\" type=\"button\">업데이트 확인</button>\n      <p id=\"updateStatus\" class=\"record-export-note\" role=\"status\"></p>\n",
+      "after": "    <div class=\"settings-head\">앱 정보</div>\n    <div class=\"settings-card app-version-card\">\n      <strong>앱 버전 172 · 2026-11-10</strong>\n      <button class=\"btn-reset\" id=\"btnCheckUpdate\" type=\"button\">업데이트 확인</button>\n      <p id=\"updateStatus\" class=\"record-export-note\" role=\"status\"></p>\n"
+    },
+    {
+      "before": "<nav class=\"tab-bar\" id=\"modeToggle\" role=\"tablist\"></nav>\n\n<script src=\"app.js?v=171\"></script>\n\n\n",
+      "after": "<nav class=\"tab-bar\" id=\"modeToggle\" role=\"tablist\"></nav>\n\n<script src=\"app.js?v=172\"></script>\n\n\n"
+    }
+  ],
+  "sw.js": [
+    {
+      "before": "const CACHE_PREFIX = 'workout-routine-pwa-';\nconst CACHE_NAME = CACHE_PREFIX + 'v171-release-171';\nconst RELEASE = CACHE_NAME.match(/v(\\d+)-release-/)[1];\nconst BASE = '/workout-app/';\n// Generated by bump-version.sh. Do not edit these hashes manually.\nconst ASSET_HASHES = {\"index.html\":\"831befb3e8560f8aefd3a9b333926f2414275db203cac8300b4f9c16604fb839\",\"app.js\":\"fee1dab0eaabc147cae2df6a4ad821596d49824b6f6a2f7accd906aeed312e88\",\"style.css\":\"58521aaccc72a90d43ed6fb4e38b741097aad15cd2a2e6b278a66a39e042d9be\"};\nconst APP_SHELL = [BASE+'index.html',BASE+'style.css?v='+RELEASE,BASE+'app.js?v='+RELEASE,BASE+'manifest.webmanifest',BASE+'icon-192.png',BASE+'icon-512.png'];\nconst clientReleases = new Map();\n",
+      "after": "const CACHE_PREFIX = 'workout-routine-pwa-';\nconst CACHE_NAME = CACHE_PREFIX + 'v172-release-172';\nconst RELEASE = CACHE_NAME.match(/v(\\d+)-release-/)[1];\nconst BASE = '/workout-app/';\n// Generated by bump-version.sh. Do not edit these hashes manually.\nconst ASSET_HASHES = {\"index.html\":\"552268321bb809fe3247f8ebf3fa35444eaabcf3a78a375421991e4eea622039\",\"app.js\":\"5393f282a404ef05eb98f6376bc204a578adde61d9c092f87e2d58a9774ef8bd\",\"style.css\":\"0024491237655807d1667cbf8dcfab60aafd5e08f188ddac589c020c44ef056a\"};\nconst APP_SHELL = [BASE+'index.html',BASE+'style.css?v='+RELEASE,BASE+'app.js?v='+RELEASE,BASE+'manifest.webmanifest',BASE+'icon-192.png',BASE+'icon-512.png'];\nconst clientReleases = new Map();\n"
+    }
+  ]
+}

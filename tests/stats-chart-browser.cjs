@@ -80,7 +80,7 @@ const server = http.createServer((req,res) => {
      for(let i=count-1;i>=0;i--){assert((await page.locator('[data-point-position]').innerText()).startsWith((i+1)+' /'));assert.equal(await page.locator('[data-point][aria-pressed=true]').getAttribute('data-point'),'synthetic-'+i);if(i)await page.locator('[data-point-prev]').click();}
      assert(await page.locator('[data-point-prev]').isDisabled());
      await page.locator('[data-graph-latest]').click();assert(await page.locator('[data-point-next]').isDisabled());
-     const xs=expanded.points.map(p=>p.x);if(xs.length>2){const gap=xs[1]-xs[0];assert(Math.abs(gap-(expanded.width*264/360)/(count-1))<.1,'points use the full plot width');assert(xs.slice(1).every((x,i)=>Math.abs(x-xs[i]-gap)<.1));}
+     const xs=expanded.points.map(p=>p.x);if(xs.length>2){const gap=xs[1]-xs[0];assert(Math.abs(gap-(expanded.width*304/360)/(count-1))<.1,'points use the full plot width');assert(xs.slice(1).every((x,i)=>Math.abs(x-xs[i]-gap)<.1));}
     }else results.push({width,count,overview});
     if(arm==='B' && count===38){
      const snapshot=()=>page.evaluate(()=>localStorage.getItem('geunlog-body-v1'));
