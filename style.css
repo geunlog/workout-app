@@ -2831,6 +2831,13 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 
 /* Weekly plan card retains the former workout-tab design. */
 .bulk-app #weeklyPlanCard {margin:14px 0;border-radius:18px;overflow:hidden;background:#f0f4ff;border:1px solid #c4d1f5;border-top:4px solid var(--primary);box-shadow:0 4px 16px #315bea0a;}
+.bulk-app #weeklyPlanCard{padding:12px 14px}
+.bulk-app #weeklyPlanTitle{font-size:16px;line-height:1.3;margin:0 0 6px}
+.bulk-app #weeklyPlanCard .principle-body{padding:0}
+.bulk-app #weeklyPlanCard .bar-legend{margin:0;line-height:1.45}
+.bulk-app #weeklyPlanBars{margin:8px 0}
+.bulk-app #weeklyPlanBars .bar-row{margin-bottom:6px}
+.bulk-app #weeklyPlanBars .bar-row:last-child{margin-bottom:0}
 .bulk-app .weekly-record-summary {background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px;min-width:0;}
 .bulk-app .weekly-record-summary h2 {font-size:14px;margin:0 0 4px;}
 .bulk-app .weekly-record-caption,.bulk-app .weekly-record-unknown {font-size:11px;color:var(--muted);margin:0 0 8px;}
