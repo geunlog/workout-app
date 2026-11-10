@@ -34,7 +34,7 @@ const server = http.createServer((req,res) => {
    await page.locator('[data-period]').selectOption('all');
    const before=await page.evaluate(()=>localStorage.getItem('geunlog-body-v1'));
    if(count) {
-    const geometry=()=>page.locator('.body-graph-scroll').evaluate(e=>({width:e.clientWidth,svg:e.querySelector('svg').getBoundingClientRect().width,overflow:document.documentElement.scrollWidth>innerWidth+1,points:[...e.querySelectorAll('[data-point]')].map(p=>({x:p.getBoundingClientRect().x,id:p.dataset.point}))}));
+    const geometry=()=>page.locator('.body-graph-scroll').evaluate(e=>({width:e.clientWidth,svg:e.querySelector('svg').getBoundingClientRect().width,overflow:document.documentElement.scrollWidth>innerWidth+1,points:[...e.querySelectorAll('[data-point]')].map(p=>({x:p.getBoundingClientRect().x+p.getBoundingClientRect().width/2,id:p.dataset.point}))}));
     const overview=await geometry();assert(!overview.overflow);
     if(arm==='B') {
      await page.locator('[data-graph-latest]').click();
