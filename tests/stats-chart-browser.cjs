@@ -3,7 +3,7 @@ const http = require('http');
 const assert = require('assert/strict');
 const {chromium} = require('playwright');
 const cp = require('child_process');
-const base = 'e8e6a0ff0c654492a5bd560e7dbadf5c3517df19';
+const base = '4a3796a72503494f4ace878f30341388be454f08';
 const results = [];
 const server = http.createServer((req,res) => {
  const [arm,file='index.html'] = req.url.slice(1).split('/');
@@ -18,7 +18,7 @@ const server = http.createServer((req,res) => {
  const browser=await chromium.launch();
  try {
  for(const width of [320,360,390,430]) for(const arm of ['A','B']) {
-  const page=await browser.newPage({viewport:{width,height:844},serviceWorkers:'block'});
+  const page=await browser.newPage({viewport:{width,height:844},hasTouch:true,serviceWorkers:'block'});
   await page.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
   await page.goto(`http://127.0.0.1:${server.address().port}/${arm}/`);
   for(const count of [0,1,2,5,38]) {
@@ -34,18 +34,34 @@ const server = http.createServer((req,res) => {
    await page.locator('[data-period]').selectOption('all');
    const before=await page.evaluate(()=>localStorage.getItem('geunlog-body-v1'));
    if(count) {
-    const geometry=()=>page.locator('.body-graph-scroll').evaluate(e=>({width:e.clientWidth,svg:e.querySelector('svg').getBoundingClientRect().width,overflow:document.documentElement.scrollWidth>innerWidth+1,points:[...e.querySelectorAll('[data-point]')].map(p=>({x:p.getBoundingClientRect().x+p.getBoundingClientRect().width/2,id:p.dataset.point}))}));
+    const geometry=()=>page.locator('.body-graph-scroll').evaluate(e=>({width:e.clientWidth,scrollWidth:e.scrollWidth,left:e.getBoundingClientRect().left,svg:e.querySelector('svg').getBoundingClientRect().width,overflow:document.documentElement.scrollWidth>innerWidth+1,points:[...e.querySelectorAll('[data-point]')].map(p=>({x:p.getBoundingClientRect().x+p.getBoundingClientRect().width/2,id:p.dataset.point}))}));
     const overview=await geometry();assert(!overview.overflow);
     if(arm==='B') {
      await page.locator('[data-graph-latest]').click();
-     const expanded=await geometry();assert(expanded.svg>=overview.width);assert(!expanded.overflow);
+     const expanded=await geometry();assert(Math.abs(expanded.svg-overview.width)<=1);assert.equal(expanded.scrollWidth,expanded.width);assert(!expanded.overflow);
      await page.locator('[data-graph-latest]').click();
      assert((await page.locator('[data-point-position]').innerText()).startsWith(`${count} /`));
      assert(await page.locator('[data-point]').last().evaluate(e=>{const p=e.getBoundingClientRect(),s=e.closest('.body-graph-scroll').getBoundingClientRect();return p.left>=s.left&&p.right<=s.right;}),'latest point visible');
      if(count===38)console.log(JSON.stringify(await page.locator('.body-graph-scroll').evaluate(e=>({scroll:e.scrollLeft,rect:e.getBoundingClientRect().toJSON(),svg:e.querySelector('svg').getBoundingClientRect().toJSON(),dot:e.querySelector('circle:last-of-type').getBoundingClientRect().toJSON(),view:e.querySelector('svg').getAttribute('viewBox'),html:e.querySelector('polyline').outerHTML.slice(0,400)}))));
-     if(count===38)assert(expanded.points[37].x-expanded.points[36].x>30);
+     assert(expanded.points.every(p=>p.x>expanded.left&&p.x<expanded.left+expanded.width),'all points are visible together');
      results.push({width,count,overview,expanded});
      await page.locator('.body-graph-scroll').scrollIntoViewIfNeeded();
+     if(count===38){
+      const centers=await page.locator('[data-point]').evaluateAll(dots=>dots.map(dot=>{
+       const box=dot.getBoundingClientRect();
+       return {x:box.left+box.width/2,y:box.top+box.height/2,id:dot.dataset.point};
+      }));
+      const selected=()=>page.locator('[data-point][aria-pressed=true]').getAttribute('data-point');
+      for(const point of centers){
+       await page.mouse.click(point.x,point.y);
+       assert.equal(await selected(),point.id,'mouse center at '+width+'px');
+      }
+      for(const point of centers){
+       await page.touchscreen.tap(point.x,point.y);
+       assert.equal(await selected(),point.id,'touch center at '+width+'px');
+      }
+      console.log('PASS '+width+'px: 38 mouse and 38 touch selections');
+     }
      const chartImage=await page.locator('.body-graph-scroll').screenshot({path:`test-results/stats-visible-${width}-${count}.png`});
      const bluePixels=await page.evaluate(async data=>{
       const image=new Image();image.src='data:image/png;base64,'+data;await image.decode();
@@ -64,7 +80,7 @@ const server = http.createServer((req,res) => {
      for(let i=count-1;i>=0;i--){assert((await page.locator('[data-point-position]').innerText()).startsWith((i+1)+' /'));assert.equal(await page.locator('[data-point][aria-pressed=true]').getAttribute('data-point'),'synthetic-'+i);if(i)await page.locator('[data-point-prev]').click();}
      assert(await page.locator('[data-point-prev]').isDisabled());
      await page.locator('[data-graph-latest]').click();assert(await page.locator('[data-point-next]').isDisabled());
-     const xs=expanded.points.map(p=>p.x);if(xs.length>2){const gap=xs[1]-xs[0];assert(gap>=47);assert(xs.slice(1).every((x,i)=>Math.abs(x-xs[i]-gap)<.1));}
+     const xs=expanded.points.map(p=>p.x);if(xs.length>2){const gap=xs[1]-xs[0];assert(Math.abs(gap-(expanded.width*264/360)/(count-1))<.1,'points use the full plot width');assert(xs.slice(1).every((x,i)=>Math.abs(x-xs[i]-gap)<.1));}
     }else results.push({width,count,overview});
     if(arm==='B' && count===38){
      const snapshot=()=>page.evaluate(()=>localStorage.getItem('geunlog-body-v1'));

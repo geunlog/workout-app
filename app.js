@@ -150,11 +150,11 @@ function graphScale(vals){
 
 function graph(points){
  if(!points.length)return '<div class="body-empty"><strong>선택한 기간에 기록이 없어요</strong><button type="button" data-show-all>전체 기간 보기</button></div>';
- const vals=points.map(r=>value(r,metric)),{low,high,ticks}=graphScale(vals),width=Math.max(360,(points.length-1)*48+96),left=48,right=width-48,top=30,bottom=188;
+ const vals=points.map(r=>value(r,metric)),{low,high,ticks}=graphScale(vals),width=360,left=48,right=width-48,top=30,bottom=188;
  const span=points.length-1;
  const xy=points.map((r,i)=>[span===0?(left+right)/2:left+i/span*(right-left),bottom-(vals[i]-low)/(high-low)*(bottom-top)]),latest=points.at(-1);
  const segments=[xy];
- return '<div class="body-graph-summary"><span>'+fields[metric][0]+' · '+points.length+'회 측정</span><strong><span class="body-latest-label">최근 측정</span>'+fmt(value(latest,metric),metric)+'</strong><small>'+latest.at.replace('T',' ')+'</small></div><div class="body-graph-tools"><button type="button" data-point-prev>이전</button><button type="button" data-point-next>다음</button><button type="button" data-graph-latest>최근 측정</button></div><p data-point-position class="body-muted" aria-live="polite"></p><p class="body-muted">측정 순서 · 날짜 간격 미반영. 좌우로 밀어 기록을 확인하세요.</p><div class="body-graph-scroll" tabindex="0" aria-label="측정 순서 변화 그래프"><svg style="width:'+width+'px;min-width:100%" preserveAspectRatio="none" viewBox="0 0 '+width+' 220" aria-label="'+fields[metric][0]+' 변화 그래프"><text x="8" y="18">'+fields[metric][1]+'</text>'+ticks.map(v=>{const y=bottom-(v-low)/(high-low)*(bottom-top);return '<line x1="'+left+'" x2="'+right+'" y1="'+y+'" y2="'+y+'" stroke="#dce3ee"/><text x="'+(left-8)+'" y="'+(y+4)+'" text-anchor="end">'+String(v)+'</text>';}).join('')+'<defs><clipPath id="body-plot-clip"><rect data-plot-clip x="48" y="24" width="'+(width-96)+'" height="170"/></clipPath></defs><g clip-path="url(#body-plot-clip)">'+segments.map(segment=>'<polyline fill="none" stroke="#315bea" stroke-width="2" points="'+segment.map(p=>p.join(',')).join(' ')+'"/>').join('')+points.map((r,i)=>'<circle tabindex="0" role="button" aria-label="'+esc(r.at+' '+fmt(vals[i],metric))+'" data-point="'+r.id+'" cx="'+xy[i][0]+'" cy="'+xy[i][1]+'" r="3.5" stroke="transparent" stroke-width="16" style="paint-order:stroke fill" fill="#315bea"><title>'+esc(r.at+' '+fmt(vals[i],metric))+'</title></circle>').join('')+'</g>'+[...new Set(span===0?[0]:points.length>4&&xy[Math.floor((points.length-1)/2)][0]-left>70&&right-xy[Math.floor((points.length-1)/2)][0]>70?[0,Math.floor((points.length-1)/2),points.length-1]:[0,points.length-1])].map(i=>'<text x="'+xy[i][0]+'" y="213" text-anchor="'+(i===0?'start':i===points.length-1?'end':'middle')+'">'+points[i].at.slice(5,10).replace('-','/')+'</text>').join('')+'</svg></div><div data-graph-detail class="body-graph-detail" aria-live="polite">점을 누르면 그날의 전체 측정값을 확인해요.</div><p class="body-muted">점이나 이전·다음 버튼으로 측정값을 선택하세요.</p>';
+ return '<div class="body-graph-summary"><span>'+fields[metric][0]+' · '+points.length+'회 측정</span><strong><span class="body-latest-label">최근 측정</span>'+fmt(value(latest,metric),metric)+'</strong><small>'+latest.at.replace('T',' ')+'</small></div><div class="body-graph-tools"><button type="button" data-point-prev>이전</button><button type="button" data-point-next>다음</button><button type="button" data-graph-latest>최근 측정</button></div><p data-point-position class="body-muted" aria-live="polite"></p><p class="body-muted">측정 순서 · 날짜 간격 미반영.</p><div class="body-graph-scroll"><svg preserveAspectRatio="none" viewBox="0 0 '+width+' 220" aria-label="'+fields[metric][0]+' 변화 그래프"><text x="8" y="18">'+fields[metric][1]+'</text>'+ticks.map(v=>{const y=bottom-(v-low)/(high-low)*(bottom-top);return '<line x1="'+left+'" x2="'+right+'" y1="'+y+'" y2="'+y+'" stroke="#dce3ee"/><text x="'+(left-8)+'" y="'+(y+4)+'" text-anchor="end">'+String(v)+'</text>';}).join('')+segments.map(segment=>'<polyline fill="none" stroke="#315bea" stroke-width="2" points="'+segment.map(p=>p.join(',')).join(' ')+'"/>').join('')+points.map((r,i)=>'<circle tabindex="0" role="button" aria-label="'+esc(r.at+' '+fmt(vals[i],metric))+'" data-point="'+r.id+'" cx="'+xy[i][0]+'" cy="'+xy[i][1]+'" r="3.5" stroke="transparent" stroke-width="16" style="paint-order:stroke fill" fill="#315bea"><title>'+esc(r.at+' '+fmt(vals[i],metric))+'</title></circle>').join('')+[...new Set(span===0?[0]:points.length>4&&xy[Math.floor((points.length-1)/2)][0]-left>70&&right-xy[Math.floor((points.length-1)/2)][0]>70?[0,Math.floor((points.length-1)/2),points.length-1]:[0,points.length-1])].map(i=>'<text x="'+xy[i][0]+'" y="213" text-anchor="'+(i===0?'start':i===points.length-1?'end':'middle')+'">'+points[i].at.slice(5,10).replace('-','/')+'</text>').join('')+'</svg></div><div data-graph-detail class="body-graph-detail" aria-live="polite">점을 누르면 그날의 전체 측정값을 확인해요.</div><p class="body-muted">점이나 이전·다음 버튼으로 측정값을 선택하세요.</p>';
 }
 function mount(root,notice=''){
  let data;try{data=read();}catch(e){root.innerHTML='<p role="alert">체형 기록을 읽지 못했어요. 원본 데이터를 유지했어요.</p>';return;}
@@ -162,27 +162,23 @@ function mount(root,notice=''){
  root.innerHTML='<section class="body-tracker"><div class="body-heading"><div><h2>체형 변화</h2><p>플랜 공통 기록</p></div><button class="body-primary" data-add>+ 기록 추가</button></div><p role="status">'+esc(notice)+'</p><div class="body-filters"><label>측정 기기<select data-device><option value="">전체 기기</option>'+[...new Set(all.map(r=>r.device).filter(Boolean))].map(d=>'<option '+(device===d?'selected':'')+' value="'+esc(d)+'">'+esc(d)+'</option>').join('')+'</select></label><label>비교 기준<select data-compare><option value="previous">이전 측정</option><option value="baseline" '+(comparison==='baseline'?'selected':'')+'>설정한 기준 기록</option></select></label></div><p class="body-muted">항목별 최근 측정값 · 측정 시점은 다를 수 있어요</p><div class="body-cards">'+['weight','muscle','fatPercent','waist'].map(k=>{const list=filtered.filter(r=>value(r,k)!=null),latest=list.at(-1),ref=comparison==='baseline'?baseline:list.at(-2);return '<article><span>'+fields[k][0]+'</span><strong>'+(k==='waist'&&latest?value(latest,k).toFixed(1)+' cm<br><span class="body-secondary-unit">'+(value(latest,k)/2.54).toFixed(2)+' inch</span>':fmt(latest?value(latest,k):null,k))+'</strong><small>'+(latest?esc(latest.at.replace('T',' ')):'기록 없음')+'</small><p>'+(latest&&ref&&value(ref,k)!=null&&ref.id!==latest.id?esc(delta(value(latest,k)-value(ref,k),k))+'<br><small>'+esc(ref.at.replace('T',' '))+' 대비</small>':(comparison==='baseline'?(data.baseline?(ref?(latest&&ref.id===latest.id?'현재 기록이 비교 기준이에요':'기준 기록에 '+fields[k][0]+' 없음'):'선택한 기기에 기준 기록 없음'):'비교 기준을 설정해주세요'):'이전 측정값 없음'))+'</p></article>';}).join('')+'</div><section class="body-chart"><div class="body-filters"><label>지표<select data-metric>'+Object.entries(fields).map(([k,f])=>'<option value="'+k+'" '+(metric===k?'selected':'')+'>'+f[0]+'</option>').join('')+'</select></label><label>기간<select data-period>'+[['30','1개월'],['90','3개월'],['180','6개월'],['all','전체'],['custom','직접 설정']].map(([k,l])=>'<option value="'+k+'" '+(period===k?'selected':'')+'>'+l+'</option>').join('')+'</select></label></div>'+(period==='custom'?'<div class="body-filters"><label>시작일<input type="date" data-from value="'+esc(from)+'"></label><label>종료일<input type="date" data-to value="'+esc(to)+'"></label></div>':'')+'<p class="body-muted">최근 구간은 1·3개월, 특정 구간은 직접 설정으로 확대해요.</p><div data-graph></div></section><div data-history-host></div><details><summary>체형 기록 백업</summary><p>이 기기에 저장돼요. 전체 플랜 백업에도 포함되며, 아래에서 체형 기록만 내보낼 수 있어요.</p><div class="body-actions"><button data-export>백업 파일 저장</button><button data-import-open>백업 불러오기</button></div><input type="file" data-import hidden accept="application/json,.json"></details></section>';
  historyView(root,data);dateControls(root);
  const draw=()=>{let cutoff='';if(period!=='all'&&period!=='custom'){const d=new Date();d.setDate(d.getDate()-Number(period));cutoff=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}const points=filtered.filter(r=>value(r,metric)!=null&&(period==='custom'?(!from||r.at.slice(0,10)>=from)&&(!to||r.at.slice(0,10)<=to):!cutoff||r.at.slice(0,10)>=cutoff));root.querySelector('[data-graph]').innerHTML=from&&to&&period==='custom'&&from>to?'<p>시작일이 종료일보다 늦어요.</p>':graph(points);const openPoint=id=>{const r=all.find(r=>r.id===id),detail=root.querySelector('[data-graph-detail]');graphSelectedId=r.id;detail.innerHTML=dayDetail(filtered,r);detail.querySelectorAll('[data-graph-edit]').forEach(button=>button.onclick=()=>editor(root,all.find(item=>item.id===button.dataset.graphEdit)));detail.querySelectorAll('[data-graph-delete]').forEach(button=>button.onclick=async()=>{const id=button.dataset.graphDelete;try{const current=read(),target=current.records.find(item=>item.id===id);if(!target)return;if(!await confirmBodyDelete(target.at.replace('T',' ')+' 측정 기록을 삭제할까요?'+(current.baseline===id?' 비교 기준도 해제돼요.':'')+'\n복원하려면 삭제 전 백업 파일이 필요해요.'))return;current.records=current.records.filter(item=>item.id!==id);if(current.baseline===id)current.baseline=null;write(current);historySelected.delete(id);if(graphSelectedId===id){const next=dayRecords(current.records.filter(item=>(!device||item.device===device)&&value(item,metric)!=null),target.at);graphSelectedId=next.length?next[0].id:null;}mount(root,'측정 기록을 삭제했어요.');}catch(error){bodyNotice('삭제 실패: '+error.message);}});root.querySelectorAll('[data-point]').forEach(dot=>{dot.setAttribute('r',dot.dataset.point===id?'4.5':'3.5');dot.setAttribute('fill',dot.dataset.point===id?'#142e86':'#315bea');dot.setAttribute('aria-pressed',String(dot.dataset.point===id)); });const index=points.findIndex(item=>item.id===id);root.querySelector('[data-point-position]').textContent=(index+1)+' / '+points.length+' · '+r.at.replace('T',' ');root.querySelector('[data-point-prev]').disabled=index===0;root.querySelector('[data-point-next]').disabled=index===points.length-1;
- const scroller=root.querySelector('.body-graph-scroll'),dot=[...root.querySelectorAll('[data-point]')].find(el=>el.dataset.point===id);
- if(dot){const box=scroller.getBoundingClientRect(),rect=dot.getBoundingClientRect();if(rect.left<box.left+52||rect.right>box.right-12)scroller.scrollLeft+=rect.left-box.left-scroller.clientWidth/2;}
  };
- root.querySelectorAll('[data-point]').forEach(p=>{p.onclick=()=>openPoint(p.dataset.point);p.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();p.onclick();}};});
- const scroller=root.querySelector('.body-graph-scroll');
- if(scroller){
-  const svg=scroller.querySelector('svg');
-  const axisLabels=[...svg.querySelectorAll('text')].filter(label=>Number(label.getAttribute('y'))<200);
-  const pinAxis=()=>{
-   const scale=svg.getBoundingClientRect().width/svg.viewBox.baseVal.width;
-   const clip=svg.querySelector('[data-plot-clip]');
-   clip.setAttribute('x',48+scroller.scrollLeft/scale);
-   clip.setAttribute('width',Math.max(0,scroller.clientWidth/scale-60));
-   axisLabels.forEach(label=>{
-    const original=label.dataset.originalX||label.getAttribute('x');
-    label.dataset.originalX=original;
-    label.setAttribute('x',Number(original)+scroller.scrollLeft/scale);
-    label.style.paintOrder='stroke';label.style.stroke='white';label.style.strokeWidth='4px';
-   });
+ const dots=[...root.querySelectorAll('[data-point]')];
+ for(const dot of dots){
+  dot.onclick=e=>{
+   if(e.detail===0){openPoint(dot.dataset.point);return;}
+   // Overlapping hit areas use the closest visible center, not SVG paint order.
+   let nearest=dot,best=Infinity;
+   for(const candidate of dots){
+    const box=candidate.getBoundingClientRect();
+    const distance=(e.clientX-box.left-box.width/2)**2+(e.clientY-box.top-box.height/2)**2;
+    if(distance<best){nearest=candidate;best=distance;}
+   }
+   openPoint(nearest.dataset.point);
   };
-  scroller.addEventListener('scroll',pinAxis);
+  dot.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openPoint(dot.dataset.point);}};
+ }
+ if(points.length){
   const navigate=offset=>{
    const index=points.findIndex(item=>item.id===graphSelectedId);
    openPoint(points[Math.max(0,Math.min(points.length-1,index+offset))].id);
@@ -191,7 +187,6 @@ function mount(root,notice=''){
   root.querySelector('[data-point-next]').onclick=()=>navigate(1);
   root.querySelector('[data-graph-latest]').onclick=()=>openPoint(points.at(-1).id);
   openPoint(points.find(r=>r.id===graphSelectedId)?.id||points.at(-1).id);
-  pinAxis();
  }
  const showAll=root.querySelector('[data-show-all]');if(showAll)showAll.onclick=()=>{period='all';mount(root);};};draw();
  root.querySelector('[data-add]').onclick=()=>editor(root);
