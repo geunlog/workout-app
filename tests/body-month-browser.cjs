@@ -1,0 +1,25 @@
+const fs=require('fs'),http=require('http'),assert=require('assert/strict'),{chromium}=require('playwright');
+const server=http.createServer((q,r)=>{try{const f=q.url.split('?')[0].slice(1)||'index.html';r.setHeader('Content-Type',f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':'text/html');r.end(fs.readFileSync(f));}catch{r.writeHead(404).end();}});
+(async()=>{await new Promise(ok=>server.listen(0,'127.0.0.1',ok));const browser=await chromium.launch();try{
+for(const width of [320,360,390,430]){
+ const page=await browser.newPage({viewport:{width,height:844},hasTouch:true,serviceWorkers:'block'}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
+ await page.goto('http://127.0.0.1:'+server.address().port);
+ await page.evaluate(()=>{const records=[['early','2026-11-04T08:00',89,91],['morning','2026-11-11T08:09',88.8,90.1],['evening','2026-11-11T18:00',89.2,null],['waist','2026-11-12T08:00',null,90]].map(([id,at,weight,waist])=>({id,at,weight,waist,muscle:null,fatPercent:null,fatMass:null,device:'test',note:'',waistUnit:'cm',createdAt:at+'Z',updatedAt:at+'Z'}));localStorage.setItem('geunlog-body-v1',JSON.stringify({version:1,records,baseline:'early'}));document.body.innerHTML='<main class="bulk-app"></main>';BodyTracker.mount(document.querySelector('main'));});
+ await page.locator('[data-period]').selectOption('all');const original=await page.evaluate(()=>localStorage.getItem('geunlog-body-v1'));
+ const day=d=>page.locator('[data-calendar-day="2026-11-'+d+'"]');
+ assert((await day('11').innerText()).includes('89.2'));assert((await day('11').innerText()).includes('90.1'));
+ await day('11').tap();assert((await page.locator('.body-graph-summary strong').innerText()).includes('89.2 kg'));assert.equal(await page.locator('[data-day-select][aria-pressed=true]').getAttribute('data-day-select'),'evening');
+ await page.locator('[data-day-select=morning]').click();assert((await page.locator('.body-graph-summary strong').innerText()).includes('88.8 kg'));assert.equal(await page.locator('[data-point][aria-pressed=true]').getAttribute('data-point'),'morning');
+ await page.locator('[data-point-prev]').click();assert.equal(await page.locator('[data-calendar-day][aria-pressed=true]').getAttribute('data-calendar-day'),'2026-11-04');assert((await page.locator('.body-graph-summary strong').innerText()).includes('89.0 kg'));
+ await day('12').tap();assert((await page.locator('.body-graph-summary strong').innerText()).includes('미측정'));assert.equal(await page.locator('[data-point][aria-pressed=true]').count(),0);
+ await day('13').tap();assert((await page.locator('[data-graph-detail]').innerText()).includes('측정 기록이 없어요'));assert((await day('13').getAttribute('aria-label')).includes('미측정'));
+ await day('11').click();await page.locator('[data-calendar-mode=range]').click();await day('12').click();await day('04').click();await page.locator('[data-range-apply]').click();assert.equal(await page.locator('[data-from]').inputValue(),'2026-11-04');assert.equal(await page.locator('[data-to]').inputValue(),'2026-11-12');assert.equal(await page.locator('[data-point]').count(),3);
+ await page.locator('[data-calendar-mode=range]').click();await day('11').click();await page.locator('[data-range-cancel]').click();assert.equal(await page.locator('[data-from]').inputValue(),'2026-11-04');
+ await page.locator('[data-month-next]').click();assert((await page.locator('.body-month-panel-toolbar strong').innerText()).includes('12월'));await page.locator('[data-month-prev]').click();
+ await day('11').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('[data-calendar-day]:focus').getAttribute('data-calendar-day'),'2026-11-11');
+ await page.locator('[data-compare]').selectOption('baseline');assert((await page.locator('[data-graph-detail]').innerText()).includes('2026-11-04 대비'));
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);assert.equal(await page.evaluate(()=>localStorage.getItem('geunlog-body-v1')),original,'all navigation preserves bytes');assert.deepEqual(errors,[]);
+ await page.screenshot({path:'test-results/body-month-'+width+'.png',fullPage:true});console.log('PASS '+width+'px: dual values, selected record, missing/empty day, time selection, keyboard focus, month navigation, range apply/cancel, baseline and source bytes');await page.close();
+}
+}finally{await browser.close();server.close();}})().catch(e=>{console.error(e);process.exitCode=1;server.close();});

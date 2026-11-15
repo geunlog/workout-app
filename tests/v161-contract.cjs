@@ -1,5 +1,5 @@
 const fs=require('fs'),cp=require('child_process'),assert=require('assert/strict');
-const base='86b52f80e399f1dace7b352a9cd74e8c8d4458e8',a=cp.execFileSync('git',['show',base+':app.js'],{encoding:'utf8',maxBuffer:5e6}),b=fs.readFileSync('app.js','utf8');
+const base='86b52f80e399f1dace7b352a9cd74e8c8d4458e8',a=cp.execFileSync('git',['show',base+':app.js'],{encoding:'utf8',maxBuffer:5e6}),b=require('./v173-display-contract.cjs').read('app.js');
 const block=(s,start,end)=>{const i=s.indexOf(start),j=s.indexOf(end,i+start.length);assert(i>=0&&j>i,start);return s.slice(i,j);};
 for(const [start,end] of [
  ['function validate(data){','function graph(points){'],
