@@ -7,6 +7,7 @@ for(const width of [320,360,390,430]){
  await page.goto('http://127.0.0.1:'+server.address().port);
  await page.evaluate(()=>{const records=[['early','2026-11-04T08:00',89,91],['morning','2026-11-11T08:09',88.8,90.1],['evening','2026-11-11T18:00',89.2,null],['waist','2026-11-12T08:00',null,90]].map(([id,at,weight,waist])=>({id,at,weight,waist,muscle:null,fatPercent:null,fatMass:null,device:'test',note:'',waistUnit:'cm',createdAt:at+'Z',updatedAt:at+'Z'}));localStorage.setItem('geunlog-body-v1',JSON.stringify({version:1,records,baseline:'early'}));document.body.innerHTML='<main class="bulk-app"></main>';BodyTracker.mount(document.querySelector('main'));});
  assert.equal(await page.locator('[data-from],[data-to],[data-calendar-mode]').count(),0);assert(await page.locator('.body-month-panel').evaluate(e=>e.querySelector('[data-body-month-panel]').getBoundingClientRect().bottom<=e.querySelector('.body-chart').getBoundingClientRect().top));
+ assert.equal(await page.locator('.body-chart .body-latest-label').count(),0);assert.equal(await page.locator('.body-chart').evaluate(e=>e.innerText.includes('날짜 간격 미반영')||e.innerText.includes('점이나 이전')),false);
  await page.locator('[data-period]').selectOption('all');const original=await page.evaluate(()=>localStorage.getItem('geunlog-body-v1'));
  const day=d=>page.locator('[data-calendar-day="2026-11-'+d+'"]');
  assert((await day('11').innerText()).includes('89.2'));assert((await day('11').innerText()).includes('90.1'));
