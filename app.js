@@ -4,7 +4,10 @@ window.BodyTracker=(function(){
 const KEY='geunlog-body-v1',fields={weight:['체중','kg',1,500],muscle:['골격근량','kg',1,200],fatPercent:['체지방률','%',0.1,80],fatMass:['체지방량','kg',0.1,300],waist:['허리둘레','cm',10,300]};
 let metric='weight',period='90',device='',from='',to='',comparison='previous',graphSelectedId='';
 const graphColors={weight:'#315bea',muscle:'#7851bd',fatPercent:'#b85b16',waist:'#147568',fatMass:'#a94c7d'};
-let graphMetrics=['weight'];
+const GRAPH_SETTINGS_KEY='geunlog-body-graph-settings-v1';
+function readGraphMetrics(){try{const keys=JSON.parse(localStorage.getItem(GRAPH_SETTINGS_KEY));if(Array.isArray(keys)&&keys.length>0&&keys.length<=Object.keys(fields).length&&new Set(keys).size===keys.length&&keys.every(k=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(fields,k)))return keys;}catch(e){}return ['weight'];}
+function saveGraphMetrics(keys){try{localStorage.setItem(GRAPH_SETTINGS_KEY,JSON.stringify(keys));return true;}catch(e){return false;}}
+let graphMetrics=readGraphMetrics();metric=graphMetrics[0];
 let calendarMonth='',selectedDay='',calendarMode='day',rangeStart='',rangeEnd='';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const localNow=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
@@ -164,7 +167,7 @@ function graphSettings(root){
  const trigger=root.querySelector('[data-graph-settings]');trigger.onclick=()=>{
  const d=document.createElement('dialog');d.className='body-graph-settings';d.setAttribute('aria-labelledby','body-graph-settings-title');d.setAttribute('aria-describedby','body-graph-settings-hint');
  d.innerHTML='<form method="dialog"><header><h3 id="body-graph-settings-title">표시할 그래프</h3><p>함께 볼 항목을 선택하세요</p></header><div class="body-graph-settings-options">'+['weight','muscle','fatPercent','waist','fatMass'].map(k=>'<label style="--series-color:'+graphColors[k]+'"><input type="checkbox" value="'+k+'" '+(graphMetrics.includes(k)?'checked':'')+'><span class="body-setting-dot" aria-hidden="true"></span><span>'+fields[k][0]+'</span></label>').join('')+'</div><p id="body-graph-settings-hint">여러 항목은 첫 측정 대비 변화율(%)로 비교해요.</p><p data-settings-error role="alert"></p><footer><button value="cancel">취소</button><button value="apply">적용</button></footer></form>';
- d.querySelector('form').onsubmit=e=>{e.preventDefault();if(e.submitter?.value!=='apply'){d.close('cancel');return;}const next=[...d.querySelectorAll('input:checked')].map(i=>i.value);if(!next.length){e.preventDefault();d.querySelector('[data-settings-error]').textContent='항목을 하나 이상 선택해주세요.';return;}graphMetrics=next;metric=next[0];d.close('apply');};
+ d.querySelector('form').onsubmit=e=>{e.preventDefault();if(e.submitter?.value!=='apply'){d.close('cancel');return;}const next=[...d.querySelectorAll('input:checked')].map(i=>i.value);if(!next.length){e.preventDefault();d.querySelector('[data-settings-error]').textContent='항목을 하나 이상 선택해주세요.';return;}if(!saveGraphMetrics(next)){d.querySelector('[data-settings-error]').textContent='설정을 저장하지 못했어요. 다시 시도해주세요.';return;}graphMetrics=next;metric=next[0];d.close('apply');};
  d.onclose=()=>{const apply=d.returnValue==='apply';d.remove();if(apply)mount(root);root.querySelector('[data-graph-settings]')?.focus({preventScroll:true});};document.body.append(d);d.showModal();
  };
 }
@@ -248,7 +251,7 @@ detail.querySelectorAll('[data-graph-edit]').forEach(button=>button.onclick=()=>
  const chosen=filtered.find(r=>r.id===graphSelectedId&&r.at.slice(0,10)===selectedDay)||dayRecords(filtered,selectedDay).at(-1);openPoint(chosen?.id||'');
  const showAll=root.querySelector('[data-show-all]');if(showAll)showAll.onclick=()=>{period='all';mount(root);};};draw();graphSettings(root);
  root.querySelector('[data-add]').onclick=()=>editor(root);
- for(const [name,set] of [['device',v=>{device=v;historySelected.clear();historyLimit=10;}],['compare',v=>comparison=v],['metric',v=>{metric=v;graphMetrics=[v];}],['period',v=>{period=v;calendarMode=v==='custom'?'range':'day';rangeStart=from;rangeEnd=to;}],['from',v=>from=v],['to',v=>to=v]]){const e=root.querySelector('[data-'+name+']');if(e)e.onchange=()=>{set(e.value);mount(root);};}
+ for(const [name,set] of [['device',v=>{device=v;historySelected.clear();historyLimit=10;}],['compare',v=>comparison=v],['metric',v=>{if(saveGraphMetrics([v])){metric=v;graphMetrics=[v];}else bodyNotice('그래프 설정을 저장하지 못했어요. 다시 시도해주세요.');}],['period',v=>{period=v;calendarMode=v==='custom'?'range':'day';rangeStart=from;rangeEnd=to;}],['from',v=>from=v],['to',v=>to=v]]){const e=root.querySelector('[data-'+name+']');if(e)e.onchange=()=>{set(e.value);mount(root);};}
  root.querySelector('[data-export]').onclick=()=>{try{download();}catch(e){bodyNotice(e.message);}};
  root.querySelector('[data-import-open]').onclick=()=>root.querySelector('[data-import]').click();
  root.querySelector('[data-import]').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10000000)throw Error('10MB 이하 파일을 선택해주세요.');const imported=JSON.parse(await file.text());if(imported.format!=='geunlog-body')throw Error('체형 기록 백업 파일을 선택해주세요.');validate(imported);if(!await confirmBodyDelete('백업을 현재 기록에 합칠까요?\n같은 기록은 최근 수정본을 유지해요.',{title:'체형 기록 불러오기',accept:'불러오기',danger:false}))return;write(merge(imported));mount(root,'체형 기록을 가져왔어요.');}catch(err){bodyNotice(err.message);}};
