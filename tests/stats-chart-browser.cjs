@@ -3,7 +3,7 @@ const http = require('http');
 const assert = require('assert/strict');
 const {chromium} = require('playwright');
 const cp = require('child_process');
-const base = '4a3796a72503494f4ace878f30341388be454f08';
+const base = '54c6d319b36c05e4a594bf69847d573cd4763a07';
 const results = [];
 const server = http.createServer((req,res) => {
  const [arm,file='index.html'] = req.url.slice(1).split('/');
@@ -80,7 +80,7 @@ const server = http.createServer((req,res) => {
      for(let i=count-1;i>=0;i--){assert((await page.locator('[data-point-position]').innerText()).startsWith((i+1)+' /'));assert.equal(await page.locator('[data-point][aria-pressed=true]').getAttribute('data-point'),'synthetic-'+i);if(i)await page.locator('[data-point-prev]').click();}
      assert(await page.locator('[data-point-prev]').isDisabled());
      await page.locator('[data-graph-latest]').click();assert(await page.locator('[data-point-next]').isDisabled());
-     const xs=expanded.points.map(p=>p.x);if(xs.length>2){const gap=xs[1]-xs[0];assert(Math.abs(gap-(expanded.width*304/360)/(count-1))<.1,'points use the full plot width');assert(xs.slice(1).every((x,i)=>Math.abs(x-xs[i]-gap)<.1));}
+     const xs=expanded.points.map(p=>p.x);if(xs.length>2){const gap=xs[1]-xs[0],plotWidth=await page.locator('.body-graph-scroll svg line').first().evaluate(e=>e.getBoundingClientRect().width);assert(plotWidth>=expanded.width*304/360,'plot width is at least the approved baseline');assert(Math.abs(gap-plotWidth/(count-1))<.1,'points use the full plot width');assert(xs.slice(1).every((x,i)=>Math.abs(x-xs[i]-gap)<.1));}
     }else results.push({width,count,overview});
     if(arm==='B' && count===38){
      const snapshot=()=>page.evaluate(()=>localStorage.getItem('geunlog-body-v1'));

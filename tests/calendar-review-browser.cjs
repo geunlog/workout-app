@@ -13,6 +13,13 @@ for(const arm of ['A','B'])for(const width of [320,360,390,430])for(const route 
  const before=await snapshot(p),original=JSON.parse(before['geunlog-body-v1']);await p.locator('[data-period]').selectOption('all');
  if(route==='add')await p.locator('[data-add]').click();
  if(route==='edit')await p.locator('[data-graph-edit]').first().click();
+ if(route==='range'&&arm==='B'){
+  await p.locator('[data-period]').selectOption('custom');
+  await p.locator('[data-calendar-day="2026-02-12"]').press('Enter');await p.locator('[data-calendar-day="2026-02-15"]').click();
+  await p.locator('[data-range-apply]').click();assert.equal(await p.locator('[data-point]').count(),1);assert.deepEqual(await snapshot(p),before);
+  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(row.errors,[]);
+  await p.screenshot({path:path.join(out,`B-${width}-inline-range.png`),fullPage:true});await p.close();console.log('PASS inline shared range '+width);continue;
+ }
  if(route==='range')await p.locator('[data-period]').selectOption('custom');
  if(route==='history')await p.locator('.body-history-tools>summary').click();
  const selector=route==='add'||route==='edit'?'.body-dialog input[name=date]':route==='range'?'[data-from]':'[data-hfrom]';
