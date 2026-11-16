@@ -3317,3 +3317,35 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .body-month-panel .body-multi-summary{grid-template-columns:1fr}.body-month-panel .body-multi-summary>strong{grid-column:1;grid-row:auto;text-align:left;display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:12px;white-space:normal;letter-spacing:0}
 .body-graph-settings{border:1px solid #dce3f2;border-radius:18px;max-width:min(360px,90vw);padding:20px}.body-graph-settings::backdrop{background:#17274466}.body-graph-settings label{display:flex;align-items:center;gap:12px;min-height:48px}.body-graph-settings input{width:20px;height:20px}.body-graph-settings p{font-size:12px;color:#52617c}.body-graph-settings footer{display:flex;gap:8px}.body-graph-settings button{min-height:44px;flex:1}
 .body-day-record[data-record-select]{cursor:pointer}.body-day-record [data-day-select]{min-height:44px;background:transparent;border:0;font-weight:700;color:#2b50ca;padding:4px 8px}
+
+/* v174: settings belong to the selected measurement, with a compact app dialog. */
+.body-month-panel .body-month-panel-grid button{min-height:54px;padding:3px 0;gap:1px;box-sizing:border-box}
+.body-month-panel .body-month-panel-grid button b{line-height:1.25}
+.body-month-panel .body-month-panel-grid button span{line-height:1.2}
+.body-month-panel>.body-chart{margin-top:4px;padding-top:8px}
+.body-month-panel .body-graph-summary{position:relative;gap:6px 10px}
+.body-month-panel .body-graph-summary>span{grid-column:1/-1;min-height:28px;display:flex;align-items:center;padding-right:44px}
+.body-month-panel .body-graph-summary>strong{grid-column:2;grid-row:2;text-align:right}
+.body-month-panel .body-graph-summary>small{grid-column:1;grid-row:2}
+.body-month-panel .body-multi-summary>strong{grid-column:1;grid-row:2;text-align:left}
+.body-month-panel .body-multi-summary>small{grid-column:1;grid-row:3}
+.body-chart [data-graph-settings]{display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:12px;background:#e6edff;color:#3557ad;flex-shrink:0;cursor:pointer}
+.body-graph-summary>[data-graph-settings]{position:absolute;right:5px;top:4px}
+.body-chart .body-empty>[data-graph-settings]{margin:8px auto 0}
+.body-graph-settings{box-sizing:border-box;width:calc(100% - 32px);max-width:360px;max-height:calc(100dvh - 32px);padding:20px;margin:auto;border:1px solid #dce3f2;border-radius:24px;background:#fff;color:#263451;font-family:var(--ui,sans-serif);box-shadow:0 18px 60px #17274430;overflow:auto}
+.body-graph-settings::backdrop{background:#17274466;backdrop-filter:blur(3px)}
+.body-graph-settings form{margin:0;display:grid;gap:14px}
+.body-graph-settings header h3{font:700 19px/1.4 var(--ui,sans-serif);letter-spacing:-.4px;margin:0 0 4px}
+.body-graph-settings header p{margin:0;color:#68758c;font-size:13px;line-height:1.5}
+.body-graph-settings-options{display:grid;gap:6px}
+.body-graph-settings-options label{box-sizing:border-box;display:flex;align-items:center;min-height:48px;gap:10px;padding:10px 12px;border:1px solid #e6eaf2;border-radius:12px;background:#f8faff;font-size:14px;font-weight:600;cursor:pointer}
+.body-graph-settings-options label:has(input:checked){border-color:#b7c8ff;background:#edf2ff;color:#2448af}
+.body-graph-settings-options input{width:18px;height:18px;margin:0;accent-color:#315bea;flex-shrink:0}
+.body-graph-settings .body-setting-dot{width:7px;height:7px;border-radius:50%;background:var(--series-color);flex-shrink:0}
+.body-graph-settings #body-graph-settings-hint{font-size:12px;line-height:1.6;margin:0;color:#68758c;word-break:keep-all}
+.body-graph-settings [data-settings-error]{font-size:12px;color:#af3e4c;margin:0}
+.body-graph-settings [data-settings-error]:empty{display:none}
+.body-graph-settings footer{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.body-graph-settings footer button{min-height:46px;padding:10px 14px;border:1px solid #dce3f2;border-radius:12px;background:#f1f4fa;color:#465673;font:600 14px/1.4 var(--ui,sans-serif);cursor:pointer}
+.body-graph-settings footer [value=apply]{border-color:#315bea;background:#315bea;color:#fff;box-shadow:0 3px 8px #315bea26}
+.body-graph-settings :is(button,input):focus-visible{outline:3px solid #315bea;outline-offset:3px}
