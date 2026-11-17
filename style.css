@@ -3352,3 +3352,36 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 
 /* v177: measurement navigation follows the graph in both visual and DOM order. */
 .body-month-panel .body-graph-tools{margin-top:12px}
+
+/* v177 records: actual saved muscle groups before selecting a day. */
+.bulk-app #recordsScope>.stats-note{font-size:11px;margin:6px 2px 12px}
+.bulk-app .record-calendar{padding:10px;background:#fff;border:1px solid #dfe5ef;border-radius:18px;margin:0 0 12px;min-width:0}
+.bulk-app .record-calendar .record-date-tools{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;padding:0;border:0;margin:0 0 8px;gap:6px}
+.bulk-app .record-calendar .record-date-tools button{min-height:44px;min-width:0;margin:0}
+.bulk-app .record-calendar [data-date-picker]{font-size:17px;border:0;background:transparent;min-height:44px}
+.bulk-app .record-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px 1px;text-align:center}
+.bulk-app .record-weekday{padding:5px 0 7px;color:#7a879c;font-size:10px;font-weight:600}
+.bulk-app .record-weekday:nth-child(6){color:#5377b4}.bulk-app .record-weekday:nth-child(7){color:#b66068}
+.bulk-app .record-calendar-grid button{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;width:100%;min-width:0;min-height:64px;padding:5px 1px;border:1px solid transparent;border-radius:10px;background:transparent;color:#36415b;box-shadow:none}
+.bulk-app .record-calendar-grid b{font-size:12px;line-height:1.4;font-weight:650}
+.bulk-app .record-calendar-grid button span{max-width:100%;font-size:10px;font-weight:550;line-height:1.25;color:var(--record-muscle-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bulk-app .record-calendar-grid [data-has-records]{background:#f1f5fd}
+.bulk-app .record-calendar-grid [aria-current=date]{border-color:#b7c8ff}
+.bulk-app .record-calendar-grid [aria-pressed=true]{background:#315bea;border-color:#315bea;color:#fff;box-shadow:0 2px 6px #315bea26}
+.bulk-app .record-calendar-grid [aria-pressed=true] span{color:#fff}
+.bulk-app .record-calendar-grid button:disabled{opacity:.3}
+.bulk-app .record-calendar button:focus-visible{outline:2px solid #173fae;outline-offset:1px}
+.bulk-app .record-date-summary{display:flex;align-items:center;font-size:12px;font-weight:550;color:#52627b;margin:10px 2px}
+.bulk-app .date-record-card{padding:12px;margin:10px 0;border-radius:16px}
+.bulk-app .record-card-heading{position:relative;padding-bottom:6px}
+.bulk-app .record-card-heading h3{font-size:14px;line-height:1.45;margin:0 0 4px;overflow-wrap:anywhere}
+.bulk-app .record-card-heading p{margin:0;font-size:11px;line-height:1.5;color:#78859a}
+.bulk-app .record-plan-badge{display:inline-block;margin-top:5px;padding:2px 7px;max-width:100%;border-radius:7px;background:#eef2fa;color:#536685;font-size:10px;overflow-wrap:anywhere}
+.bulk-app .date-record-card .rec-item{gap:8px;min-height:48px;padding:6px 0;border-top:1px solid #edf0f5}
+.bulk-app .date-record-card .record-card-value{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:1;min-width:0;min-height:44px;padding:8px 9px;border:1px solid #e3eaf8;border-radius:10px;background:#f6f8fd;color:#263451;font-size:15px;font-weight:650;line-height:1.5}
+.bulk-app .date-record-card .record-edit-trigger::after{content:none}
+.bulk-app .date-record-card .record-edit-label{font-size:10px;font-weight:550;white-space:nowrap;color:#506db7;flex-shrink:0}
+.bulk-app .date-record-card .btn-hist-del{width:44px;min-width:44px;min-height:44px;padding:10px;border-color:#e9edf3;background:#fff;color:#8791a2}
+.bulk-app .date-record-card .record-edit-form{margin-top:6px}
+.bulk-app #recordsView .records-management{margin-top:20px;padding:2px 12px;background:#f7f9fc}
+.bulk-app #recordsView .records-management>summary{font-size:12px}

@@ -2924,7 +2924,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     row.insertAdjacentElement('afterend',form);
     (trigger.classList.contains('record-card-date')?dateButton:weight).focus();
   }
-  var recordsViewMode='exercise',recordsSelectedDate='',recordsDateContext='';
+  var recordsViewMode='exercise',recordsSelectedDate='',recordsDateContext='',recordsCalendarMonth='';
   function dateRecordRuns(source,date) {
     // Keep original array order when legacy timestamps are missing; never invent times.
     var list=[];
@@ -2943,22 +2943,34 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   }
   function renderDateRecords(source,removeRecords) {
     var selection=resolveRecordDate(source,recordsSelectedDate,recordsDateContext);
+    if(!recordsCalendarMonth||selection.date!==recordsSelectedDate)recordsCalendarMonth=selection.date.slice(0,7);
     recordsSelectedDate=selection.date;recordsDateContext=selection.context;
-    var tools=document.createElement('div');tools.className='record-date-tools';tools.setAttribute('role','group');tools.setAttribute('aria-label','날짜 이동');
-    tools.innerHTML='<button type="button" data-prev aria-label="이전 날짜">‹</button><button type="button" data-date-picker aria-label="조회 날짜" aria-haspopup="dialog"></button><button type="button" data-next aria-label="다음 날짜">›</button>';
-    var input=tools.querySelector('[data-date-picker]');input.textContent=recordsSelectedDate.replaceAll('-','.');
-    function change(value){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}if(value&&value<=todayStr()){recordsSelectedDate=value;renderRecords();var next=document.querySelector('[data-date-picker]');if(next)next.focus({preventScroll:true});}}
-    input.onclick=function(){openWorkoutDatePicker(input,{value:recordsSelectedDate,title:'조회 날짜',onApply:change});};
-    tools.querySelector('[data-next]').disabled=recordsSelectedDate>=todayStr();
-    [-1,1].forEach(function(offset,i){tools.querySelector(i?'[data-next]':'[data-prev]').onclick=function(){var d=new Date(recordsSelectedDate+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+offset);change(d.toISOString().slice(0,10));};});
-    var jump=document.createElement('select');jump.className='record-date-jump';jump.setAttribute('aria-label','조건에 맞는 기록일');
-    var placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=selection.dates.length?'기록이 있는 날짜로 이동':'조건에 맞는 기록일 없음';jump.appendChild(placeholder);
-    selection.dates.slice().reverse().forEach(function(d){var option=document.createElement('option');option.value=d;option.textContent=d;jump.appendChild(option);});jump.value=selection.dates.includes(recordsSelectedDate)?recordsSelectedDate:'';jump.onchange=function(){change(jump.value);};
-    recordsListEl.appendChild(tools);recordsListEl.appendChild(jump);
+    var calendar=document.createElement('section');calendar.className='record-calendar';calendar.setAttribute('aria-label','날짜별 운동 부위');
+    var tools=document.createElement('div');tools.className='record-date-tools';tools.setAttribute('role','group');tools.setAttribute('aria-label','기록 달력 월 이동');
+    tools.innerHTML='<button type="button" data-prev aria-label="이전 달">‹</button><button type="button" data-date-picker aria-label="다른 날짜 찾기" aria-haspopup="dialog"></button><button type="button" data-next aria-label="다음 달">›</button>';
+    var parts=recordsCalendarMonth.split('-').map(Number),year=parts[0],month=parts[1];
+    tools.querySelector('[data-date-picker]').textContent=year+'년 '+month+'월';
+    function editing(){if(!document.querySelector('.record-edit-form'))return false;showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return true;}
+    function change(value){if(editing())return;if(value&&value<=todayStr()){recordsSelectedDate=value;recordsCalendarMonth=value.slice(0,7);renderRecords();var next=document.querySelector('[data-record-day="'+value+'"]');if(next)next.focus({preventScroll:true});}}
+    tools.querySelector('[data-date-picker]').onclick=function(){if(!editing())openWorkoutDatePicker(this,{value:recordsSelectedDate,title:'조회 날짜',onApply:change});};
+    tools.querySelector('[data-next]').disabled=recordsCalendarMonth>=todayStr().slice(0,7);
+    tools.querySelector('[data-prev]').disabled=year<=1900&&month===1;
+    [-1,1].forEach(function(offset,i){tools.querySelector(i?'[data-next]':'[data-prev]').onclick=function(){if(editing())return;var d=new Date(year,month-1+offset,1);recordsCalendarMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');renderRecords();var next=document.querySelector('.record-calendar '+(i?'[data-next]':'[data-prev]'));if(next)next.focus({preventScroll:true});};});
+    var grouped=new Map();source.forEach(function(record){if(!grouped.has(record.date))grouped.set(record.date,[]);record.entries.forEach(function(entry){var muscles=grouped.get(record.date),muscle=entryMuscle(entry);if(!muscles.includes(muscle))muscles.push(muscle);});});
+    var grid=document.createElement('div');grid.className='record-calendar-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label',year+'년 '+month+'월 운동 기록');
+    ['월','화','수','목','금','토','일'].forEach(function(day){var label=document.createElement('span');label.className='record-weekday';label.textContent=day;grid.appendChild(label);});
+    var offset=(new Date(year,month-1,1).getDay()+6)%7,count=new Date(year,month,0).getDate();for(var i=0;i<offset;i++)grid.appendChild(document.createElement('span'));
+    for(var day=1;day<=count;day++){
+      var key=recordsCalendarMonth+'-'+String(day).padStart(2,'0'),muscles=grouped.get(key)||[],button=document.createElement('button');button.type='button';button.dataset.recordDay=key;button.disabled=key>todayStr();button.setAttribute('aria-pressed',String(key===recordsSelectedDate));button.setAttribute('aria-label',key+' · '+(muscles.length?muscles.join(' · '):'운동 기록 없음'));if(key===todayStr())button.setAttribute('aria-current','date');
+      var number=document.createElement('b');number.textContent=day;button.appendChild(number);
+      muscles.slice(0,2).forEach(function(m,i){var tag=document.createElement('span');tag.textContent=m+(i===1&&muscles.length>2?' +'+(muscles.length-2):'');tag.style.setProperty('--record-muscle-color',MUSCLE_COLOR[m]||'#66758c');button.appendChild(tag);});
+      if(muscles.length)button.dataset.hasRecords='';button.onclick=function(){change(this.dataset.recordDay);};grid.appendChild(button);
+    }
+    calendar.append(tools,grid);recordsListEl.appendChild(calendar);
     var runs=dateRecordRuns(source,recordsSelectedDate);
-    var note=document.createElement('p');note.className='stats-note record-date-summary';note.textContent=recordsSelectedDate+' · '+new Set(runs.map(function(r){return r.key;})).size+'개 종목 · '+runs.reduce(function(n,r){return n+r.entries.length;},0)+'세트 · 저장 순서 기준'+(recordDataWarning?' · 일부 기록 확인 불가':'');recordsListEl.appendChild(note);
-    runs.forEach(function(run,i){var e=run.entries[0],card=document.createElement('article');card.className='date-record-card';var heading=document.createElement('h3');heading.textContent=(i+1)+'. '+e.n;var meta=document.createElement('p');meta.textContent=entryMuscle(e)+' · '+run.entries.length+'세트'+(recordsScope==='all'?' · '+(e._profile||activeProfile):'');card.append(heading,meta);
-      run.entries.forEach(function(entry,index){var row=document.createElement('div');row.className='rec-item';var label=document.createElement('span');label.textContent=(index+1)+'세트';var edit=document.createElement('button');edit.type='button';edit.className='record-card-value record-edit-trigger';edit.textContent=(entry.w==='-'?'무게 미입력':entry.w+'kg')+' × '+(entry.reps==='-'?'횟수 미입력':entry.reps+'회');entry._setNo=index+1;edit.onclick=function(){if(entry._profile&&entry._profile!==activeProfile){switchProfile(entry._profile);return;}openRecordEditor(row,entry,edit);};row.append(label,edit);
+    var note=document.createElement('p');note.className='stats-note record-date-summary';note.textContent=recordsSelectedDate+' · '+new Set(runs.map(function(r){return r.key;})).size+'개 종목 · '+runs.reduce(function(n,r){return n+r.entries.length;},0)+'세트'+(recordDataWarning?' · 일부 기록 확인 불가':'');recordsListEl.appendChild(note);
+    runs.forEach(function(run,i){var e=run.entries[0],card=document.createElement('article');card.className='date-record-card';var heading=document.createElement('h3');heading.textContent=(i+1)+'. '+e.n;var meta=document.createElement('p');meta.textContent=entryMuscle(e)+' · '+run.entries.length+'세트';var header=document.createElement('header');header.className='record-card-heading';header.append(heading,meta);if(recordsScope==='all'){var badge=document.createElement('span');badge.className='record-plan-badge';badge.textContent=e._profile||activeProfile;header.appendChild(badge);}card.appendChild(header);
+      run.entries.forEach(function(entry,index){var row=document.createElement('div');row.className='rec-item';var label=document.createElement('span');label.textContent=(index+1)+'세트';var edit=document.createElement('button');edit.type='button';edit.className='record-card-value record-edit-trigger';edit.textContent=(entry.w==='-'?'무게 미입력':entry.w+'kg')+' × '+(entry.reps==='-'?'횟수 미입력':entry.reps+'회');var other=entry._profile&&entry._profile!==activeProfile;edit.setAttribute('aria-label',entry.n+' '+(index+1)+'세트 '+(other?entry._profile+' 플랜으로 이동':'기록 수정'));var editLabel=document.createElement('small');editLabel.className='record-edit-label';editLabel.textContent=other?'이동':'수정';edit.appendChild(editLabel);entry._setNo=index+1;edit.onclick=function(){if(entry._profile&&entry._profile!==activeProfile){switchProfile(entry._profile);return;}openRecordEditor(row,entry,edit);};row.append(label,edit);
         if(!entry._profile||entry._profile===activeProfile){var del=document.createElement('button');del.type='button';del.className='btn-hist-del';del.innerHTML=deleteIcon();del.setAttribute('aria-label',entry.n+' '+(index+1)+'세트 기록 삭제');del.onclick=function(){requireSecondClick(del,'확인',function(){removeRecords(function(item){return item.id===entry.id;},true);});};row.appendChild(del);}card.appendChild(row);
       });recordsListEl.appendChild(card);
     });
@@ -2993,7 +3005,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     scheduleWeeklySummary();
     var scope=document.getElementById('recordsScope');
     if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
-    scope.innerHTML='<h3 class="stats-scope-heading">기록 범위</h3><div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?'플랜: '+activeProfile:'모든 플랜의 기록 · 다른 플랜 기록은 해당 플랜으로 이동해 수정해요.')+'</p>';
+    scope.innerHTML='<div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?activeProfile+' 플랜':'모든 플랜 · 다른 플랜 기록은 이동 후 수정')+'</p>';
     var viewSwitch=document.createElement('div');viewSwitch.className='records-view-tabs';viewSwitch.setAttribute('role','tablist');viewSwitch.setAttribute('aria-label','기록 보기 방식');
     [['date','날짜별','하루의 운동 흐름'],['exercise','종목별','종목의 변화와 누적']].forEach(function(pair){
       var b=document.createElement('button');b.type='button';b.id='recordsTab-'+pair[0];b.dataset.recordsView=pair[0];b.setAttribute('role','tab');b.setAttribute('aria-controls','recordsList');b.setAttribute('aria-selected',String(recordsViewMode===pair[0]));b.tabIndex=recordsViewMode===pair[0]?0:-1;
@@ -3002,6 +3014,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       b.onkeydown=function(e){if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();var target=e.key==='Home'?'date':e.key==='End'?'exercise':pair[0]==='date'?'exercise':'date';scope.querySelector('[data-records-view="'+target+'"]').click();};
       viewSwitch.appendChild(b);
     });scope.prepend(viewSwitch);
+    document.querySelector('.records-management>summary').textContent=activeProfile+' 플랜 기록 관리';
     document.querySelector('.record-filter-panel').hidden=recordsViewMode==='date';
     recordsListEl.setAttribute('role','tabpanel');recordsListEl.setAttribute('aria-labelledby','recordsTab-'+recordsViewMode);recordsListEl.tabIndex=0;
     scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;renderRecords();};});
