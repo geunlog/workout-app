@@ -3349,3 +3349,6 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .body-graph-settings footer button{min-height:46px;padding:10px 14px;border:1px solid #dce3f2;border-radius:12px;background:#f1f4fa;color:#465673;font:600 14px/1.4 var(--ui,sans-serif);cursor:pointer}
 .body-graph-settings footer [value=apply]{border-color:#315bea;background:#315bea;color:#fff;box-shadow:0 3px 8px #315bea26}
 .body-graph-settings :is(button,input):focus-visible{outline:3px solid #315bea;outline-offset:3px}
+
+/* v177: measurement navigation follows the graph in both visual and DOM order. */
+.body-month-panel .body-graph-tools{margin-top:12px}
