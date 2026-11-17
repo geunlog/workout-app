@@ -3405,10 +3405,6 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app #recordsView .record-filter-panel .rec-filter-presets{order:-1;margin:0;gap:4px;padding:4px;background:#eaf0f8;border-radius:13px}
 .bulk-app #recordsView .rec-filter-presets .rec-preset-btn{min-height:44px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:12px;font-weight:650;box-shadow:none}
 .bulk-app #recordsView .rec-filter-presets .rec-preset-btn[aria-pressed=true]{background:white;color:var(--primary);box-shadow:0 2px 6px #19233b0a}
-.bulk-app .record-muscle-chips{display:flex;flex-wrap:wrap;gap:6px}
-.bulk-app .record-muscle-chips button{min-height:44px;padding:7px 13px;border-radius:12px;border:1px solid var(--line);background:white;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
-.bulk-app .record-muscle-chips button[aria-pressed=true]{border-color:var(--primary);color:var(--primary);background:#edf2ff;box-shadow:inset 0 0 0 1px var(--primary)}
-.bulk-app .record-muscle-chips button[data-record-muscle]:not([data-record-muscle=""])::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muscle-color);margin-right:6px}
 .bulk-app #recordBrowseTools{display:flex;align-items:center;gap:8px;margin:0;min-height:44px}
 .bulk-app #recordResultCount{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;margin-right:auto}
 .bulk-app #recordSortControl .card-sort{display:block;min-height:44px;width:116px;max-width:none;border:0;background-color:transparent;font-size:12px;padding-left:4px;color:var(--muted)}
@@ -3442,5 +3438,17 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app #recordsList .record-collapse{min-height:44px;background:transparent;border:0;font-size:12px;color:var(--muted);padding:8px}
 .bulk-app #recordsList .record-edit-form{flex-basis:100%}
 .bulk-app #recordsList .rec-item:has(.record-edit-form){flex-wrap:wrap}
-.bulk-app #recordsList button:focus-visible,.bulk-app .record-muscle-chips button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
-@media(max-width:360px){.bulk-app .record-muscle-chips{gap:5px}.bulk-app .record-muscle-chips button{padding:7px 10px}.bulk-app #recordBrowseTools{gap:4px}.bulk-app #recordSortControl .card-sort{width:104px}.bulk-app #recordsList .exercise-record-head{padding:14px 10px}.bulk-app #recordsList .record-exercise-heading h3{font-size:14px}.bulk-app #recordsList .record-day-group{margin:0 10px}.bulk-app #recordsList .rec-item .record-card-value{font-size:15px}}
+.bulk-app #recordsList button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media(max-width:360px){.bulk-app #recordBrowseTools{gap:4px}.bulk-app #recordSortControl .card-sort{width:104px}.bulk-app #recordsList .exercise-record-head{padding:14px 10px}.bulk-app #recordsList .record-exercise-heading h3{font-size:14px}.bulk-app #recordsList .record-day-group{margin:0 10px}.bulk-app #recordsList .rec-item .record-card-value{font-size:15px}}
+
+/* v178 follow-up: muscle selection shares one row with exercise search. */
+.bulk-app #recordsView .record-filter-panel .record-exercise-search{display:grid;grid-template-columns:100px minmax(0,1fr);align-items:stretch;gap:8px}
+.bulk-app #recordsView .record-exercise-search #recordSearchMuscle{width:100%;min-width:0;min-height:48px;margin:0;padding:10px 28px 10px 10px;border:1px solid var(--line-strong);border-radius:14px;background-color:white;background-position:right 8px center;color:var(--ink);font-family:inherit;font-size:13px}
+.bulk-app #recordsView .record-search-field{position:relative;min-width:0}
+.bulk-app #recordsView .record-search-field input{box-sizing:border-box;min-width:0;margin:0;font-size:14px;border-color:var(--line-strong)}
+.bulk-app #recordsView .record-search-field .stats-search-icon{left:12px;top:50%;transform:translateY(-50%)}
+.bulk-app #recordsView #recordSearchEmpty{order:2;display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;text-align:left;font-size:13px;line-height:1.6;margin:0}
+.bulk-app #recordsView #recordSearchEmpty>span{flex-basis:100%}
+.bulk-app #recordsView #recordSearchEmpty>.btn-reset{display:inline-flex;align-items:center;justify-content:center;width:auto;min-height:44px;margin:0;padding:8px 10px;font-size:12px;color:var(--primary)}
+.bulk-app #recordsView #recordSearchMuscle:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media(max-width:360px){.bulk-app #recordsView .record-filter-panel .record-exercise-search{grid-template-columns:94px minmax(0,1fr);gap:6px}.bulk-app #recordsView .record-search-field input{font-size:13px;padding-left:34px}}

@@ -3007,7 +3007,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     scheduleWeeklySummary();
     var scope=document.getElementById('recordsScope');
     if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
-    scope.innerHTML='<div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?activeProfile+' 플랜':'모든 플랜 · 다른 플랜 기록은 이동 후 수정')+'</p>';
+    scope.innerHTML='<div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div>'+(recordsScope==='all'?'<p class="stats-note">다른 플랜 기록은 이동 후 수정</p>':'');
     var viewSwitch=document.createElement('div');viewSwitch.className='records-view-tabs';viewSwitch.setAttribute('role','tablist');viewSwitch.setAttribute('aria-label','기록 보기 방식');
     [['date','날짜별','하루의 운동 흐름'],['exercise','종목별','종목의 변화와 누적']].forEach(function(pair){
       var b=document.createElement('button');b.type='button';b.id='recordsTab-'+pair[0];b.dataset.recordsView=pair[0];b.setAttribute('role','tab');b.setAttribute('aria-controls','recordsList');b.setAttribute('aria-selected',String(recordsViewMode===pair[0]));b.tabIndex=recordsViewMode===pair[0]?0:-1;
@@ -3072,10 +3072,6 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if(removed>0){if(allowUndo)offerRecordUndo(before,removed);else showToast('운동기록 '+removed+'세트 삭제 완료');}
     }
     if(recordsViewMode==='date'){renderDateRecords(sourceRecords,deleteRecords);return;}
-    var muscleCounts = new Map();
-    groups.forEach(function(entries,key){var pair=JSON.parse(key);if(recordQuery&&pair[1].toLocaleLowerCase('ko-KR').indexOf(recordQuery)===-1)return;if(entries.some(function(e){return (!recFilterFrom||e.date>=recFilterFrom)&&(!recFilterTo||e.date<=recFilterTo);}))muscleCounts.set(pair[0],(muscleCounts.get(pair[0])||0)+1);});
-    var chips=document.getElementById('recordMuscleChips');chips.replaceChildren();
-    [''].concat(MUSCLES,['기타']).forEach(function(m){if(m&&!muscleCounts.has(m)&&recordMuscleQuery!==m)return;var button=document.createElement('button');button.type='button';button.dataset.recordMuscle=m;button.style.setProperty('--muscle-color',MUSCLE_COLOR[m]||'var(--muted)');button.setAttribute('aria-pressed',String(recordMuscleQuery===m));button.textContent=m||'전체';button.onclick=function(){var select=document.getElementById('recordSearchMuscle');select.value=m;select.dispatchEvent(new Event('change'));var next=Array.from(chips.children).find(function(b){return b.dataset.recordMuscle===m;});if(next)next.focus({preventScroll:true});};chips.appendChild(button);});
     var sortControl=document.getElementById('recordSortControl');sortControl.innerHTML=cardSortHtml('record','종목');bindCardSort(sortControl);
     Array.from(groups.entries()).sort(compareRecordGroups).forEach(function (pairEntry) {
       var key=pairEntry[0],all=pairEntry[1];
@@ -3172,7 +3168,19 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       recordsListEl.appendChild(card);
     });
     document.getElementById('recordResultCount').textContent=matchedExerciseCount+'개 종목';
-    if(recordSearchEmpty){recordSearchEmpty.hidden=matchedExerciseCount>0;recordSearchEmpty.textContent='해당 조건의 운동기록이 없어요.';if(!matchedExerciseCount){var reset=document.createElement('button');reset.type='button';reset.className='btn-reset';reset.textContent='조회 조건 초기화';reset.onclick=function(){recFilterFrom='';recFilterTo='';recordExerciseQuery='';recordMuscleQuery='';document.getElementById('recordSearchMuscle').value='';renderRecords();};recordSearchEmpty.appendChild(reset);}}
+    if(recordSearchEmpty){
+      recordSearchEmpty.hidden=matchedExerciseCount>0;
+      recordSearchEmpty.replaceChildren();
+      var emptyMessage=document.createElement('span');
+      emptyMessage.textContent=(recFilterFrom||recFilterTo?'선택한 기간에 ':'')+(recordMuscleQuery?recordMuscleQuery+' 부위의 ':'')+(recordQuery?'‘'+recordExerciseQuery.trim()+'’ ':'')+'운동기록이 없어요.';
+      recordSearchEmpty.appendChild(emptyMessage);
+      function addReset(kind,label,reset,focus){var button=document.createElement('button');button.type='button';button.className='btn-reset';button.dataset.recordReset=kind;button.textContent=label;button.onclick=function(){reset();renderRecords();document.querySelector(focus).focus({preventScroll:true});};recordSearchEmpty.appendChild(button);}
+      if(!matchedExerciseCount){
+        if(recordQuery)addReset('search','검색어 지우기',function(){recordExerciseQuery='';},'#recordExerciseSearch');
+        if(recordMuscleQuery)addReset('muscle','부위 전체 보기',function(){recordMuscleQuery='';},'#recordSearchMuscle');
+        if(recFilterFrom||recFilterTo)addReset('period','전체 기간 보기',function(){recFilterFrom='';recFilterTo='';recordCustomRangeOpen=false;},'.rec-preset-btn[data-preset=all]');
+      }
+    }
     document.querySelector('.records-disclosure-actions').hidden=false;
     bindCardSort(recordsListEl);
 
