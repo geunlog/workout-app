@@ -3050,7 +3050,8 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     });
     status.textContent=recordSearchChoices.length?(query?'일치하는 종목 ':'최근 기록한 종목 ')+recordSearchChoices.length+'개':'선택한 조건에 맞는 종목이 없어요.';
     status.classList.toggle('record-suggestion-empty',!recordSearchChoices.length);
-    popup.hidden=false;input.setAttribute('aria-expanded','true');fitRecordSearchSuggestions();
+    if(!recordSearchChoices.length){closeRecordSearchSuggestions();return;}
+    popup.hidden=false;popup.scrollTop=0;input.setAttribute('aria-expanded','true');fitRecordSearchSuggestions();
   }
   function renderRecords() {
     scheduleWeeklySummary();
