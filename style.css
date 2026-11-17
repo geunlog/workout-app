@@ -3385,3 +3385,12 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app .date-record-card .record-edit-form{margin-top:6px}
 .bulk-app #recordsView .records-management{margin-top:20px;padding:2px 12px;background:#f7f9fc}
 .bulk-app #recordsView .records-management>summary{font-size:12px}
+
+/* v177 follow-up: the same muscle color token as routine cards, without recoloring actions. */
+.bulk-app .date-record-card{border-left:3px solid var(--muscle-color,var(--muted));background:#fff}
+.bulk-app .record-card-heading h3{font-size:15px;font-weight:700;color:var(--ink)}
+.bulk-app .record-card-heading p{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:0}
+.bulk-app .record-muscle-chip{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;box-sizing:border-box;border-radius:7px;font-size:11px;font-weight:650;line-height:1.4;background:#f2f5f9;color:var(--ink)}
+.bulk-app .record-muscle-chip{background:color-mix(in srgb,var(--muscle-color,var(--muted)) 10%,white);color:color-mix(in srgb,var(--muscle-color,var(--muted)) 60%,var(--ink))}
+.bulk-app .record-set-count{font-size:11px;font-weight:400;color:var(--muted)}
+.bulk-app .record-plan-badge{background:#fff;border:1px solid var(--line);color:var(--muted);font-weight:400;line-height:1.4}
