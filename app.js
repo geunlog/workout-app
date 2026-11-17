@@ -1562,7 +1562,6 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   document.getElementById('recordSearchMuscle').onchange=function(){
     if(document.querySelector('.record-edit-form')){this.value=recordMuscleQuery;showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
     recordMuscleQuery=this.value;renderRecords();
-    recordsListEl.querySelectorAll('.record-muscle-group').forEach(function(group){if(recordMuscleQuery){group.open=true;group.querySelectorAll('details').forEach(function(el){el.open=false;});}});
     syncRecordDisclosureControls();
   };
   var MODE_KEY = 'bulk-routine-active-mode-v1';
@@ -2989,10 +2988,13 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var key=JSON.stringify([muscle,name]),card=Array.from(recordsListEl.querySelectorAll('[data-record-key]')).find(function(el){return el.dataset.recordKey==='exercise:'+key;});
     showToast('현재 플랜의 해당 부위·종목으로 조회 조건을 맞췄어요.'+(periodChanged?' 기간 필터를 해제했어요.':''));
     if(!card){showToast('해당 부위·종목에 저장된 기록이 없어요.');return;}
-    card.open=true;var parent=card.closest('.record-muscle-group');if(parent)parent.open=true;
-    var groups=Array.from(card.querySelectorAll('.record-day-group')),day=groups.find(function(g){return g.dataset.recordKey==='day:'+key+'|'+date;})||groups[0];if(day)day.open=true;
-    var target=(day||card).querySelector('summary');target.focus({preventScroll:true});target.scrollIntoView({behavior:'smooth',block:'center'});
+    card.open=true;
+    var groups=Array.from(card.querySelectorAll('.record-day-group')),day=groups.find(function(g){return g.dataset.recordKey==='day:'+key+'|'+targetDate;})||groups[0];
+    if(day){var index=groups.indexOf(day);groups.forEach(function(g,i){if(i<=index)g.hidden=false;});recordHistoryLimits[key]=Math.max(recordHistoryLimits[key]||3,index+1);var more=card.querySelector('.record-history-more'),remaining=groups.filter(function(g){return g.hidden;}).length;if(more){more.hidden=!remaining;more.textContent='이전 기록 더 보기 · '+remaining+'일';}}
+    var target=day?day.querySelector('.record-day-heading'):card.querySelector('summary');target.focus({preventScroll:true});target.scrollIntoView({behavior:'smooth',block:'center'});
   }
+  var recordHistoryLimits = Object.create(null);
+  var recordCustomRangeOpen = false;
   var recordsScope='current';
   function recordsSource(){
     if(recordsScope==='current')return logs;
@@ -3005,7 +3007,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     scheduleWeeklySummary();
     var scope=document.getElementById('recordsScope');
     if(!scope){scope=document.createElement('div');scope.id='recordsScope';document.getElementById('recordsView').prepend(scope);}
-    scope.innerHTML='<div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div><p class="stats-note">'+statsEscape(recordsScope==='current'?activeProfile+' 플랜':'모든 플랜 · 다른 플랜 기록은 이동 후 수정')+'</p>';
+    scope.innerHTML='<div class="stats-periods" role="group" aria-label="기록 플랜 범위"><button data-records-scope="current" aria-pressed="'+(recordsScope==='current')+'">현재 플랜</button><button data-records-scope="all" aria-pressed="'+(recordsScope==='all')+'">모든 플랜</button></div>'+(recordsScope==='all'?'<p class="stats-note">다른 플랜 기록은 이동 후 수정</p>':'');
     var viewSwitch=document.createElement('div');viewSwitch.className='records-view-tabs';viewSwitch.setAttribute('role','tablist');viewSwitch.setAttribute('aria-label','기록 보기 방식');
     [['date','날짜별','하루의 운동 흐름'],['exercise','종목별','종목의 변화와 누적']].forEach(function(pair){
       var b=document.createElement('button');b.type='button';b.id='recordsTab-'+pair[0];b.dataset.recordsView=pair[0];b.setAttribute('role','tab');b.setAttribute('aria-controls','recordsList');b.setAttribute('aria-selected',String(recordsViewMode===pair[0]));b.tabIndex=recordsViewMode===pair[0]?0:-1;
@@ -3049,15 +3051,6 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     function muscleFor(entry) {
       return entry.m || MUSCLES.find(function(m){return (catalog[m] || []).some(function(c){return c.n===entry.n;});}) || '기타';
     }
-    var sections = new Map();
-    MUSCLES.concat(['기타']).forEach(function(m){
-      var section=document.createElement('details');section.className='rec-group record-muscle-group';section.dataset.recordKey='muscle:'+m;section.open=!!opened[section.dataset.recordKey];
-      var summary=document.createElement('summary');var label=document.createElement('span');label.className='rec-title';label.textContent=m;label.style.color=MUSCLE_COLOR[m] || 'var(--muted)';
-      var count=document.createElement('span');count.className='rec-count';
-      var arrow=document.createElement('span');arrow.className='rec-chev';var heading=document.createElement('span');heading.className='rec-head';heading.append(label,count);summary.appendChild(heading);summary.insertAdjacentHTML('beforeend',cardSortHtml('record',m));summary.appendChild(arrow);
-      var body=document.createElement('div');body.className='rec-body';section.appendChild(summary);section.appendChild(body);
-      sections.set(m,{section:section,body:body,count:count});
-    });
     var groups = new Map();
     sourceRecords.forEach(function (record) {
       (record.entries || []).forEach(function (entry) {
@@ -3079,6 +3072,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if(removed>0){if(allowUndo)offerRecordUndo(before,removed);else showToast('운동기록 '+removed+'세트 삭제 완료');}
     }
     if(recordsViewMode==='date'){renderDateRecords(sourceRecords,deleteRecords);return;}
+    var sortControl=document.getElementById('recordSortControl');sortControl.innerHTML=cardSortHtml('record','종목');bindCardSort(sortControl);
     Array.from(groups.entries()).sort(compareRecordGroups).forEach(function (pairEntry) {
       var key=pairEntry[0],all=pairEntry[1];
       var pair=JSON.parse(key),muscle=pair[0],name=pair[1];
@@ -3090,6 +3084,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       if (!visible.length) return;
       matchedExerciseCount++;
       var card = document.createElement('details');card.className = 'exercise-record-card';card.dataset.recordKey='exercise:'+key;card.open=!!opened[card.dataset.recordKey] || (!!recordQuery && name.toLocaleLowerCase('ko-KR')===recordQuery);
+      card.style.setProperty('--muscle-color',MUSCLE_COLOR[muscle]||'var(--muted)');
       var head = document.createElement('summary');head.className = 'exercise-record-head';
       var title = document.createElement('h3');title.textContent = name;
       var del = document.createElement('button');del.type = 'button';del.className = 'btn-reset exercise-record-delete';del.textContent = '이 종목 기록 전체 삭제';del.setAttribute('aria-label',name + ' 전체 기록 삭제');
@@ -3101,7 +3096,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       var arrow=document.createElement('span');arrow.className='exercise-record-chevron';
       var count = document.createElement('span');count.className = 'record-count-badge';count.textContent = visible.length + '세트';
       count.setAttribute('aria-label','현재 조회 ' + visible.length + '세트');
-      head.appendChild(title);head.appendChild(count);head.appendChild(arrow);card.appendChild(head);
+      var heading=document.createElement('div');heading.className='record-exercise-heading';
+      var meta=document.createElement('div');meta.className='record-exercise-meta';var muscleChip=document.createElement('span');muscleChip.className='record-muscle-chip';muscleChip.textContent=muscle;var latest=document.createElement('span');latest.textContent='최근 '+visible[0].date.replace(/-/g,'.');meta.append(muscleChip,latest);heading.append(title,meta);
+      head.append(heading,count,arrow);card.appendChild(head);
       var setSeen={};
       all.forEach(function(entry){
         var setKey=JSON.stringify([entry.date,entry._profile||activeProfile]);
@@ -3113,32 +3110,18 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         if(!visibleByDate.has(entry.date))visibleByDate.set(entry.date,[]);
         visibleByDate.get(entry.date).push(entry);
       });
+      var dayIndex=0;
       visibleByDate.forEach(function(dayEntries,dayDate){
-        var dayGroup=document.createElement('details');dayGroup.className='record-day-group';
+        var dayGroup=document.createElement('section');dayGroup.className='record-day-group';dayGroup.hidden=dayIndex++ >= (recordHistoryLimits[key]||3);
         dayGroup.dataset.recordKey='day:'+key+'|'+dayDate;
-        dayGroup.open=!!opened[dayGroup.dataset.recordKey];
         var dayProfiles=Array.from(new Set(dayEntries.map(function(e){return e._profile||activeProfile;})));
-        var daySummary=document.createElement('summary');
+        var daySummary=document.createElement('div');daySummary.className='record-day-heading';daySummary.tabIndex=-1;
         var dayDateEl=document.createElement('span');dayDateEl.className='record-day-summary-date';dayDateEl.textContent=dayDate;
         var dayCount=document.createElement('span');dayCount.className='record-set-badge';dayCount.textContent=dayEntries.length+'세트';
-        var numeric=dayEntries.filter(function(entry){return entry.w !== '-' && Number.isFinite(Number(entry.w));});
-        var best=null;
-        numeric.forEach(function(entry){
-          var entryWeight=Number(entry.w);
-          var entryReps=(entry.reps!=='-' && Number.isFinite(Number(entry.reps))) ? Number(entry.reps) : -Infinity;
-          var bestWeight=best ? Number(best.w) : -Infinity;
-          var bestReps=(best && best.reps!=='-' && Number.isFinite(Number(best.reps))) ? Number(best.reps) : -Infinity;
-          if(!best || entryWeight>bestWeight || (entryWeight===bestWeight && entryReps>bestReps))best=entry;
-        });
-        var bestValue=document.createElement('span');bestValue.className='record-day-summary-value';
-        bestValue.textContent=best ? '최고 ' : '무게 미입력';
-        if(best){var numberGroup=document.createElement('span');numberGroup.className='record-number-group';numberGroup.textContent=best.w+'kg × '+(best.reps==='-'?'횟수 미입력':best.reps+'회');bestValue.appendChild(numberGroup);}
-        var dayArrow=document.createElement('span');dayArrow.className='record-day-chevron';
-        daySummary.setAttribute('aria-label',name+' '+dayDate+' '+dayEntries.length+'세트, '+bestValue.textContent+', 세트 상세 보기');
         daySummary.appendChild(dayDateEl);daySummary.appendChild(dayCount);
         if(recordsScope==='all'&&dayProfiles.length===1){var dayPlan=document.createElement('span');dayPlan.className='record-day-plan';dayPlan.textContent=dayProfiles[0];dayPlan.title=dayProfiles[0];dayPlan.tabIndex=0;dayPlan.setAttribute('role','button');dayPlan.setAttribute('aria-label','플랜 '+dayProfiles[0]+' 전체 이름 보기');
-          var showPlan=function(event){event.preventDefault();event.stopPropagation();var dialog=document.createElement('dialog');dialog.className='record-plan-dialog';var title=document.createElement('h3');title.textContent='소속 플랜';var text=document.createElement('p');text.textContent=dayProfiles[0];var close=document.createElement('button');close.className='btn-reset';close.textContent='닫기';close.onclick=function(){dialog.close();};dialog.append(title,text,close);dialog.onclose=function(){dialog.remove();dayPlan.focus({preventScroll:true});};document.body.appendChild(dialog);dialog.showModal();};dayPlan.onclick=showPlan;dayPlan.onkeydown=function(event){if(event.key==='Enter'||event.key===' ')showPlan(event);};daySummary.appendChild(dayPlan);daySummary.setAttribute('aria-label',daySummary.getAttribute('aria-label')+', 플랜 '+dayProfiles[0]);}
-        daySummary.appendChild(bestValue);daySummary.appendChild(dayArrow);dayGroup.appendChild(daySummary);
+          var showPlan=function(event){event.preventDefault();event.stopPropagation();var dialog=document.createElement('dialog');dialog.className='record-plan-dialog';var title=document.createElement('h3');title.textContent='소속 플랜';var text=document.createElement('p');text.textContent=dayProfiles[0];var close=document.createElement('button');close.className='btn-reset';close.textContent='닫기';close.onclick=function(){dialog.close();};dialog.append(title,text,close);dialog.onclose=function(){dialog.remove();dayPlan.focus({preventScroll:true});};document.body.appendChild(dialog);dialog.showModal();};dayPlan.onclick=showPlan;dayPlan.onkeydown=function(event){if(event.key==='Enter'||event.key===' ')showPlan(event);};daySummary.appendChild(dayPlan);daySummary.setAttribute('aria-label',dayDate+' · '+dayEntries.length+'세트, 플랜 '+dayProfiles[0]);}
+        dayGroup.appendChild(daySummary);
         var orderedDayEntries=dayEntries;
         if(recordsScope==='all'){
           var byProfile=new Map();
@@ -3173,26 +3156,31 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
           
           row.appendChild(setBadge);row.appendChild(value);if(!entry._profile||entry._profile===activeProfile)row.appendChild(remove);dayGroup.appendChild(row);
         });
-        var duplicate=document.createElement('button');duplicate.type='button';duplicate.className='btn-reset record-duplicate';duplicate.textContent='마지막 세트와 같은 기록 추가';
+        var duplicate=document.createElement('button');duplicate.type='button';duplicate.className='btn-reset record-duplicate';duplicate.textContent='+ 같은 세트 추가';duplicate.setAttribute('aria-label',name+' '+dayDate+' 마지막 세트와 같은 기록 추가');
         duplicate.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}var last=dayEntries[dayEntries.length-1];requireSecondClick(duplicate,'1세트 추가 확인',function(){try{saveDirectRecord(last.n,entryMuscle(last),last.date,last.w==='-'?'':last.w,last.reps==='-'?'':last.reps);renderRecords();renderPanel();showToast('같은 내용으로 1세트 추가했어요.');}catch(error){showToast(error.message,'error');}});};if(recordsScope==='current')dayGroup.appendChild(duplicate);
         card.appendChild(dayGroup);
       });
-      var footer=document.createElement('div');footer.className='record-delete-footer';if(recordsScope==='current')footer.appendChild(del);
+      if(visibleByDate.size>3){var more=document.createElement('button');more.type='button';more.className='btn-reset record-history-more';more.onclick=function(){var days=Array.from(card.querySelectorAll('.record-day-group'));var shown=days.filter(function(d){return !d.hidden;}).length;recordHistoryLimits[key]=shown+3;days.forEach(function(d,i){d.hidden=i>=recordHistoryLimits[key];});updateMore();var first=days[shown];if(first)first.querySelector('.record-day-heading').focus({preventScroll:true});};function updateMore(){var remaining=card.querySelectorAll('.record-day-group[hidden]').length;more.hidden=!remaining;more.textContent='이전 기록 더 보기 · '+remaining+'일';}card.appendChild(more);updateMore();}
+      var footer=document.createElement('div');footer.className='record-delete-footer';if(recordsScope==='current'){var menu=document.createElement('details');menu.className='record-actions-menu';var menuLabel=document.createElement('summary');menuLabel.textContent='종목 관리';menu.append(menuLabel,del);footer.appendChild(menu);}
       var collapse=document.createElement('button');collapse.type='button';collapse.className='btn-reset record-collapse';collapse.textContent='접기';collapse.setAttribute('aria-label',name+' 기록 접기');
       collapse.onclick=function(){if(card.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}card.open=false;head.focus({preventScroll:true});head.scrollIntoView({block:'center',behavior:'smooth'});};
       footer.appendChild(collapse);card.appendChild(footer);
-      (sections.get(muscle) || sections.get('기타')).body.appendChild(card);
+      recordsListEl.appendChild(card);
     });
-    sections.forEach(function(group,muscle){
-      var count=group.body.querySelectorAll('.exercise-record-card').length;
-      if(!count)return;
-      if(muscle==='기타' && !count)return;
-      group.count.textContent=count ? count+'개 종목' : '기록 없음';
-      if(recordQuery && count)group.section.open=true;
-      if(!count){var empty=document.createElement('p');empty.className='rec-empty';empty.textContent='표시할 운동기록이 없어요.';group.body.appendChild(empty);}
-      recordsListEl.appendChild(group.section);
-    });
-    if(recordSearchEmpty){recordSearchEmpty.hidden=matchedExerciseCount>0;recordSearchEmpty.textContent='해당 조건의 운동기록이 없어요.';if(!matchedExerciseCount){var reset=document.createElement('button');reset.type='button';reset.className='btn-reset';reset.textContent='조회 조건 초기화';reset.onclick=function(){recFilterFrom='';recFilterTo='';recordExerciseQuery='';recordMuscleQuery='';document.getElementById('recordSearchMuscle').value='';renderRecords();};recordSearchEmpty.appendChild(reset);}}
+    document.getElementById('recordResultCount').textContent=matchedExerciseCount+'개 종목';
+    if(recordSearchEmpty){
+      recordSearchEmpty.hidden=matchedExerciseCount>0;
+      recordSearchEmpty.replaceChildren();
+      var emptyMessage=document.createElement('span');
+      emptyMessage.textContent=(recFilterFrom||recFilterTo?'선택한 기간에 ':'')+(recordMuscleQuery?recordMuscleQuery+' 부위의 ':'')+(recordQuery?'‘'+recordExerciseQuery.trim()+'’ ':'')+'운동기록이 없어요.';
+      recordSearchEmpty.appendChild(emptyMessage);
+      function addReset(kind,label,reset,focus){var button=document.createElement('button');button.type='button';button.className='btn-reset';button.dataset.recordReset=kind;button.textContent=label;button.onclick=function(){reset();renderRecords();document.querySelector(focus).focus({preventScroll:true});};recordSearchEmpty.appendChild(button);}
+      if(!matchedExerciseCount){
+        if(recordQuery)addReset('search','검색어 지우기',function(){recordExerciseQuery='';},'#recordExerciseSearch');
+        if(recordMuscleQuery)addReset('muscle','부위 전체 보기',function(){recordMuscleQuery='';},'#recordSearchMuscle');
+        if(recFilterFrom||recFilterTo)addReset('period','전체 기간 보기',function(){recFilterFrom='';recFilterTo='';recordCustomRangeOpen=false;},'.rec-preset-btn[data-preset=all]');
+      }
+    }
     document.querySelector('.records-disclosure-actions').hidden=false;
     bindCardSort(recordsListEl);
 
@@ -4140,15 +4128,8 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     routineOrderPending=false;
     showToast('루틴 변경사항을 되돌렸어요.');return true;
   }
-  function recordDisclosureGroups() {
-    return Array.from(recordsListEl.querySelectorAll('.record-muscle-group')).filter(function(group){return !!group.querySelector('.exercise-record-card');});
-  }
   function recordDisclosureTargets(muscle) {
-    var targets=[];
-    recordDisclosureGroups().forEach(function(group){
-      if(muscle && group.dataset.recordKey!=='muscle:'+muscle)return;
-      targets.push(group);group.querySelectorAll('details').forEach(function(el){targets.push(el);});
-    });
+    var targets=Array.from(recordsListEl.querySelectorAll('.exercise-record-card')).filter(function(card){return !muscle||JSON.parse(card.dataset.recordKey.slice(9))[0]===muscle;});
     return targets;
   }
   function syncRecordDisclosureControls() {
@@ -5218,7 +5199,8 @@ function estimateSession(day) {
     document.getElementById('recFromPicker').textContent=recFilterFrom?recFilterFrom.replace(/-/g,'. '):'시작일 선택';
     document.getElementById('recToPicker').textContent=recFilterTo?recFilterTo.replace(/-/g,'. '):'종료일 선택';
     var preset=!recFilterFrom&&!recFilterTo?'all':recFilterTo===todayStr()&&recFilterFrom===adjustmentWeek(todayStr()).from?'week':recFilterTo===todayStr()&&recFilterFrom===todayStr().slice(0,7)+'-01'?'month':'';
-    document.querySelectorAll('.rec-preset-btn').forEach(function(button){button.setAttribute('aria-pressed',String(button.dataset.preset===preset));});
+    document.querySelectorAll('.rec-preset-btn').forEach(function(button){button.setAttribute('aria-pressed',String(button.dataset.preset===(recordCustomRangeOpen?'custom':preset)));});
+    var custom=document.querySelector('[data-preset=custom]');custom.setAttribute('aria-expanded',String(recordCustomRangeOpen));document.getElementById('recordCustomRange').hidden=!recordCustomRangeOpen;
     var all=document.getElementById('recordSearchMuscle').querySelector('option[value=""]');if(all)all.textContent='전체 부위';
   }
   (function () {
@@ -5229,16 +5211,20 @@ function estimateSession(day) {
       recordSearchInput.addEventListener('input',function(){
         var nextValue=recordSearchInput.value;
         if(nextValue===recordExerciseQuery)return;
+        if(document.querySelector('.record-edit-form')){recordSearchInput.value=recordExerciseQuery;showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
         recordExerciseQuery=nextValue;
         renderRecords();
       });
     }
-    function pick(bound,trigger){openWorkoutDatePicker(trigger,{value:(bound==='from'?recFilterFrom:recFilterTo)||todayStr(),title:bound==='from'?'조회 시작일':'조회 종료일',selectRange:bound==='from',minDate:bound==='to'?recFilterFrom:'',rangeFrom:recFilterFrom,rangeTo:recFilterTo,onApply:function(value,start){if(bound==='from')recFilterFrom=start;recFilterTo=value;renderRecords();}});}
+    function pick(bound,trigger){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}openWorkoutDatePicker(trigger,{value:(bound==='from'?recFilterFrom:recFilterTo)||todayStr(),title:bound==='from'?'조회 시작일':'조회 종료일',selectRange:bound==='from',minDate:bound==='to'?recFilterFrom:'',rangeFrom:recFilterFrom,rangeTo:recFilterTo,onApply:function(value,start){if(bound==='from')recFilterFrom=start;recFilterTo=value;renderRecords();}});}
     document.getElementById('recFromPicker').onclick=function(){pick('from',this);};
     document.getElementById('recToPicker').onclick=function(){pick('to',this);};
     document.querySelectorAll('.rec-preset-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
+        if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
         var p = btn.getAttribute('data-preset');
+        recordCustomRangeOpen=p==='custom';
+        if(p==='custom'){syncRecordFilterUI();document.getElementById('recFromPicker').focus();return;}
         if (p === 'all') { recFilterFrom = ''; recFilterTo = ''; }
         else if (p === 'week') { recFilterFrom = adjustmentWeek(todayStr()).from; recFilterTo = todayStr(); }
         else if (p === 'month') { recFilterFrom = todayStr().slice(0,7)+'-01'; recFilterTo = todayStr(); }
