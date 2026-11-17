@@ -1561,7 +1561,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   refreshRecordFilterOptions();
   document.getElementById('recordSearchMuscle').onchange=function(){
     if(document.querySelector('.record-edit-form')){this.value=recordMuscleQuery;showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
-    recordMuscleQuery=this.value;renderRecords();
+    closeRecordSearchSuggestions();recordMuscleQuery=this.value;renderRecords();
     syncRecordDisclosureControls();
   };
   var MODE_KEY = 'bulk-routine-active-mode-v1';
@@ -1589,6 +1589,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   });
   var mode = 'day';
   function applyModeView() {
+    if(mode!=='records')closeRecordSearchSuggestions();
     dayViewEl.hidden = mode !== 'day';
     catalogViewEl.hidden = mode !== 'catalog';
     recordsViewEl.hidden = mode !== 'records';
@@ -3003,6 +3004,54 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       return Array.isArray(source)?source.filter(function(r){return r&&Array.isArray(r.entries);}).map(function(r){return Object.assign({},r,{entries:r.entries.map(function(e){return Object.assign({},e,{_profile:profile});})});}):[];
     });
   }
+  var recordSearchChoices=[],recordSearchOpen=false,recordSearchActive=-1,recordSearchComposing=false;
+  function closeRecordSearchSuggestions(){
+    recordSearchOpen=false;recordSearchActive=-1;
+    var input=document.getElementById('recordExerciseSearch'),popup=document.getElementById('recordSearchPopup');
+    if(popup)popup.hidden=true;
+    if(input){input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
+  }
+  function fitRecordSearchSuggestions(){
+    if(!recordSearchOpen)return;
+    var input=document.getElementById('recordExerciseSearch'),popup=document.getElementById('recordSearchPopup');
+    if(!input||!popup||!input.getClientRects().length){closeRecordSearchSuggestions();return;}
+    var viewport=window.visualViewport,bottom=viewport?viewport.offsetTop+viewport.height:innerHeight;
+    var room=bottom-input.getBoundingClientRect().bottom-12;
+    if(room<64){input.scrollIntoView({block:'start',behavior:'instant'});room=bottom-input.getBoundingClientRect().bottom-12;}
+    if(room<48){closeRecordSearchSuggestions();return;}
+    popup.style.maxHeight=Math.min(292,room)+'px';
+  }
+  function selectRecordSearchSuggestion(index){
+    var choice=recordSearchChoices[index],input=document.getElementById('recordExerciseSearch');
+    if(!choice||recordSearchComposing)return;
+    if(document.querySelector('.record-edit-form')){closeRecordSearchSuggestions();showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
+    recordExerciseQuery=choice.name;input.value=choice.name;
+    input.focus({preventScroll:true});closeRecordSearchSuggestions();renderRecords();
+  }
+  function refreshRecordSearchSuggestions(source){
+    var input=document.getElementById('recordExerciseSearch'),popup=document.getElementById('recordSearchPopup'),list=document.getElementById('recordExerciseSuggestions'),status=document.getElementById('recordSuggestionStatus');
+    var byName=new Map(),query=String(recordExerciseQuery||'').trim().toLocaleLowerCase('ko-KR');
+    source.forEach(function(record){
+      if((recFilterFrom&&record.date<recFilterFrom)||(recFilterTo&&record.date>recFilterTo))return;
+      (record.entries||[]).forEach(function(entry){
+        var muscle=entryMuscle(entry),name=String(entry.n||'').trim(),key=name.toLocaleLowerCase('ko-KR');
+        if(!name||(recordMuscleQuery&&muscle!==recordMuscleQuery)||(query&&key.indexOf(query)===-1))return;
+        if(!byName.has(key))byName.set(key,{name:name,key:key,muscles:[],date:record.date});
+        var choice=byName.get(key);if(!choice.muscles.includes(muscle))choice.muscles.push(muscle);if(record.date>choice.date)choice.date=record.date;
+      });
+    });
+    recordSearchChoices=Array.from(byName.values()).sort(function(a,b){return (query?Number(b.key.startsWith(query))-Number(a.key.startsWith(query)):0)||b.date.localeCompare(a.date)||a.name.localeCompare(b.name,'ko');});
+    if(!recordSearchOpen||recordSearchComposing||document.activeElement!==input||mode!=='records'||recordsViewMode!=='exercise'||document.querySelector('.record-edit-form')){closeRecordSearchSuggestions();return;}
+    list.replaceChildren();recordSearchActive=-1;input.removeAttribute('aria-activedescendant');
+    recordSearchChoices.forEach(function(choice,index){
+      var option=document.createElement('div');option.id='record-search-option-'+index;option.className='record-search-option';option.setAttribute('role','option');option.setAttribute('aria-selected','false');option.style.setProperty('--muscle-color',MUSCLE_COLOR[choice.muscles[0]]||'var(--muted)');
+      var name=document.createElement('strong');name.textContent=choice.name;var meta=document.createElement('span');meta.textContent=choice.muscles.join(' · ');option.append(name,meta);
+      option.onmousedown=function(event){event.preventDefault();};option.onclick=function(){selectRecordSearchSuggestion(index);};list.appendChild(option);
+    });
+    status.textContent=recordSearchChoices.length?(query?'일치하는 종목 ':'최근 기록한 종목 ')+recordSearchChoices.length+'개':'선택한 조건에 맞는 종목이 없어요.';
+    status.classList.toggle('record-suggestion-empty',!recordSearchChoices.length);
+    popup.hidden=false;input.setAttribute('aria-expanded','true');fitRecordSearchSuggestions();
+  }
   function renderRecords() {
     scheduleWeeklySummary();
     var scope=document.getElementById('recordsScope');
@@ -3029,23 +3078,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     recordsListEl.querySelectorAll('details[data-record-key]').forEach(function(el){opened[el.dataset.recordKey]=el.open;});
     recordsListEl.replaceChildren();
     var recordSearchInput = document.getElementById('recordExerciseSearch');
-    var recordSearchList = document.getElementById('recordExerciseSuggestions');
     var recordSearchEmpty = document.getElementById('recordSearchEmpty');
-    var recordedNames = [];
-    var recordedNameSeen = new Set();
-    sourceRecords.forEach(function(record){
-      (record.entries || []).forEach(function(entry){
-        if(recordMuscleQuery && entryMuscle(entry)!==recordMuscleQuery)return;
-        var name=String(entry && entry.n || '').trim();
-        if(!name)return;
-        var k=name.toLocaleLowerCase('ko-KR');
-        if(recordedNameSeen.has(k))return;
-        recordedNameSeen.add(k);recordedNames.push(name);
-      });
-    });
-    recordedNames.sort(function(a,b){return a.localeCompare(b,'ko');});
-    if(recordSearchList)recordSearchList.innerHTML=recordedNames.map(function(name){return '<option value="'+statsEscape(name)+'"></option>';}).join('');
-    if(recordSearchInput && recordSearchInput.value !== recordExerciseQuery)recordSearchInput.value=recordExerciseQuery;
+    if(recordSearchInput&&!recordSearchComposing&&recordSearchInput.value!==recordExerciseQuery)recordSearchInput.value=recordExerciseQuery;
+    refreshRecordSearchSuggestions(sourceRecords);
     var recordQuery=String(recordExerciseQuery || '').trim().toLocaleLowerCase('ko-KR');
     var matchedExerciseCount=0;
     function muscleFor(entry) {
@@ -5208,13 +5243,39 @@ function estimateSession(day) {
     var toInput = document.getElementById('recFilterTo');
     var recordSearchInput = document.getElementById('recordExerciseSearch');
     if(recordSearchInput){
-      recordSearchInput.addEventListener('input',function(){
+      function openSuggestions(){
+        if(document.querySelector('.record-edit-form'))return;
+        recordSearchOpen=true;refreshRecordSearchSuggestions(recordsSource().filter(function(r){return r.date<=todayStr();}));
+      }
+      function applySearch(){
+        if(recordSearchComposing)return;
         var nextValue=recordSearchInput.value;
-        if(nextValue===recordExerciseQuery)return;
-        if(document.querySelector('.record-edit-form')){recordSearchInput.value=recordExerciseQuery;showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
-        recordExerciseQuery=nextValue;
-        renderRecords();
+        if(document.querySelector('.record-edit-form')){recordSearchInput.value=recordExerciseQuery;closeRecordSearchSuggestions();showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}
+        recordSearchOpen=true;
+        if(nextValue!==recordExerciseQuery){recordExerciseQuery=nextValue;renderRecords();}else openSuggestions();
+      }
+      recordSearchInput.addEventListener('focus',openSuggestions);
+      recordSearchInput.addEventListener('input',function(event){if(!event.isComposing)applySearch();});
+      recordSearchInput.addEventListener('compositionstart',function(){recordSearchComposing=true;closeRecordSearchSuggestions();});
+      recordSearchInput.addEventListener('compositionend',function(){recordSearchComposing=false;applySearch();});
+      recordSearchInput.addEventListener('keydown',function(event){
+        if(event.isComposing||recordSearchComposing||event.keyCode===229)return;
+        if(event.key==='Escape'){if(recordSearchOpen){event.preventDefault();event.stopPropagation();closeRecordSearchSuggestions();}return;}
+        if(event.key==='Tab'){closeRecordSearchSuggestions();return;}
+        if(event.key==='Enter'){event.preventDefault();if(recordSearchOpen&&recordSearchActive>=0)selectRecordSearchSuggestion(recordSearchActive);else{closeRecordSearchSuggestions();recordSearchInput.blur();}return;}
+        if(!['ArrowDown','ArrowUp'].includes(event.key))return;
+        event.preventDefault();if(!recordSearchOpen)openSuggestions();if(!recordSearchChoices.length)return;
+        recordSearchActive=event.key==='ArrowDown'?(recordSearchActive+1)%recordSearchChoices.length:(recordSearchActive<0?recordSearchChoices.length-1:(recordSearchActive-1+recordSearchChoices.length)%recordSearchChoices.length);
+        var options=document.querySelectorAll('#recordExerciseSuggestions [role=option]');options.forEach(function(option,index){option.setAttribute('aria-selected',String(index===recordSearchActive));});
+        var active=options[recordSearchActive];if(active){recordSearchInput.setAttribute('aria-activedescendant',active.id);active.scrollIntoView({block:'nearest'});}
       });
+      var field=recordSearchInput.closest('.record-search-field');
+      field.addEventListener('focusout',function(){setTimeout(function(){if(!field.contains(document.activeElement))closeRecordSearchSuggestions();},0);});
+      document.addEventListener('pointerdown',function(event){if(!field.contains(event.target))closeRecordSearchSuggestions();},true);
+      window.addEventListener('popstate',closeRecordSearchSuggestions);
+      window.addEventListener('scroll',fitRecordSearchSuggestions,{passive:true});
+      window.addEventListener('resize',fitRecordSearchSuggestions);
+      if(window.visualViewport){var previousHeight=window.visualViewport.height;window.visualViewport.addEventListener('resize',function(){var height=window.visualViewport.height;if(height-previousHeight>100)closeRecordSearchSuggestions();else fitRecordSearchSuggestions();previousHeight=height;});window.visualViewport.addEventListener('scroll',fitRecordSearchSuggestions);}
     }
     function pick(bound,trigger){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}openWorkoutDatePicker(trigger,{value:(bound==='from'?recFilterFrom:recFilterTo)||todayStr(),title:bound==='from'?'조회 시작일':'조회 종료일',selectRange:bound==='from',minDate:bound==='to'?recFilterFrom:'',rangeFrom:recFilterFrom,rangeTo:recFilterTo,onApply:function(value,start){if(bound==='from')recFilterFrom=start;recFilterTo=value;renderRecords();}});}
     document.getElementById('recFromPicker').onclick=function(){pick('from',this);};
