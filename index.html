@@ -182,19 +182,6 @@
       <p class="save-hint" id="recordsActionHint" role="status" aria-live="polite"></p>
       <section class="record-filter-panel" aria-label="조회 필터">
       <h3 class="sr-only">종목 조회</h3>
-      <div class="rec-filter">
-        <div class="rec-filter-row" id="recordCustomRange" hidden>
-          <label>시작일<input type="hidden" id="recFilterFrom"><button type="button" class="btn-reset" id="recFromPicker" aria-haspopup="dialog">시작일 선택</button></label>
-          <span class="rec-filter-sep">~</span>
-          <label>종료일<input type="hidden" id="recFilterTo"><button type="button" class="btn-reset" id="recToPicker" aria-haspopup="dialog">종료일 선택</button></label>
-        </div>
-        <div class="rec-filter-presets">
-          <button type="button" class="rec-preset-btn" data-preset="all">전체 기간</button>
-          <button type="button" class="rec-preset-btn" data-preset="week">이번 주</button>
-          <button type="button" class="rec-preset-btn" data-preset="month">이번 달</button>
-          <button type="button" class="rec-preset-btn" data-preset="custom" aria-controls="recordCustomRange" aria-expanded="false">직접 설정</button>
-        </div>
-      </div>
       <div class="stats-exercise-search record-exercise-search muscle-search">
         <select id="recordSearchMuscle" aria-label="기록 부위 선택"></select>
         <div class="record-search-field">
@@ -203,9 +190,23 @@
         <datalist id="recordExerciseSuggestions"></datalist>
         </div>
       </div>
+      <div class="rec-filter">
+        <div class="rec-filter-presets">
+          <button type="button" class="rec-preset-btn" data-preset="all">전체 기간</button>
+          <button type="button" class="rec-preset-btn" data-preset="week">이번 주</button>
+          <button type="button" class="rec-preset-btn" data-preset="month">이번 달</button>
+          <button type="button" class="rec-preset-btn" data-preset="custom" aria-controls="recordCustomRange" aria-expanded="false">직접 설정</button>
+        </div>
+        <div class="rec-filter-row" id="recordCustomRange" hidden>
+          <label>시작일<input type="hidden" id="recFilterFrom"><button type="button" class="btn-reset" id="recFromPicker" aria-haspopup="dialog">시작일 선택</button></label>
+          <span class="rec-filter-sep">~</span>
+          <label>종료일<input type="hidden" id="recFilterTo"><button type="button" class="btn-reset" id="recToPicker" aria-haspopup="dialog">종료일 선택</button></label>
+        </div>
+      </div>
+
       
-      <p class="stats-search-empty" id="recordSearchEmpty" hidden>검색한 종목의 기록이 현재 조회 기간에 없어요.</p>
       <div class="records-disclosure-actions" id="recordBrowseTools"><span id="recordResultCount" role="status"></span><span id="recordSortControl"></span><button type="button" class="btn-reset" id="btnRecordsExpand" aria-controls="recordsList">전체 펼치기</button></div>
+      <p class="stats-search-empty" id="recordSearchEmpty" hidden>검색한 종목의 기록이 현재 조회 기간에 없어요.</p>
       <p class="record-scope-note" hidden>현재 플랜의 기록을 표시해요.</p>
       </section>
       <div id="recordsList"></div>
