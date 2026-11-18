@@ -1509,6 +1509,31 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   // null이면 사용자가 '전체'를 골라 요일 전부를 세로로 보는 상태, 그 외엔 0~6 인덱스.
   var reportSelectedDay;
   var statsViewEl = document.getElementById('statsView');
+  var VIEW_PREFERENCES_KEY='bulk-view-preferences-v1';
+  var VIEW_PREFERENCE_VALUES={
+    recordsView:['exercise','date'],
+    recordsScope:['current','all'],
+    statsView:['exercise','body']
+  };
+  function readViewPreferences(){
+    var value=readJSON(VIEW_PREFERENCES_KEY,null);
+    var valid=value&&typeof value==='object'&&!Array.isArray(value)&&value.version===1;
+    var preferences={version:1};
+    Object.keys(VIEW_PREFERENCE_VALUES).forEach(function(name){
+      var allowed=VIEW_PREFERENCE_VALUES[name];
+      preferences[name]=valid&&allowed.includes(value[name])?value[name]:allowed[0];
+    });
+    return preferences;
+  }
+  var viewPreferences=readViewPreferences();
+  function rememberViewPreference(name,value){
+    // Read at the point of selection so a second window's other settings survive.
+    var next=readViewPreferences();
+    next[name]=value;
+    if(!writeJSON(VIEW_PREFERENCES_KEY,next)){
+      showToast('화면 선택을 저장하지 못했어요. 이번 실행에서만 유지돼요.','error');
+    }
+  }
   var statsPeriod = 'week';
   var statsCalendarMonth = '';
   var statsCustomRange = null, statsRangeAnchor = '';
@@ -1590,6 +1615,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   var mode = 'day';
   function applyModeView() {
     if(mode!=='records')closeRecordSearchSuggestions();
+    if(mode!=='stats'&&statsSearchCleanup){statsSearchCleanup();statsSearchCleanup=null;}
     dayViewEl.hidden = mode !== 'day';
     catalogViewEl.hidden = mode !== 'catalog';
     recordsViewEl.hidden = mode !== 'records';
@@ -1827,17 +1853,20 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var overlay=document.createElement('div');overlay.id='exerciseSearchOverlay';overlay.className='memo-delete-overlay';
     var dialog=document.createElement('div');dialog.className='memo-delete-dialog exercise-search-dialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','exerciseSearchTitle');
     var header=document.createElement('div');header.className='exercise-search-header';
-    var title=document.createElement('h2');title.id='exerciseSearchTitle';title.textContent='운동 종목 검색';
+    var title=document.createElement('h2');title.id='exerciseSearchTitle';title.textContent='운동 종목 추가';
     var closeBtn=document.createElement('button');closeBtn.type='button';closeBtn.textContent='닫기';
     header.appendChild(title);header.appendChild(closeBtn);
-    var input=document.createElement('input');input.type='search';input.placeholder='종목 검색';input.setAttribute('aria-label','운동 이름 검색');
+    var input=document.createElement('input');input.type='search';input.placeholder='종목 검색';input.setAttribute('aria-label','운동 이름 검색');input.autocomplete='off';input.spellcheck=false;
     var count=document.createElement('p');count.className='exercise-search-count';count.setAttribute('role','status');count.setAttribute('aria-live','polite');
     var results=document.createElement('div');results.className='exercise-search-results';
     var filter=makeMuscleSelect(),searchRow=document.createElement('div');searchRow.className='muscle-search';searchRow.appendChild(filter);searchRow.appendChild(input);
     dialog.appendChild(header);dialog.appendChild(searchRow);dialog.appendChild(count);dialog.appendChild(results);overlay.appendChild(dialog);
     var app=document.getElementById('bulkApp'),previousInert=app.inert,previousOverflow=document.body.style.overflow;
-    function close() {overlay.remove();document.removeEventListener('keydown',keydown);app.inert=previousInert;document.body.style.overflow=previousOverflow;if(trigger.isConnected)trigger.focus();}
+    var composing=false,viewport=window.visualViewport;
+    function fitDialog(){var height=viewport?viewport.height:innerHeight;overlay.style.top=(viewport?viewport.offsetTop:0)+'px';overlay.style.height=height+'px';overlay.style.bottom='auto';dialog.style.maxHeight=Math.max(100,height-24)+'px';}
+    function close() {overlay.remove();document.removeEventListener('keydown',keydown);window.removeEventListener('resize',fitDialog);if(viewport){viewport.removeEventListener('resize',fitDialog);viewport.removeEventListener('scroll',fitDialog);}app.inert=previousInert;document.body.style.overflow=previousOverflow;if(trigger.isConnected)trigger.focus();}
     function keydown(e) {
+      if(composing||e.isComposing||e.keyCode===229)return;
       if(e.key==='Escape'){e.preventDefault();close();}
       if(e.key==='Tab'){
         var focusables=Array.from(dialog.querySelectorAll('button,input,select'));var first=focusables[0],last=focusables[focusables.length-1];
@@ -1849,10 +1878,10 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       results.replaceChildren();var matches=searchExerciseCatalog(input.value,filter.value);count.textContent=matches.length+'개 종목';
       if(!matches.length){var empty=document.createElement('p');empty.textContent='일치하는 종목이 없어요. 다른 이름으로 검색하거나 운동 관리에서 종목을 등록해주세요.';results.appendChild(empty);}
       matches.forEach(function(match){
-        var button=document.createElement('button');button.type='button';button.className='exercise-search-result';
-        var name=document.createElement('span');name.textContent=match.exercise.n;
-        var meta=document.createElement('small');meta.textContent=match.muscle+' · '+match.exercise.s+'세트'+(match.exercise.r?' · '+match.exercise.r+'회':'')+(match.exercise.rir?' · RIR '+match.exercise.rir:'');
-        button.appendChild(name);button.appendChild(meta);
+        var button=document.createElement('button');button.type='button';button.className='exercise-search-result';button.style.setProperty('--muscle-color',MUSCLE_COLOR[match.muscle]||'var(--muted)');button.setAttribute('aria-label',match.exercise.n+' · '+match.muscle+' · 루틴에 추가');
+        var name=document.createElement('span');name.className='exercise-search-name';name.textContent=match.exercise.n;
+        var meta=document.createElement('small'),muscleLabel=document.createElement('span');muscleLabel.className='exercise-muscle-label';muscleLabel.textContent=match.muscle;meta.append(muscleLabel,document.createTextNode(' · '+match.exercise.s+'세트'+(match.exercise.r?' · '+match.exercise.r+'회':'')+(match.exercise.rir?' · RIR '+match.exercise.rir:'')));var add=document.createElement('span');add.className='exercise-search-add';add.textContent='＋';add.setAttribute('aria-hidden','true');
+        button.append(name,meta,add);
         button.addEventListener('click',function(){
           if(day.temporary && day.ex.length>=30){showToast('임시 루틴은 하루 최대 30종목이에요.','pending');return;}var ex=match.exercise;day.ex.push({uid:'row-'+genId(),n:ex.n,m:match.muscle,s:ex.s,r:ex.r,rir:ex.rir});
           close();save();renderPanel();renderPrinciples();
@@ -1860,8 +1889,8 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         });results.appendChild(button);
       });
     }
-    filter.addEventListener('change',function(){renderResults();results.scrollTop=0;});input.addEventListener('input',renderResults);closeBtn.addEventListener('click',close);overlay.addEventListener('click',function(e){if(e.target===overlay)close();});
-    app.inert=true;document.body.style.overflow='hidden';document.body.appendChild(overlay);document.addEventListener('keydown',keydown);renderResults();input.focus();
+    filter.addEventListener('change',function(){renderResults();results.scrollTop=0;});input.addEventListener('compositionstart',function(){composing=true;});input.addEventListener('compositionend',function(){composing=false;renderResults();results.scrollTop=0;});input.addEventListener('input',function(event){if(composing||event.isComposing)return;renderResults();results.scrollTop=0;});closeBtn.addEventListener('click',close);overlay.addEventListener('click',function(e){if(e.target===overlay)close();});
+    app.inert=true;document.body.style.overflow='hidden';document.body.appendChild(overlay);document.addEventListener('keydown',keydown);window.addEventListener('resize',fitDialog);if(viewport){viewport.addEventListener('resize',fitDialog);viewport.addEventListener('scroll',fitDialog);}fitDialog();renderResults();input.focus();
   }
 
   function createCardioCard() {
@@ -2924,7 +2953,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     row.insertAdjacentElement('afterend',form);
     (trigger.classList.contains('record-card-date')?dateButton:weight).focus();
   }
-  var recordsViewMode='exercise',recordsSelectedDate='',recordsDateContext='',recordsCalendarMonth='';
+  var recordsViewMode=viewPreferences.recordsView,recordsSelectedDate='',recordsDateContext='',recordsCalendarMonth='';
   function dateRecordRuns(source,date) {
     // Keep original array order when legacy timestamps are missing; never invent times.
     var list=[];
@@ -2996,7 +3025,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   }
   var recordHistoryLimits = Object.create(null);
   var recordCustomRangeOpen = false;
-  var recordsScope='current';
+  var recordsScope=viewPreferences.recordsScope;
   function recordsSource(){
     if(recordsScope==='current')return logs;
     return profiles.flatMap(function(profile){
@@ -3062,14 +3091,14 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     [['date','날짜별','하루의 운동 흐름'],['exercise','종목별','종목의 변화와 누적']].forEach(function(pair){
       var b=document.createElement('button');b.type='button';b.id='recordsTab-'+pair[0];b.dataset.recordsView=pair[0];b.setAttribute('role','tab');b.setAttribute('aria-controls','recordsList');b.setAttribute('aria-selected',String(recordsViewMode===pair[0]));b.tabIndex=recordsViewMode===pair[0]?0:-1;
       b.innerHTML='<strong>'+pair[1]+'</strong><small>'+pair[2]+'</small>';
-      b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsViewMode=pair[0];renderRecords();document.getElementById('recordsTab-'+pair[0]).focus({preventScroll:true});};
+      b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsViewMode=pair[0];rememberViewPreference('recordsView',recordsViewMode);renderRecords();document.getElementById('recordsTab-'+pair[0]).focus({preventScroll:true});};
       b.onkeydown=function(e){if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();var target=e.key==='Home'?'date':e.key==='End'?'exercise':pair[0]==='date'?'exercise':'date';scope.querySelector('[data-records-view="'+target+'"]').click();};
       viewSwitch.appendChild(b);
     });scope.prepend(viewSwitch);
     document.querySelector('.records-management>summary').textContent=activeProfile+' 플랜 기록 관리';
     document.querySelector('.record-filter-panel').hidden=recordsViewMode==='date';
     recordsListEl.setAttribute('role','tabpanel');recordsListEl.setAttribute('aria-labelledby','recordsTab-'+recordsViewMode);recordsListEl.tabIndex=0;
-    scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;renderRecords();};});
+    scope.querySelectorAll('[data-records-scope]').forEach(function(b){b.onclick=function(){if(document.querySelector('.record-edit-form')){showToast('수정 중인 기록을 저장하거나 취소해주세요.','pending');return;}recordsScope=b.dataset.recordsScope;rememberViewPreference('recordsScope',recordsScope);renderRecords();};});
     document.querySelector('.record-scope-note').textContent=recordsScope==='all'?'날짜 옆에 소속 플랜을 표시해요.':'현재 플랜의 기록을 표시해요.';
     var sourceRecords=recordsSource().filter(function(r){return r.date<=todayStr();});
     if(recordsScope==='all')scope.insertAdjacentHTML('beforeend',profileLogWarningsHtml());
@@ -3766,14 +3795,45 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var choices=statsRecordedExerciseNames(pinMuscleQuery).map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');
     return '<details class="stats-card stats-section" data-stats-panel="pins"><summary><span>관심 종목 · <small>'+pins.length+'/5</small></span></summary><p class="stats-note">전체 기간 기록</p><div class="muscle-search pin-search">'+muscleSelectHtml('pinMuscleSelect',pinMuscleQuery)+'<input type="search" id="pinExerciseInput" list="pinExerciseChoices" placeholder="종목 검색" aria-label="고정할 종목" style="min-width:0;flex:1;width:100%;font-size:16px"><datalist id="pinExerciseChoices">'+choices+'</datalist><button type="button" class="btn-reset" data-pin-add>추가</button></div><p class="stats-note" id="pinSearchCount" role="status"></p>'+pins.map(function(n){var g=all.exercises.find(function(e){return e.name===n;});var recent=g?g.latest:null;return '<details class="stats-exercise" data-stats-key="pin:'+statsEscape(n)+'"><summary><span class="stats-exercise-title">'+statsEscape(n)+'<small>'+(recent?statsEscape(recent.date+' · '+recent.w+'kg × '+recent.reps+'회'):'기록 없음')+'</small></span></summary><div class="stats-exercise-body">'+(g?statsExerciseMetricsHtml(g,true):'')+'<div class="pin-remove-row"><button class="btn-reset" type="button" data-pin-remove="'+statsEscape(n)+'">관심 해제</button></div></div></details>';}).join('')+(!pins.length?'<p class="stats-note">자주 보는 종목을 추가하세요.</p>':'')+'</details>';
   }
-  var bodyStatsOpen=false;
+  function bindStatsExerciseSuggestions(input,exercises){
+    var field=input.closest('.stats-search-field'),popup=field.querySelector('.record-search-popup'),list=field.querySelector('[role=listbox]'),status=field.querySelector('[role=status]'),open=false,composing=false,active=-1,choices=[],viewport=window.visualViewport,previousHeight=viewport?viewport.height:innerHeight;
+    function close(){open=false;active=-1;popup.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
+    function fit(){if(!open)return;if(!input.isConnected||mode!=='stats'||bodyStatsOpen){close();return;}var bottom=viewport?viewport.offsetTop+viewport.height:innerHeight,room=bottom-input.getBoundingClientRect().bottom-12;if(room<64){input.scrollIntoView({block:'start',behavior:'instant'});room=bottom-input.getBoundingClientRect().bottom-12;}if(room<48){close();return;}popup.style.maxHeight=Math.min(292,room)+'px';}
+    function refresh(){
+      if(composing||!input.isConnected||document.activeElement!==input||mode!=='stats'||bodyStatsOpen){close();return;}
+      var q=input.value.trim().toLocaleLowerCase('ko-KR'),byName=new Map();
+      exercises.forEach(function(e){if(statsMuscleQuery&&e.muscle!==statsMuscleQuery)return;var key=e.name.toLocaleLowerCase('ko-KR');if(q&&!key.includes(q))return;if(!byName.has(key))byName.set(key,{name:e.name,key:key,muscles:[],date:e.latest?e.latest.date:''});var c=byName.get(key);if(!c.muscles.includes(e.muscle))c.muscles.push(e.muscle);if(e.latest&&e.latest.date>c.date)c.date=e.latest.date;});
+      choices=Array.from(byName.values()).sort(function(a,b){return (q?Number(b.key.startsWith(q))-Number(a.key.startsWith(q)):0)||b.date.localeCompare(a.date)||a.name.localeCompare(b.name,'ko');});list.replaceChildren();active=-1;input.removeAttribute('aria-activedescendant');
+      if(!choices.length){close();return;}
+      choices.forEach(function(c,index){var option=document.createElement('div');option.className='record-search-option';option.id='stats-search-option-'+index;option.setAttribute('role','option');option.setAttribute('aria-selected','false');option.style.setProperty('--muscle-color',MUSCLE_COLOR[c.muscles[0]]||'var(--muted)');var name=document.createElement('strong'),meta=document.createElement('div');
+        name.textContent=c.name;
+        c.muscles.forEach(function(muscle,index){
+          if(index)meta.append(' · ');
+          var label=document.createElement('span');
+          label.textContent=muscle;
+          label.style.setProperty('--muscle-color',MUSCLE_COLOR[muscle]||'var(--muted)');
+          meta.append(label);
+        });
+        option.append(name,meta);option.onmousedown=function(e){e.preventDefault();};option.onclick=function(){choose(index);};list.appendChild(option);});
+      status.textContent=(q?'일치하는 종목 ':'최근 기록한 종목 ')+choices.length+'개';open=true;popup.hidden=false;popup.scrollTop=0;input.setAttribute('aria-expanded','true');fit();
+    }
+    function choose(index){if(composing||!choices[index])return;input.value=choices[index].name;applyStatsExerciseSearch(input.value);input.focus({preventScroll:true});close();}
+    function apply(){if(composing)return;applyStatsExerciseSearch(input.value);refresh();}
+    input.addEventListener('focus',refresh);input.addEventListener('compositionstart',function(){composing=true;close();});input.addEventListener('compositionend',function(){composing=false;apply();});input.addEventListener('input',function(e){if(!e.isComposing)apply();});input.addEventListener('change',function(){if(!composing)applyStatsExerciseSearch(input.value);});
+    input.addEventListener('keydown',function(e){if(composing||e.isComposing||e.keyCode===229)return;if(e.key==='Escape'){if(open){e.preventDefault();e.stopPropagation();close();}return;}if(e.key==='Tab'){close();return;}if(e.key==='Enter'){e.preventDefault();if(open&&active>=0)choose(active);else{close();input.blur();}return;}if(!['ArrowDown','ArrowUp'].includes(e.key))return;e.preventDefault();if(!open)refresh();if(!open)return;active=e.key==='ArrowDown'?(active+1)%choices.length:(active<0?choices.length-1:(active-1+choices.length)%choices.length);var options=list.querySelectorAll('[role=option]');options.forEach(function(o,i){o.setAttribute('aria-selected',String(i===active));});if(options[active]){input.setAttribute('aria-activedescendant',options[active].id);options[active].scrollIntoView({block:'nearest'});}});
+    function outside(e){if(!field.contains(e.target))close();}function resize(){var height=viewport?viewport.height:innerHeight;if(height-previousHeight>100)close();else fit();previousHeight=height;}
+    field.addEventListener('focusout',function(){setTimeout(function(){if(!field.contains(document.activeElement))close();},0);});document.addEventListener('pointerdown',outside,true);window.addEventListener('resize',resize);window.addEventListener('scroll',fit,{passive:true});window.addEventListener('popstate',close);if(viewport){viewport.addEventListener('resize',resize);viewport.addEventListener('scroll',fit);}
+    function cleanup(){close();document.removeEventListener('pointerdown',outside,true);window.removeEventListener('resize',resize);window.removeEventListener('scroll',fit);window.removeEventListener('popstate',close);if(viewport){viewport.removeEventListener('resize',resize);viewport.removeEventListener('scroll',fit);}}cleanup.close=close;return cleanup;
+  }
+  var bodyStatsOpen=viewPreferences.statsView==='body',statsSearchCleanup=null;
   function renderStats() {
+    if(statsSearchCleanup){statsSearchCleanup();statsSearchCleanup=null;}
     var nav=document.getElementById('bodyStatsNav');
     if(!nav){nav=document.createElement('div');nav.id='bodyStatsNav';nav.className='body-stats-nav';statsViewEl.parentNode.insertBefore(nav,statsViewEl);}
     nav.setAttribute('role','tablist');nav.setAttribute('aria-label','통계 종류');
     nav.innerHTML='<button id="exerciseStatsTab" role="tab" type="button" aria-controls="statsView" aria-selected="'+(!bodyStatsOpen)+'" tabindex="'+(!bodyStatsOpen?'0':'-1')+'"><strong>운동 통계</strong><small>수행 기록·운동량</small></button><button id="bodyStatsTab" role="tab" type="button" aria-controls="statsView" aria-selected="'+bodyStatsOpen+'" tabindex="'+(bodyStatsOpen?'0':'-1')+'"><strong>체형 변화</strong><small>체중·체성분·허리둘레</small></button>';
     statsViewEl.setAttribute('role','tabpanel');statsViewEl.setAttribute('aria-labelledby',bodyStatsOpen?'bodyStatsTab':'exerciseStatsTab');
-    function selectStatsTab(index,focus){bodyStatsOpen=index===1;renderStats();if(focus)nav.children[index].focus();}
+    function selectStatsTab(index,focus){bodyStatsOpen=index===1;rememberViewPreference('statsView',bodyStatsOpen?'body':'exercise');renderStats();if(focus)nav.children[index].focus();}
     nav.children[0].onclick=function(){selectStatsTab(0,false);};nav.children[1].onclick=function(){selectStatsTab(1,false);};
     nav.onkeydown=function(e){if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();selectStatsTab(e.key==='Home'?0:e.key==='End'?1:bodyStatsOpen?0:1,true);}};
     if(bodyStatsOpen){BodyTracker.mount(statsViewEl);return;}
@@ -3838,9 +3898,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       return '<details class="rec-group stats-muscle-group" data-stats-key="'+statsEscape(muscleKey)+'"'+(opened.has(muscleKey)?' open':'')+'><summary><span class="rec-title" style="color:'+(MUSCLE_COLOR[m] || 'var(--muted)')+'">'+m+'</span><span class="rec-count">'+(exercises.length?exercises.length+'개 종목':'기록 없음')+'</span><span class="rec-chev"></span></summary><div class="rec-body">'+
         (cards || '<p class="stats-note">선택한 기간에 기록된 운동이 없어요.</p>')+'</div></details>';
     }).join('');
-    var recordedNames=statsRecordedExerciseNames(statsMuscleQuery);
-    var searchList=recordedNames.map(function(name){return '<option value="'+statsEscape(name)+'"></option>';}).join('');
-    var searchHtml='<div class="stats-exercise-search muscle-search">'+muscleSelectHtml('statsMuscleSelect',statsMuscleQuery)+'<input type="search" data-stats-exercise-search list="statsExerciseSuggestions" autocomplete="off" placeholder="종목명 검색" aria-label="통계 종목 검색" value="'+statsEscape(statsExerciseQuery)+'"><svg class="stats-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><datalist id="statsExerciseSuggestions">'+searchList+'</datalist></div><p class="stats-note" data-stats-search-count role="status"></p><p class="stats-search-empty" data-stats-search-empty hidden>검색한 종목의 기록이 선택 기간에 없어요.</p>';
+    var searchHtml='<div class="stats-exercise-search muscle-search">'+muscleSelectHtml('statsMuscleSelect',statsMuscleQuery)+'<div class="stats-search-field"><input type="search" data-stats-exercise-search autocomplete="off" spellcheck="false" enterkeyhint="search" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="statsExerciseSuggestions" aria-expanded="false" placeholder="종목명 검색" aria-label="통계 종목 검색" value="'+statsEscape(statsExerciseQuery)+'"><svg class="stats-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><div class="record-search-popup stats-search-popup" hidden><div id="statsExerciseSuggestions" role="listbox" aria-label="통계 종목 추천"></div><p class="sr-only" role="status" aria-live="polite"></p></div></div></div><p class="stats-note" data-stats-search-count role="status"></p><p class="stats-search-empty" data-stats-search-empty hidden>검색한 종목의 기록이 선택 기간에 없어요.</p>';
     var attendanceDisplay=statsAttendanceDisplay(data,asOf);
     var big3List=data.big3||[];
     var big3RowCells=[];
@@ -3892,15 +3950,13 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       rangeHtml+
       '<h3 class="stats-heading">종목별 변화</h3><p class="stats-note">선택 기간의 변화</p>'+searchHtml+groups;
     statsViewEl.querySelectorAll('[data-record-muscle]').forEach(function(button){button.onclick=function(){
-      recFilterFrom=mcRange.from;recFilterTo=mcRange.to;recordExerciseQuery='';recordMuscleQuery=button.dataset.recordMuscle;
+      recordsViewMode='exercise';recordsScope=statsScope;recFilterFrom=mcRange.from;recFilterTo=mcRange.to;recordExerciseQuery='';recordMuscleQuery=button.dataset.recordMuscle;
       document.getElementById('recordSearchMuscle').value=recordMuscleQuery;
       mode='records';writeJSON(MODE_KEY,mode);applyModeView();renderModeToggle();renderRecords();
-      var target=Array.from(recordsListEl.querySelectorAll('.record-muscle-group')).find(function(el){return el.dataset.recordKey==='muscle:'+recordMuscleQuery;});
-      if(target){target.open=true;target.querySelectorAll('details').forEach(function(el){el.open=false;});}
-      requestAnimationFrame(function(){var dateFilter=recordsViewEl.querySelector('.rec-filter');if(dateFilter)dateFilter.scrollIntoView({block:'start',behavior:'smooth'});});
+      requestAnimationFrame(function(){var target=recordsListEl.querySelector('.exercise-record-head')||recordsViewEl.querySelector('.record-filter-panel');if(target){target.scrollIntoView({block:'start',behavior:'smooth'});if(target.matches('summary'))target.focus({preventScroll:true});}});
 
     };});
-    statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;writeJSON('bulk-workout-stats-scope-v1',statsScope);renderStats();};});
+    statsViewEl.querySelectorAll('[data-stats-scope]').forEach(function(b){b.onclick=function(){statsScope=b.dataset.statsScope;if(!writeJSON('bulk-workout-stats-scope-v1',statsScope))showToast('화면 선택을 저장하지 못했어요. 이번 실행에서만 유지돼요.','error');renderStats();};});
     statsViewEl.querySelectorAll('details[data-stats-key]').forEach(function(el){if(opened.has(el.dataset.statsKey))el.open=true;});
     statsViewEl.querySelectorAll('[data-stats-panel]').forEach(function(el){var name=el.dataset.statsPanel;el.dataset.owner=activeProfile;el.open=name==='range' && !!statsRangeAnchor ? true : typeof panelPrefs[name]==='boolean' ? panelPrefs[name] : name==='pins' && pinnedExercises().length>0;
       el.addEventListener('toggle',function(){if(!el.isConnected)return;panelPrefs[name]=el.open;writeJSON(panelKey,panelPrefs);});
@@ -3946,16 +4002,12 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     statsViewEl.querySelectorAll('[data-calendar-current]').forEach(function(button){button.addEventListener('click',function(){
       statsCalendarMonth=todayStr().slice(0,7);renderStats();var current=statsViewEl.querySelector('[data-calendar-current]');if(current)current.focus({preventScroll:true});
     });});
-    document.getElementById('statsMuscleSelect').onchange=function(){statsMuscleQuery=this.value;var list=document.getElementById('statsExerciseSuggestions');list.innerHTML=statsRecordedExerciseNames(statsMuscleQuery).map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');applyStatsExerciseSearch(statsExerciseQuery);};
+    document.getElementById('statsMuscleSelect').onchange=function(){if(statsSearchCleanup)statsSearchCleanup.close();statsMuscleQuery=this.value;applyStatsExerciseSearch(statsExerciseQuery);};
     document.getElementById('pinMuscleSelect').onchange=function(){pinMuscleQuery=this.value;document.getElementById('pinExerciseInput').value='';document.getElementById('pinExerciseChoices').innerHTML=statsRecordedExerciseNames(pinMuscleQuery).map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');updatePinSearchCount();};
     function updatePinSearchCount(){var value=document.getElementById('pinExerciseInput').value.trim(),q=value.toLocaleLowerCase('ko-KR'),names=statsRecordedExerciseNames(pinMuscleQuery);document.getElementById('pinSearchCount').textContent=q?names.filter(function(n){return n.toLocaleLowerCase('ko-KR').includes(q);}).length+'개 종목':'';statsViewEl.querySelector('[data-pin-add]').disabled=!names.includes(value)||pinnedExercises().includes(value)||pinnedExercises().length>=5;}
     document.getElementById('pinExerciseInput').addEventListener('input',updatePinSearchCount);updatePinSearchCount();
     var statsSearchInput=statsViewEl.querySelector('[data-stats-exercise-search]');
-    if(statsSearchInput){
-      statsSearchInput.addEventListener('input',function(){applyStatsExerciseSearch(statsSearchInput.value);});
-      statsSearchInput.addEventListener('change',function(){applyStatsExerciseSearch(statsSearchInput.value);});
-      applyStatsExerciseSearch(statsSearchInput.value);
-    }
+    if(statsSearchInput){statsSearchCleanup=bindStatsExerciseSuggestions(statsSearchInput,data.exercises);applyStatsExerciseSearch(statsSearchInput.value);}
     statsViewEl.querySelectorAll('[data-stats-metric]').forEach(function(button){button.addEventListener('click',function(){
       var body=button.closest('.stats-exercise-body');
       if(!body)return;
