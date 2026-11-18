@@ -2,6 +2,6 @@
 const fs=require('fs'),assert=require('assert/strict'),crypto=require('crypto');
 const raw=fs.readFileSync('tests/v181-display-delta.json');
 const changes=JSON.parse(raw);
-assert.equal(crypto.createHash('sha256').update(raw).digest('hex'),'787677374c158af136fc2ce6657e75303bb341365333f978be2071f25fef68e1');
+assert.equal(crypto.createHash('sha256').update(raw).digest('hex'),'734da4e9d2e409a87170b3903f29ad1cf2e28a7b2177f5643b99fa34e6e19b5d');
 function read(f){let s=fs.readFileSync(f,'utf8');for(const c of changes[f]||[]){assert(c.after.length);assert.equal(s.split(c.after).length-1,1,'unique v181 UI change');s=s.replace(c.after,c.before);}return s;}
 module.exports={read};

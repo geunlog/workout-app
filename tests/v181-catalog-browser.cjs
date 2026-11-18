@@ -118,6 +118,8 @@ async function inspect(context,width,version){
   const listBox=await suggestions.locator('..').boundingBox();
   assert(listBox.y>=fieldBox.y+fieldBox.height);
   assert(Math.abs(listBox.x-fieldBox.x)<2);
+  const settingsBox=await dialog.locator('.catalog-add-specs').boundingBox();
+  assert(settingsBox.y>=listBox.y+listBox.height);
   assert((await dips.innerText()).includes('가슴'));
   await snap('catalog-dialog-suggestions');
   await dips.tap();

@@ -3330,6 +3330,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       muscle:function(){return muscle.value;},
       isActive:function(){return dialog.open&&!editing;},
       maxHeight:148,
+      inFlow:true,
       distinguishByMuscle:true,
       idleLabel:'등록된 종목 ',
       onChoose:function(choice){
@@ -3891,8 +3892,11 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     input.addEventListener('focus',refresh,listen);input.addEventListener('compositionstart',function(){composing=true;close();},listen);input.addEventListener('compositionend',function(){composing=false;apply();},listen);input.addEventListener('input',function(e){if(!e.isComposing)apply();},listen);input.addEventListener('change',function(){if(!composing&&settings.onInput)settings.onInput(input.value);},listen);
     input.addEventListener('keydown',function(e){if(composing||e.isComposing||e.keyCode===229)return;if(e.key==='Escape'){if(open){e.preventDefault();e.stopPropagation();close();}return;}if(e.key==='Tab'){close();return;}if(e.key==='Enter'){e.preventDefault();if(open&&active>=0)choose(active);else{close();input.blur();}return;}if(!['ArrowDown','ArrowUp'].includes(e.key))return;e.preventDefault();if(!open)refresh();if(!open)return;active=e.key==='ArrowDown'?(active+1)%choices.length:(active<0?choices.length-1:(active-1+choices.length)%choices.length);var options=list.querySelectorAll('[role=option]');options.forEach(function(o,i){o.setAttribute('aria-selected',String(i===active));});if(options[active]){input.setAttribute('aria-activedescendant',options[active].id);options[active].scrollIntoView({block:'nearest'});}},listen);
     function outside(e){if(!field.contains(e.target))close();}function resize(){var height=viewport?viewport.height:innerHeight;if(height-previousHeight>100)close();else fit();previousHeight=height;}
-    field.addEventListener('focusout',function(){setTimeout(function(){if(!listeners.signal.aborted&&!field.contains(document.activeElement))close();},0);},listen);document.addEventListener('pointerdown',outside,true);window.addEventListener('resize',resize);window.addEventListener('scroll',fit,{passive:true});window.addEventListener('popstate',close);if(viewport){viewport.addEventListener('resize',resize);viewport.addEventListener('scroll',fit);}
-    function cleanup(){listeners.abort();close();document.removeEventListener('pointerdown',outside,true);window.removeEventListener('resize',resize);window.removeEventListener('scroll',fit);window.removeEventListener('popstate',close);if(viewport){viewport.removeEventListener('resize',resize);viewport.removeEventListener('scroll',fit);}}cleanup.close=close;return cleanup;
+    // Inline lists change the form geometry, so keep the pointer target in place until click.
+    var outsideEvent=settings.inFlow?'click':'pointerdown';
+    if(!settings.inFlow)field.addEventListener('focusout',function(){setTimeout(function(){if(!listeners.signal.aborted&&!field.contains(document.activeElement))close();},0);},listen);
+    document.addEventListener(outsideEvent,outside,true);window.addEventListener('resize',resize);window.addEventListener('scroll',fit,{passive:true});window.addEventListener('popstate',close);if(viewport){viewport.addEventListener('resize',resize);viewport.addEventListener('scroll',fit);}
+    function cleanup(){listeners.abort();close();document.removeEventListener(outsideEvent,outside,true);window.removeEventListener('resize',resize);window.removeEventListener('scroll',fit);window.removeEventListener('popstate',close);if(viewport){viewport.removeEventListener('resize',resize);viewport.removeEventListener('scroll',fit);}}cleanup.close=close;return cleanup;
   }
   var bodyStatsOpen=viewPreferences.statsView==='body',statsSearchCleanup=null,pinSearchCleanup=null;
   function renderStats() {

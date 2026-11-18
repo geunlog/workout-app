@@ -3529,7 +3529,7 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app .catalog-add-dialog :is(input,select,button):focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .bulk-app .catalog-dialog-search{align-items:flex-start}
 .bulk-app .catalog-dialog-search select{width:88px;flex:0 0 88px}
-.bulk-app .catalog-dialog-search .record-search-popup{
+.bulk-app #catalogAddDialog .record-search-popup{
   position:static;margin-top:5px;box-shadow:none;
 }
 .bulk-app .catalog-add-dialog .record-search-popup[hidden]{display:none}
