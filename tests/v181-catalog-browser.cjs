@@ -5,6 +5,7 @@ const {createServer} = require('node:http');
 const {chromium} = require('playwright');
 
 const baseline = '706b978898a34760903a9ef2c67a107ac272d493';
+const deployed = '5d2c565a9f30c21817c83368ed3560a47b3e0618';
 const catalogKey = 'bulk-routine-catalog-shared-v1';
 const assets = {'index.html':'text/html; charset=utf-8','app.js':'text/javascript','style.css':'text/css'};
 mkdirSync('test-results',{recursive:true});
@@ -12,7 +13,8 @@ const server=createServer((request,response)=>{
   const [,version,path]=new URL(request.url,'http://localhost').pathname.split('/');
   const file=path||'index.html';
   if(!Object.hasOwn(assets,file))return response.writeHead(404).end();
-  const bytes=version==='before'?execFileSync('git',['show',baseline+':'+file],{maxBuffer:2e6}):readFileSync(file);
+  const ref={before:baseline,deployed}[version];
+  const bytes=ref?execFileSync('git',['show',ref+':'+file],{maxBuffer:2e6}):readFileSync(file);
   response.writeHead(200,{'Content-Type':assets[file]}).end(bytes);
 });
 function seed(){
@@ -176,18 +178,20 @@ async function inspect(context,width,version){
   assert(await row.isVisible());
   assert.equal(await row.locator('.exercise-muscle-badge').textContent(),'등');
   await mode('운동').click();
-  await snap('day-catalog');
-  await page.locator('#dayView [data-catalog-add]').click();
-  assert(await dialog.isVisible());
-  await dialog.getByRole('button',{name:'취소'}).click();
-  await page.locator('#dayView [data-catalog-reset]').click();
-  await page.getByRole('button',{name:'취소',exact:true}).click();
+  assert.equal(await page.locator('#dayView [data-catalog-add],#dayView [data-catalog-reset]').count(),0);
+  const workoutButtons=page.locator('#dayView .routine-mode-bar > button');
+  assert.deepEqual((await workoutButtons.allTextContents()).map(s=>s.trim()),['+ 직접 기록','루틴 편집']);
+  assert((await workoutButtons.evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().height))).every(h=>h>=44));
+  await page.screenshot({path:'test-results/v182-workout-after-'+width+'.png'});
   await mode('운동 관리').click();
   await page.locator('#btnCatalogReset').click();
   await page.getByRole('button',{name:'취소',exact:true}).click();
   assert.equal(await page.evaluate(k=>localStorage.getItem(k),catalogKey),JSON.stringify(saved));
   assert.equal(await page.evaluate(()=>localStorage.getItem('bulk-routine-log-v1')),original);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.goto('http://127.0.0.1:'+server.address().port+'/deployed/');
+  assert.equal(await page.locator('#dayView [data-catalog-add],#dayView [data-catalog-reset]').count(),2);
+  await page.screenshot({path:'test-results/v182-workout-before-'+width+'.png'});
   assert.deepEqual(errors,[]);
   console.log('PASS '+width+'px: common sort icon/label, aligned search, pin keyboard, category badge, registration, duplicate, reset cancel, save failure and original records');
 }
