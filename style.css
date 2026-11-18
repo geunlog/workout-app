@@ -3455,17 +3455,16 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 
 /* v179: record search suggestions and compact filter polish. */
 .bulk-app #recordsView .record-filter-panel .record-exercise-search{margin-top:8px}
-.bulk-app #recordSortControl select.card-sort{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m3 4.5 3 3 3-3' fill='none' stroke='%2358657b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-position:right 4px center;background-size:12px 12px;padding:6px 20px 6px 4px}
-.bulk-app :is(#recordsView,#statsView) .record-search-popup{position:absolute;z-index:45;left:0;right:0;top:calc(100% + 6px);box-sizing:border-box;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--line-strong);border-radius:14px;padding:5px;background:#fff;box-shadow:0 10px 28px #19233b1a;scroll-padding:5px}
-.bulk-app :is(#recordsView,#statsView) .record-search-option{display:flex;flex-direction:column;justify-content:center;gap:3px;min-height:52px;box-sizing:border-box;padding:9px 10px;margin:0 0 3px;border-radius:9px;cursor:pointer;text-align:left;touch-action:pan-y}
-.bulk-app :is(#recordsView,#statsView) .record-search-option:last-child{margin-bottom:0}
-.bulk-app :is(#recordsView,#statsView) .record-search-option strong{font-size:13px;line-height:1.5;font-weight:650;color:var(--ink);overflow-wrap:anywhere}
-.bulk-app :is(#recordsView,#statsView) .record-search-option span{font-size:11px;line-height:1.4;color:var(--muted)}
-.bulk-app :is(#recordsView,#statsView) .record-search-option span::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muscle-color,var(--muted));margin-right:5px}
-.bulk-app :is(#recordsView,#statsView) .record-search-option[aria-selected=true]{background:#edf2ff;outline:1px solid #c5d2f7;outline-offset:-1px}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-popup{position:absolute;z-index:45;left:0;right:0;top:calc(100% + 6px);box-sizing:border-box;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--line-strong);border-radius:14px;padding:5px;background:#fff;box-shadow:0 10px 28px #19233b1a;scroll-padding:5px}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option{display:flex;flex-direction:column;justify-content:center;gap:3px;min-height:52px;box-sizing:border-box;padding:9px 10px;margin:0 0 3px;border-radius:9px;cursor:pointer;text-align:left;touch-action:pan-y}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option:last-child{margin-bottom:0}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option strong{font-size:13px;line-height:1.5;font-weight:650;color:var(--ink);overflow-wrap:anywhere}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option span{font-size:11px;line-height:1.4;color:var(--muted)}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option span::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muscle-color,var(--muted));margin-right:5px}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option[aria-selected=true]{background:#edf2ff;outline:1px solid #c5d2f7;outline-offset:-1px}
 .bulk-app #recordSuggestionStatus:not(.record-suggestion-empty){position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .bulk-app #recordSuggestionStatus.record-suggestion-empty{margin:0;padding:10px 6px;color:var(--muted);font-size:12px;line-height:1.6}
-@media(hover:hover){.bulk-app :is(#recordsView,#statsView) .record-search-option:hover{background:#f3f6fc}}
+@media(hover:hover){.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option:hover{background:#f3f6fc}}
 
 /* v180: statistics suggestions and exercise chooser. */
 .bulk-app #statsView .stats-search-field{position:relative;min-width:0;flex:1}
@@ -3489,3 +3488,61 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .exercise-search-dialog .exercise-muscle-label::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muscle-color,var(--muted));margin-right:5px}
 .exercise-search-dialog .exercise-search-add{grid-column:2;grid-row:1 / span 2;text-align:center;font-size:20px;font-weight:400;color:var(--primary)}
 .exercise-search-dialog .exercise-search-result:focus-visible{outline:2px solid var(--primary);outline-offset:-3px}
+
+/* Shared exercise list controls */
+.bulk-app :is(#recordSortControl,#catalogList) select.card-sort{
+  min-height:44px;padding:6px 9px 6px 27px;border:1px solid var(--line);border-radius:10px;
+  background-color:var(--sunken,#f3f4f8);color:var(--ink);background-position:left 8px center;
+}
+.bulk-app #catalogView .cat-toolbar-row{justify-content:space-between;gap:8px;margin-bottom:10px}
+.bulk-app #catalogView .cat-toolbar-row>button{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--raised,#fff);font-size:13px;white-space:normal}
+.bulk-app #catalogView .cat-toolbar-row #btnCatalogAdd{background:#edf1ff;border-color:#dce4ff;color:var(--primary);font-weight:700}
+.bulk-app #catalogView .cat-toolbar-row #btnCatalogReset{color:var(--muted)}
+.bulk-app .stats-search-field{position:relative;min-width:0;flex:1}
+.bulk-app #catalogView #catalogSearchName,.bulk-app #statsView #pinExerciseInput{width:100%;font-size:16px}
+.bulk-app #statsView .stats-exercise-search .stats-search-field input{font-size:16px}
+.bulk-app #statsView #pinExerciseInput{
+  min-width:0;min-height:44px;padding:7px 10px;border:1px solid var(--line-strong);
+  border-radius:12px;background:var(--raised,#fff);color:var(--ink);
+}
+.bulk-app .stats-search-field .record-search-popup[hidden]{display:none}
+.bulk-app :is(#statsView,#catalogView) .record-search-popup [role=option] div{font-size:11px;color:var(--muted)}
+.bulk-app .exercise-muscle-badge{
+  display:inline-flex;align-items:center;gap:5px;padding:2px 6px;margin-right:5px;border-radius:7px;
+  background:var(--sunken,#f3f4f8);background:color-mix(in srgb,var(--muscle-color) 12%,white);
+  color:var(--ink);color:color-mix(in srgb,var(--muscle-color) 55%,#17213b);
+  font-weight:700;white-space:nowrap;
+}
+.bulk-app .exercise-muscle-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--muscle-color)}
+.bulk-app .catalog-add-dialog{
+  box-sizing:border-box;width:min(420px,calc(100% - 28px));max-height:calc(100dvh - 28px);
+  border:1px solid var(--line);border-radius:22px;padding:18px;background:var(--raised,#fff);color:var(--ink);
+}
+.bulk-app .catalog-add-dialog::backdrop{background:#17213b66}
+.bulk-app .catalog-add-dialog form{display:grid;gap:12px}
+.bulk-app .catalog-add-dialog h2{font-size:18px;margin:0}
+.bulk-app .catalog-add-dialog label{min-width:0;display:grid;gap:5px;color:var(--muted);font-size:13px;font-weight:600}
+.bulk-app .catalog-add-dialog :is(input,select){
+  box-sizing:border-box;width:100%;min-height:44px;margin:0;padding:8px 9px;border:1px solid var(--line-strong);
+  border-radius:10px;background:var(--raised,#fff);color:var(--ink);font-size:16px;
+}
+.bulk-app .catalog-add-dialog :is(input,select,button):focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.bulk-app .catalog-dialog-search{align-items:flex-start}
+.bulk-app .catalog-dialog-search select{width:88px;flex:0 0 88px}
+.bulk-app #catalogAddDialog .record-search-popup{
+  position:static;margin-top:5px;box-shadow:none;
+}
+.bulk-app .catalog-add-dialog .record-search-popup[hidden]{display:none}
+.bulk-app .catalog-add-specs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.bulk-app .catalog-add-status{font-size:13px;margin:0;color:#a63249}
+.bulk-app .catalog-add-status:empty{display:none}
+.bulk-app .catalog-add-actions{display:flex;justify-content:flex-end;gap:8px}
+.bulk-app .catalog-add-actions button{min-height:44px;min-width:66px}
+.bulk-app .catalog-add-actions button[type=submit]{background:var(--primary);color:#fff;border-color:var(--primary)}
+/* Keep workout actions in their existing single row on narrow phones. */
+.bulk-app #dayView:not(.routine-editing) .routine-mode-bar{gap:5px}
+.bulk-app #dayView:not(.routine-editing) .routine-mode-bar>button{
+  flex:1 1 0;min-width:0;padding:4px 5px;font-size:12px;line-height:1.3;white-space:normal;
+}
+.bulk-app #dayView .routine-mode-bar [data-catalog-add]{color:var(--primary)}
+.bulk-app #dayView .routine-mode-bar [data-catalog-reset]{color:var(--muted)}
