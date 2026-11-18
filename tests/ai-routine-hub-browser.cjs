@@ -114,6 +114,12 @@ async function capture(browser,width,arm) {
     await checkBounds(hub.locator('#btnAiHistoryDay'));
     await shot('hub');
     await openBase();
+    const titleLayout=await hub.getByRole('heading',{level:2}).evaluate(title=>{
+      const range=document.createRange();
+      range.selectNodeContents(title);
+      return {lines:new Set([...range.getClientRects()].map(rect=>rect.y)).size,width:title.offsetWidth,backWidth:title.previousElementSibling.offsetWidth};
+    });
+    assert.equal(titleLayout.lines,1,JSON.stringify(titleLayout));
     await shot('base-choices');
     await page.locator('#btnBaseChatGPT').click();
     const survey=page.locator('.ai-base-survey');

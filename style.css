@@ -3542,10 +3542,10 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 
 /* AI routine management */
 .data-confirm-dialog.ai-routine-hub{position:fixed;inset:0;box-sizing:border-box;width:min(100%,560px);max-width:none;height:var(--ai-viewport-height,100dvh);max-height:none;margin:0 auto;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);border:0;border-radius:0;background:#f7f8fc}
-.ai-routine-hub>.temporary-dialog-header{min-height:68px;padding:10px 14px;box-sizing:border-box;border-bottom:1px solid var(--line);background:#fff}
+.ai-routine-hub>.temporary-dialog-header{min-height:68px;gap:8px;padding:10px 14px;box-sizing:border-box;border-bottom:1px solid var(--line);background:#fff}
 .ai-routine-hub>.temporary-dialog-header h2{flex:1;font-size:20px;line-height:1.25}
 .ai-routine-hub>.temporary-dialog-header h2:focus{outline:none}
-.ai-routine-hub [data-ai-menu-back]{min-height:44px;width:auto;margin:0;padding:6px 10px;white-space:nowrap}
+.bulk-app .ai-routine-hub [data-ai-menu-back]{flex:0 0 auto;min-height:44px;width:auto;margin:0;padding:6px 10px;white-space:nowrap}
 .ai-routine-hub .ai-routine-content{padding:16px 14px 24px;scrollbar-gutter:auto;scroll-padding-block:12px}
 .bulk-app .ai-routine-hub .ai-day-actions{gap:10px;padding:0}
 .bulk-app .ai-routine-hub .ai-day-actions>button{min-height:76px;padding:14px 32px 14px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;line-height:1.45}
@@ -3557,3 +3557,4 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app .ai-routine-hub #weekAdjustment{margin:0;padding:0;border:0;background:transparent;box-shadow:none}
 .bulk-app .ai-routine-hub #weekAdjustment :is(input,textarea,select){max-width:100%;font-size:16px}
 .data-confirm-dialog.ai-base-survey{height:min(100dvh,100%);max-height:100dvh;border-radius:0}
+@media(max-width:360px){.ai-routine-hub>.temporary-dialog-header h2{font-size:18px}}
