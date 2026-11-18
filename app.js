@@ -1639,9 +1639,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     document.getElementById('btnRevertNow').hidden = !pending;
     // 변경사항이 있으면 저장/취소 중 하나를 거쳐야 편집을 벗어난다.
     button.hidden = routineEditing && pending;
-    // 임시 루틴에는 초기화/기본적용이 없으므로 고급 옵션 자체를 접어 숨긴다(빈 채로 펼쳐지는 것 방지).
-    var advanced=document.getElementById('btnClearDay').closest('.routine-advanced-options');
-    if(advanced){advanced.hidden=isTemp;if(isTemp)advanced.open=false;}
+    document.getElementById('routineManualActions').hidden=isTemp;
     document.getElementById('btnSaveNow').closest('.reset-row').hidden = !routineEditing && !pending;
     document.getElementById('btnSaveNow').classList.toggle('pending-save',pending);
   }
@@ -5152,7 +5150,7 @@ function estimateSession(day) {
     aiMenuPage=page;
     if(page==='week')syncAiWeekButton();
     aiQuickMenu.querySelectorAll('[data-ai-page]').forEach(function(panel){panel.hidden=panel.dataset.aiPage!==page;});
-    aiMenuTitle.textContent={menu:'AI 루틴 관리',base:'기본 루틴 만들기',week:'이번 주 루틴 조정'}[page];
+    aiMenuTitle.textContent={menu:'루틴 관리',base:'기본 루틴 만들기',week:'이번 주 루틴 조정'}[page];
     aiMenuBack.hidden=page==='menu';
     aiMenuContent.scrollTop=0;
     if(aiQuickMenu.open)aiMenuTitle.focus({preventScroll:true});
@@ -5527,19 +5525,17 @@ function estimateSession(day) {
     showToast('전체 운동기록을 삭제했어요.');
   });
 
-  function openRoutineResetChooser(trigger) {
+  function openRoutineResetChooser() {
     var old = document.getElementById('routineResetChooser');
     if (old) old.remove();
 
-    var overlay = document.createElement('div');
+    var overlay = document.createElement('dialog');
     overlay.id = 'routineResetChooser';
     overlay.className = 'routine-reset-overlay';
 
     var sheet = document.createElement('div');
     sheet.className = 'routine-reset-sheet';
-    sheet.setAttribute('role','dialog');
-    sheet.setAttribute('aria-modal','true');
-    sheet.setAttribute('aria-labelledby','routineResetTitle');
+    overlay.setAttribute('aria-labelledby','routineResetTitle');
 
     var day = days[activeIndex];
     var dayLabel = day ? day.letter + '요일' : '현재 요일';
@@ -5567,43 +5563,15 @@ function estimateSession(day) {
     overlay.appendChild(sheet);
     document.body.appendChild(overlay);
 
-    var app = document.getElementById('bulkApp');
-    var previousInert = app ? app.inert : false;
-    var previousOverflow = document.body.style.overflow;
-    if (app) app.inert = true;
-    document.body.style.overflow = 'hidden';
-
     function close() {
-      overlay.remove();
-      document.removeEventListener('keydown', keydown);
-      if (app) app.inert = previousInert;
-      document.body.style.overflow = previousOverflow;
-      if (trigger && trigger.isConnected) trigger.focus({preventScroll:true});
+      overlay.close();
     }
 
-    function keydown(e) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        close();
-        return;
-      }
-      if (e.key === 'Tab') {
-        var focusables = Array.from(sheet.querySelectorAll('button:not([disabled])'));
-        if (!focusables.length) return;
-        var first = focusables[0], last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault(); last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault(); first.focus();
-        }
-      }
-    }
-
+    overlay.addEventListener('close', function() { overlay.remove(); }, {once:true});
     overlay.addEventListener('click', function(e) {
       if (e.target === overlay) close();
     });
     sheet.querySelector('.routine-reset-cancel').addEventListener('click', close);
-    document.addEventListener('keydown', keydown);
 
     sheet.querySelectorAll('[data-reset-scope]').forEach(function(btn) {
       btn.addEventListener('click', async function() {
@@ -5615,6 +5583,7 @@ function estimateSession(day) {
           var label = target ? target.letter + '요일' : '선택한 요일';
           var accepted = await confirmDataAction(label+' 루틴 초기화',label+'에 등록된 운동·제목·유산소 계획·요일 메모가 지워져요. 운동 관리의 종목과 저장된 운동기록은 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','초기화');
           if (!accepted) return;
+          aiQuickMenu.close();
 
           target.ex = [];
           target.title = '';
@@ -5628,6 +5597,7 @@ function estimateSession(day) {
         } else {
           var acceptedAll = await confirmDataAction('전체 요일 루틴 초기화','월~일의 운동 루틴을 모두 비워요. 운동 관리의 종목과 저장된 운동기록은 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','전체 초기화');
           if (!acceptedAll) return;
+          aiQuickMenu.close();
 
           days = defaults();
           save();
@@ -5642,12 +5612,13 @@ function estimateSession(day) {
       });
     });
 
+    overlay.showModal();
     sheet.querySelector('[data-reset-scope="day"]').focus();
   }
 
   document.getElementById('btnClearDay').addEventListener('click', function () {
     clearConfirmation();
-    openRoutineResetChooser(this);
+    openRoutineResetChooser();
   });
 
 
@@ -5801,15 +5772,13 @@ function estimateSession(day) {
     var old = document.getElementById('baseRoutineChooser');
     if (old) old.remove();
 
-    var overlay = document.createElement('div');
+    var overlay = document.createElement('dialog');
     overlay.id = 'baseRoutineChooser';
     overlay.className = 'base-routine-overlay';
 
     var sheet = document.createElement('div');
     sheet.className = 'base-routine-sheet';
-    sheet.setAttribute('role','dialog');
-    sheet.setAttribute('aria-modal','true');
-    sheet.setAttribute('aria-labelledby','baseRoutineTitle');
+    overlay.setAttribute('aria-labelledby','baseRoutineTitle');
     sheet.innerHTML =
       '<div class="base-routine-handle" aria-hidden="true"></div>' +
       '<div class="base-routine-head">' +
@@ -5853,49 +5822,22 @@ function estimateSession(day) {
     overlay.appendChild(sheet);
     document.body.appendChild(overlay);
 
-    var app = document.getElementById('bulkApp');
-    var previousInert = app ? app.inert : false;
-    var previousOverflow = document.body.style.overflow;
-    if (app) app.inert = true;
-    document.body.style.overflow = 'hidden';
-
     function close() {
-      overlay.remove();
-      document.removeEventListener('keydown', keydown);
-      if (app) app.inert = previousInert;
-      document.body.style.overflow = previousOverflow;
-      if (resetBtn && resetBtn.isConnected) resetBtn.focus({preventScroll:true});
+      overlay.close();
     }
 
-    function keydown(e) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        close();
-        return;
-      }
-      if (e.key === 'Tab') {
-        var focusables = Array.from(sheet.querySelectorAll('button:not([disabled])'));
-        if (!focusables.length) return;
-        var first = focusables[0], last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault(); last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault(); first.focus();
-        }
-      }
-    }
-
+    overlay.addEventListener('close', function() { overlay.remove(); }, {once:true});
     overlay.addEventListener('click', function(e) {
       if (e.target === overlay) close();
     });
     sheet.querySelector('.base-routine-cancel').addEventListener('click', close);
-    document.addEventListener('keydown', keydown);
 
     sheet.querySelectorAll('[data-split]').forEach(function(btn) {
       btn.addEventListener('click', async function() {
         var split = parseInt(btn.getAttribute('data-split'), 10);
         close();
         if(!await confirmDataAction('기본 루틴 적용',split+'분할 기본 루틴으로 현재 월~토 루틴을 교체할까요? 일요일 루틴은 그대로 유지돼요. 운동기록·운동 관리 종목·설정 메모도 유지돼요. 변경 후 루틴 저장을 눌러 확정하세요.','루틴 적용'))return;
+        aiQuickMenu.close();
         days = makeBaseSplitRoutine(split);
         save();
         renderTabs();
@@ -5907,6 +5849,7 @@ function estimateSession(day) {
       });
     });
 
+    overlay.showModal();
     sheet.querySelector('[data-split="1"]').focus();
   }
 

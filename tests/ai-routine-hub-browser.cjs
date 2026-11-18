@@ -108,10 +108,34 @@ async function capture(browser,width,arm) {
     await page.locator('#btnRoutineEdit').click();
     const original=await snapshot(page),protectedData=await backup();
     await open();
-    assert.equal(await hub.getByRole('heading',{level:2}).innerText(),'AI 루틴 관리');
+    assert.equal(await hub.getByRole('heading',{level:2}).innerText(),'루틴 관리');
     await checkBounds(hub.locator('#btnBasePlan'));
     await checkBounds(hub.locator('#btnWeekAiFromDay'));
     await checkBounds(hub.locator('#btnAiHistoryDay'));
+    assert(await hub.getByRole('heading',{name:'AI 추천'}).isVisible());
+    assert(await hub.getByRole('heading',{name:'직접 관리'}).isVisible());
+    assert.equal(await page.locator('#dayView #btnReset,#dayView #btnClearDay').count(),0);
+    const managementState=await snapshot(page);
+    for(const [id,selector,choice] of [
+      ['btnReset','#baseRoutineChooser','[data-split="1"]'],
+      ['btnClearDay','#routineResetChooser','[data-reset-scope="day"]']
+    ]){
+      const action=hub.locator('#'+id),chooser=page.locator(selector);
+      await checkBounds(action);
+      await action.click();
+      assert(await chooser.evaluate(node=>node.matches(':modal')),'chooser is above the routine management dialog');
+      await page.goBack();
+      await chooser.waitFor({state:'detached'});
+      assert(await hub.isVisible());
+      await action.click();
+      await chooser.locator(choice).click();
+      await chooser.waitFor({state:'detached'});
+      await page.locator('#dataConfirmTitle').waitFor();
+      await page.getByRole('button',{name:'취소',exact:true}).last().click();
+      await page.locator('#dataConfirmTitle').waitFor({state:'detached'});
+      assert(await hub.isVisible());
+      assert.deepEqual(await snapshot(page),managementState);
+    }
     await shot('hub');
     await openBase();
     const titleLayout=await hub.getByRole('heading',{level:2}).evaluate(title=>{
@@ -131,7 +155,7 @@ async function capture(browser,width,arm) {
     await page.keyboard.press('Escape');
     await survey.waitFor({state:'detached'});
     await page.goBack();
-    await page.waitForFunction(()=>document.getElementById('aiRoutineTitle').textContent==='AI 루틴 관리');
+    await page.waitForFunction(()=>document.getElementById('aiRoutineTitle').textContent==='루틴 관리');
     await openBase();
     await page.locator('#btnBaseAi').click();
     assert.equal(await survey.locator('[data-notes]').inputValue(),'합성 조건');
@@ -215,6 +239,11 @@ async function capture(browser,width,arm) {
     assert((await snapshot(page))[keys.temporary]);
     assert.equal(await page.locator('#btnAdjustmentGenerate').innerText(),'남은 일정 다시 추천받기');
     await closeHub(page);
+    await page.locator('#btnRoutineEdit').click();
+    await open();
+    assert(await hub.locator('#routineManualActions').isHidden());
+    assert(await hub.locator('#btnWeekAiFromDay').isVisible());
+    await closeHub(page);
     await tab(page,'루틴');
     await page.locator('#reportView [data-temp-details]').click();
     await page.locator('#temporaryDetailsDialog [data-temp-cancel]').click();
@@ -243,7 +272,7 @@ async function capture(browser,width,arm) {
     assert.equal(await page.locator('#adjustNotes').inputValue(),'');
     assert.equal((await snapshot(page))[keys.routine],newBase);
     assert.deepEqual(errors,[]);
-    console.log(`PASS ${width}px hub, reduced viewport and focus, browser Back/Escape, draft preservation, intercepted /plan and /adjust, external weekly file, canceled request, failed storage rollback, applies independently, history, report cancellation and protected data`);
+    console.log(`PASS ${width}px unified hub and manual confirmation cancellation, reduced viewport and focus, browser Back/Escape, draft preservation, intercepted /plan and /adjust, external weekly file, canceled request, failed storage rollback, applies independently, history, report cancellation and protected data`);
   } finally {
     holdResponse?.();
     await context.close();
