@@ -1,6 +1,6 @@
 const fs=require('fs'),cp=require('child_process'),assert=require('assert/strict');
 const base='9069869493959fdee618dd02fbf61e807b7cbd1b';
-const a=cp.execFileSync('git',['show',base+':app.js'],{encoding:'utf8',maxBuffer:4e6}),b=fs.readFileSync('app.js','utf8');
+const a=cp.execFileSync('git',['show',base+':app.js'],{encoding:'utf8',maxBuffer:4e6}),b=require('./v183-ui-contract.cjs').read('app.js');
 function block(s,start,end){const i=s.indexOf(start);assert(i>=0,start);const j=s.indexOf(end,i+start.length);assert(j>i,end);return s.slice(i,j);}
 function protectedSource(s){return s.replace("      if(exchange && ((exchangeUi&&!exchangeUi.current()) || (overtime().length&&acceptedTime!==timeKey())))throw new Error('조건 또는 운동 구성이 바뀌었어요. 시간 초과 여부를 다시 확인해주세요.');\n",'').replace('if(exchangeUi)exchangeUi.finish();','').replace('validateBaseCandidate(chosen,!!exchange)','validateBaseCandidate(chosen)').replace('return validateBaseCandidate(candidate,true);','return validateBaseCandidate(candidate);');}
 for(const [start,end] of [

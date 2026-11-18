@@ -1,3 +1,4 @@
+const {openBaseChoices}=require('./ai-routine-navigation.cjs');
 // Real UI, isolated synthetic storage, outbound requests blocked. No personal data.
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict'),vm=require('node:vm');
 const {chromium}=require('playwright');const root=path.resolve(process.env.AB_ROOT||path.join(__dirname,'..')),out=path.resolve(process.env.AB_OUT||path.join(__dirname,'../test-results'));fs.mkdirSync(out,{recursive:true});
@@ -20,7 +21,7 @@ for(const width of [320,360,390,430])for(const scenario of ['empty','partial','f
  },{scenario,keys,name});await page.reload();
  await page.evaluate(()=>{window.copied='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copied=text;}}});});
  const snapshot=()=>page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).sort().map(k=>[k,localStorage.getItem(k)])));
- async function open(){await page.locator('#btnRoutineEdit').click();await page.locator('#btnAiMenu').click();await page.locator('#btnBaseChatGPT').click();}
+ async function open(){await page.locator('#btnRoutineEdit').click();await page.locator('#btnAiMenu').click();await openBaseChoices(page);await page.locator('#btnBaseChatGPT').click();}
  const openedAt=performance.now();await open();const openMs=performance.now()-openedAt;const survey=page.locator('.ai-base-survey');await survey.locator('[data-day-chip="0"]').click();await survey.locator('[data-day-chip="2"]').click();
 
  const isB=!!(await survey.locator('.exchange-show-days').count());

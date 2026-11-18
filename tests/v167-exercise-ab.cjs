@@ -39,7 +39,7 @@ if(arm==='B'&&state==='recorded'){assert(await p.locator('.record-compare-hint')
     await p.locator('.routine-advanced-options>summary').click();assert(await p.locator('#btnClearDay').isVisible());assert(await p.locator('#btnReset').isVisible());await measure('advanced');await p.locator('.routine-advanced-options>summary').click();
    }
 assert(sample.geometry.edit.cards.every(c=>c.height<=184),'preserve three-row edit cards');
-   await p.locator('#btnAiMenu').click();await measure('ai');assert.equal(await p.locator('#aiQuickMenu .ai-day-actions button').count(),4);const touch=await p.locator('#aiQuickMenu button').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return[r.width,r.height]}));assert(touch.every(([w,h])=>w>=44&&h>=44));await p.locator('[data-ai-menu-close]').click();await p.locator('#btnRoutineEdit').click();
+   await p.locator('#btnAiMenu').click();await measure('ai');assert.equal(await p.locator('#aiQuickMenu .ai-day-actions button:visible').count(),await p.locator('#btnBasePlan').count()?2:4);const touch=await p.locator('#aiQuickMenu button:visible').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return[r.width,r.height]}));assert(touch.every(([w,h])=>w>=44&&h>=44));await p.locator('[data-ai-menu-close]').click();await p.locator('#btnRoutineEdit').click();
    const protectedBefore=splitStorage(await raw()).protected;
    await p.locator('#btnDirectRecord').click();const modal=p.locator('.direct-record-modal'),search=modal.locator('input[type=search]'),muscle=modal.locator('select');
    await measure('direct');await muscle.selectOption('');await search.fill('프레스');
