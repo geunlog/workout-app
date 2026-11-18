@@ -34,9 +34,21 @@ if(arm==='B'&&state==='recorded'){assert(await p.locator('.record-compare-hint')
    if(arm==='B'){
     const a=results.samples.find(s=>s.width===width&&s.state===state&&s.arm==='A');
     assert(sample.geometry.edit.firstY<a.geometry.edit.firstY,'first edit card moves upward');
-    const controls=await p.locator('#btnAiMenu,.routine-advanced-options>summary').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {w:r.width,h:r.height,y:r.y}}));
-    assert(controls.every(r=>r.w>=44&&r.h>=44));assert(Math.abs(controls[0].y-controls[1].y)<2);
-    await p.locator('.routine-advanced-options>summary').click();assert(await p.locator('#btnClearDay').isVisible());assert(await p.locator('#btnReset').isVisible());await measure('advanced');await p.locator('.routine-advanced-options>summary').click();
+    const toolbar=p.locator('#btnAiMenu,.routine-advanced-options>summary');
+    const bounds=()=>toolbar.evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {w:r.width,h:r.height,y:r.y,right:r.right};}));
+    const controls=await bounds();
+    assert(controls.every(r=>r.w>=44&&r.h>=44));assert(Math.abs(controls[0].y-controls[1].y)<2);assert(Math.abs(controls[0].w-controls[1].w)<2);
+    const advanced=p.locator('.routine-advanced-options>summary');
+    const clear=p.locator('#btnClearDay'),reset=p.locator('#btnReset');
+    assert(await clear.isHidden());assert(await reset.isHidden());
+    await advanced.press('Enter');
+    assert(await clear.isVisible());assert(await reset.isVisible());
+    const opened=await bounds();
+    assert.deepEqual(opened,controls,'opening advanced options preserves both trigger positions');
+    const actions=await clear.boundingBox();
+    assert(actions.y>=opened[0].y+opened[0].h && actions.height>=44);
+    await measure('advanced');
+    await advanced.press('Space');assert(await clear.isHidden());assert(await reset.isHidden());
    }
 assert(sample.geometry.edit.cards.every(c=>c.height<=184),'preserve three-row edit cards');
    await p.locator('#btnAiMenu').click();await measure('ai');assert.equal(await p.locator('#aiQuickMenu .ai-day-actions button:visible').count(),await p.locator('#btnBasePlan').count()?2:4);const touch=await p.locator('#aiQuickMenu button:visible').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return[r.width,r.height]}));assert(touch.every(([w,h])=>w>=44&&h>=44));await p.locator('[data-ai-menu-close]').click();await p.locator('#btnRoutineEdit').click();
