@@ -3300,7 +3300,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     idleLabel:'등록된 종목 '
   });
   catalogSearchMuscle.onchange=function(){catalogSearch.close();applyCatalogSearch();};
-  document.getElementById('btnCatalogAdd').onclick=function(){openCatalogAdd(this);};
+  document.querySelectorAll('[data-catalog-add]').forEach(function(button){
+    button.onclick=function(){openCatalogAdd(button);};
+  });
   function muscleBadgeHtml(muscle){
     return '<span class="exercise-muscle-badge" style="--muscle-color:'+(MUSCLE_COLOR[muscle]||'var(--muted)')+'">'+statsEscape(muscle)+'</span>';
   }
@@ -3312,7 +3314,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     form.reset();
     muscle.replaceChildren(new Option('부위 선택',''));
     MUSCLES.forEach(function(m){muscle.add(new Option(m,m));});
-    muscle.value=catalogSearchMuscle.value;
+    muscle.value=mode==='catalog'?catalogSearchMuscle.value:'';
     status.textContent='';
     catalogSearch.close();
     dialog.showModal();
@@ -5310,14 +5312,15 @@ function estimateSession(day) {
     hint._t = setTimeout(function () { hint.textContent = ''; hint.className = 'save-hint'; }, 1400);
   });
 
-  document.getElementById('btnCatalogReset').addEventListener('click', async function () {
+  document.querySelectorAll('[data-catalog-reset]').forEach(function(button){button.addEventListener('click',resetCatalog);});
+  async function resetCatalog() {
     if(!await confirmDataAction('기본 종목으로 초기화','모든 플랜의 공통 종목 목록과 목표값을 기본값으로 되돌려요.\n직접 추가한 종목은 목록에서 삭제돼요.\n운동 기록과 루틴은 유지돼요. 변경 전 전체 백업을 권장해요.','초기화'))return;
     {
       var next=defaultCatalog();
       if(!writeJSON(CATALOG_KEY,next)){showStorageError('catalogSaveHint');return;}
       catalog=next;renderCatalog();showToast('기본 종목으로 초기화 완료');
     }
-  });
+  }
 
   function syncRecordFilterUI(){
     var from=document.getElementById('recFilterFrom'),to=document.getElementById('recFilterTo');

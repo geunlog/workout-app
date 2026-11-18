@@ -133,6 +133,14 @@ async function inspect(context,width,version){
   const row=page.locator('[data-catalog-muscle="등"] .cat-item').filter({hasText:'합성 신규 로우'});
   assert(await row.isVisible());
   assert.equal(await row.locator('.exercise-muscle-badge').textContent(),'등');
+  await mode('운동').click();
+  await snap('day-catalog');
+  await page.locator('#dayView [data-catalog-add]').click();
+  assert(await dialog.isVisible());
+  await dialog.getByRole('button',{name:'취소'}).click();
+  await page.locator('#dayView [data-catalog-reset]').click();
+  await page.getByRole('button',{name:'취소',exact:true}).click();
+  await mode('운동 관리').click();
   await page.locator('#btnCatalogReset').click();
   await page.getByRole('button',{name:'취소',exact:true}).click();
   assert.equal(await page.evaluate(k=>localStorage.getItem(k),catalogKey),JSON.stringify(saved));

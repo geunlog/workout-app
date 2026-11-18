@@ -139,6 +139,11 @@
         <button class="btn-reset" id="btnRoutineEdit" type="button" aria-pressed="false" aria-controls="dayPanel">루틴 편집</button>
       </div>
 
+      <div class="cat-toolbar-row day-catalog-actions" aria-label="공통 종목 관리" role="group">
+        <button type="button" class="btn-reset" data-catalog-add aria-haspopup="dialog">+ 종목 추가</button>
+        <button type="button" class="btn-reset" data-catalog-reset>기본 종목으로 초기화</button>
+      </div>
+
       <div class="reset-row">
         <button class="btn-reset btn-save-now" id="btnSaveNow" type="button">루틴 저장</button>
         <button class="btn-reset btn-revert-now" id="btnRevertNow" type="button">변경 취소</button>
@@ -170,8 +175,8 @@
     <div id="catalogView" hidden>
       <div class="cat-toolbar">
         <div class="cat-toolbar-row">
-          <button id="btnCatalogAdd" type="button" class="btn-reset">+ 종목 추가</button>
-          <button id="btnCatalogReset" type="button" class="btn-reset">기본 종목으로 초기화</button>
+          <button id="btnCatalogAdd" type="button" class="btn-reset" data-catalog-add aria-haspopup="dialog">+ 종목 추가</button>
+          <button id="btnCatalogReset" type="button" class="btn-reset" data-catalog-reset>기본 종목으로 초기화</button>
           <span id="btnCatalogSave" class="sr-only" role="status">자동 저장</span>
         </div>
         <p class="save-hint" id="catalogSaveHint" role="status"></p>
@@ -189,24 +194,24 @@
       <p id="catalogSearchCount" class="sr-only" role="status"></p>
       <p id="catalogSearchEmpty" class="stats-note" hidden>조건에 맞는 종목이 없어요.</p>
       <div id="catalogList"></div>
-      <dialog id="catalogAddDialog" class="catalog-add-dialog" aria-labelledby="catalogAddTitle">
-        <form>
-          <h2 id="catalogAddTitle">운동 종목 추가</h2>
-          <label>부위<select name="muscle" required></select></label>
-          <label>종목 이름<input name="name" type="text" required maxlength="200" autocomplete="off"></label>
-          <div class="catalog-add-specs">
-            <label>세트<input name="sets" type="number" min="1" max="20" step="1" value="1" required></label>
-            <label>반복수<input name="reps" type="text" placeholder="8~12" maxlength="100"></label>
-            <label>RIR<input name="rir" type="text" placeholder="1~2" maxlength="100"></label>
-          </div>
-          <p class="catalog-add-status" role="status"></p>
-          <div class="catalog-add-actions">
-            <button type="button" class="btn-reset" data-catalog-cancel>취소</button>
-            <button type="submit" class="btn-reset">등록</button>
-          </div>
-        </form>
-      </dialog>
     </div>
+    <dialog id="catalogAddDialog" class="catalog-add-dialog" aria-labelledby="catalogAddTitle">
+      <form>
+        <h2 id="catalogAddTitle">운동 종목 추가</h2>
+        <label>부위<select name="muscle" required></select></label>
+        <label>종목 이름<input name="name" type="text" required maxlength="200" autocomplete="off"></label>
+        <div class="catalog-add-specs">
+          <label>세트<input name="sets" type="number" min="1" max="20" step="1" value="1" required></label>
+          <label>반복수<input name="reps" type="text" placeholder="8~12" maxlength="100"></label>
+          <label>RIR<input name="rir" type="text" placeholder="1~2" maxlength="100"></label>
+        </div>
+        <p class="catalog-add-status" role="status"></p>
+        <div class="catalog-add-actions">
+          <button type="button" class="btn-reset" data-catalog-cancel>취소</button>
+          <button type="submit" class="btn-reset">등록</button>
+        </div>
+      </form>
+    </dialog>
     <div id="recordsView" hidden>
       <p class="save-hint" id="recordsActionHint" role="status" aria-live="polite"></p>
       <section class="record-filter-panel" aria-label="조회 필터">
