@@ -42,7 +42,7 @@ function seed() {
         await input.evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));
         await input.fill('프레스');
         await input.evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));
-        const popup=p.locator('.stats-search-popup');
+        const popup=p.locator('.stats-exercise-search .stats-search-popup');
         const options=popup.getByRole('option');
         if(variant==='after'){
           assert.equal(await input.getAttribute('aria-expanded'),'true');

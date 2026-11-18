@@ -1558,9 +1558,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     return (recordSort==='recent'?bm.date.localeCompare(am.date):recordSort==='count'?bm.count-am.count:0) || JSON.parse(a[0])[1].localeCompare(JSON.parse(b[0])[1],'ko');
   }
   function cardSortHtml(kind,muscle){
-    var choices=kind==='catalog'?[['name','가나다순'],['added','최근 추가순']]:[['recent','최근 운동순'],['name','가나다순'],['count','기록 많은순']];
+    var choices=kind==='catalog'?[['name','가나다순'],['added','최근순']]:[['recent','최근순'],['name','가나다순'],['count','기록 많은순']];
     var value=kind==='catalog'?catalogSort:recordSort;
-    return '<select class="card-sort" data-card-sort="'+kind+'" data-sort-muscle="'+statsEscape(muscle)+'" aria-label="'+statsEscape(muscle)+' 정렬 · 모든 부위에 적용">'+choices.map(function(choice){return '<option value="'+choice[0]+'"'+(choice[0]===value?' selected':'')+'>'+choice[1]+'</option>';}).join('')+'</select>';
+    return '<select class="card-sort" data-card-sort="'+kind+'" data-sort-muscle="'+statsEscape(muscle)+'" title="'+(kind==='catalog'?'최근 추가 기준':'최근 운동 기준')+'" aria-label="'+statsEscape(muscle)+' 정렬 · '+(kind==='catalog'?'최근 추가 기준':'최근 운동 기준')+' · 모든 부위에 적용">'+choices.map(function(choice){return '<option value="'+choice[0]+'"'+(choice[0]===value?' selected':'')+'>'+choice[1]+'</option>';}).join('')+'</select>';
   }
   function bindCardSort(root){
     root.querySelectorAll('[data-card-sort]').forEach(function(select){
@@ -1615,7 +1615,9 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   var mode = 'day';
   function applyModeView() {
     if(mode!=='records')closeRecordSearchSuggestions();
+    if(mode!=='catalog'&&catalogSearch)catalogSearch.close();
     if(mode!=='stats'&&statsSearchCleanup){statsSearchCleanup();statsSearchCleanup=null;}
+    if(mode!=='stats'&&pinSearchCleanup){pinSearchCleanup();pinSearchCleanup=null;}
     dayViewEl.hidden = mode !== 'day';
     catalogViewEl.hidden = mode !== 'catalog';
     recordsViewEl.hidden = mode !== 'records';
@@ -3281,12 +3283,68 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       group.hidden=!!(muscle || query) && !matches;if((muscle || query) && matches)group.open=true;total+=matches;
     });
     document.getElementById('catalogSearchCount').textContent=total+'개 종목';
-    var catalogInput=document.getElementById('catalogSearchName');
-    if(catalogInput)catalogInput.placeholder='종목명 검색';
+    document.getElementById('catalogSearchEmpty').hidden=total>0 || !(muscle || query);
   }
   document.getElementById('catalogSearchMuscle').innerHTML=makeMuscleSelect().innerHTML;
-  document.getElementById('catalogSearchMuscle').onchange=applyCatalogSearch;
-  document.getElementById('catalogSearchName').oninput=applyCatalogSearch;
+  var catalogSearchInput=document.getElementById('catalogSearchName');
+  var catalogSearchMuscle=document.getElementById('catalogSearchMuscle');
+  var catalogSearch=bindExerciseSuggestions(catalogSearchInput,{
+    exercises:function(){
+      return MUSCLES.flatMap(function(m){
+        return catalog[m].map(function(e){return {name:e.n,muscle:m};});
+      });
+    },
+    muscle:function(){return catalogSearchMuscle.value;},
+    isActive:function(){return mode==='catalog';},
+    onInput:applyCatalogSearch,
+    idleLabel:'등록된 종목 '
+  });
+  catalogSearchMuscle.onchange=function(){catalogSearch.close();applyCatalogSearch();};
+  document.getElementById('btnCatalogAdd').onclick=function(){openCatalogAdd(this);};
+  function muscleBadgeHtml(muscle){
+    return '<span class="exercise-muscle-badge" style="--muscle-color:'+(MUSCLE_COLOR[muscle]||'var(--muted)')+'">'+statsEscape(muscle)+'</span>';
+  }
+  function openCatalogAdd(trigger){
+    var dialog=document.getElementById('catalogAddDialog');
+    var form=dialog.querySelector('form');
+    var muscle=form.elements.muscle,name=form.elements.name;
+    var status=dialog.querySelector('[role=status]');
+    form.reset();
+    muscle.replaceChildren(new Option('부위 선택',''));
+    MUSCLES.forEach(function(m){muscle.add(new Option(m,m));});
+    muscle.value=catalogSearchMuscle.value;
+    status.textContent='';
+    catalogSearch.close();
+    dialog.showModal();
+    (muscle.value?name:muscle).focus();
+    dialog.querySelector('[data-catalog-cancel]').onclick=function(){dialog.close();};
+    dialog.onclose=function(){if(trigger.isConnected)trigger.focus({preventScroll:true});};
+    form.oninput=function(){status.textContent='';};
+    form.onsubmit=function(event){
+      event.preventDefault();
+      var m=muscle.value,n=name.value.trim();
+      if(!MUSCLES.includes(m))return;
+      if(!n){status.textContent='종목 이름을 입력해 주세요.';name.focus();return;}
+      if(catalog[m].some(function(entry){return entry.n===n;})){
+        status.textContent='이 부위에 같은 이름의 종목이 있어요.';
+        name.focus();
+        return;
+      }
+      var next=readCatalogEdits();
+      next[m].push({n:n,s:Number(form.elements.sets.value),r:form.elements.reps.value.trim(),
+        rir:form.elements.rir.value.trim(),addedAt:Date.now()});
+      if(!commitCatalog(next)){
+        status.textContent='저장하지 못했어요. 다시 시도해 주세요.';
+        return;
+      }
+      if(catalogSearchMuscle.value && catalogSearchMuscle.value!==m)catalogSearchMuscle.value=m;
+      if(!n.toLocaleLowerCase('ko-KR').includes(catalogSearchInput.value.trim().toLocaleLowerCase('ko-KR')))catalogSearchInput.value='';
+      renderCatalog();
+      catalogListEl.querySelector('[data-catalog-muscle="'+m+'"]').open=true;
+      dialog.close();
+      showToast('운동 종목 추가 완료');
+    };
+  }
   function renderCatalog() {
     var openStates = {};
     document.querySelectorAll('#catalogView .rec-group').forEach(function (el, i) { openStates[i] = el.open; });
@@ -3300,7 +3358,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         var confirming = catPendingDel === token;
         return '<details class="cat-item">' +
           '<summary class="cat-item-top">' +
-            '<span class="cat-name">' + statsEscape(c.n) + '<svg class="cat-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/></svg>' + (big3Of(c.n)?'<span class="big3-badge">3대운동<span class="sr-only"> 종목</span></span>':'') + '</span><small class="cat-summary-spec">'+statsEscape(c.s)+'세트 · '+statsEscape(c.r)+'회 · RIR '+statsEscape(c.rir)+'</small>' +
+            '<span class="cat-name">' + statsEscape(c.n) + '<svg class="cat-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/></svg>' + (big3Of(c.n)?'<span class="big3-badge">3대운동<span class="sr-only"> 종목</span></span>':'') + '</span><small class="cat-summary-spec">'+muscleBadgeHtml(m)+'<span class="cat-spec-values">'+statsEscape(c.s)+'세트 · '+statsEscape(c.r)+'회 · RIR '+statsEscape(c.rir)+'</span></small>' +
             '<button class="btn-hist-del' + (confirming ? ' confirming' : '') + '" type="button" data-muscle="' + m +
               '" data-name="' + statsEscape(c.n) + '" aria-label="삭제">' + (confirming ? '확인' : deleteIcon()) + '</button>' +
           '</summary>' +
@@ -3316,22 +3374,14 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       }).join('') : '<p class="cat-empty">등록된 종목이 없어요.</p>';
 
       var isOpen = openStates[mi] === true;
-      html += '<details class="rec-group" style="border-left:3px solid ' + MUSCLE_COLOR[m] + '"' + (isOpen ? ' open' : '') + '>' +
+      html += '<details class="rec-group" data-catalog-muscle="'+m+'" style="border-left:3px solid ' + MUSCLE_COLOR[m] + '"' + (isOpen ? ' open' : '') + '>' +
         '<summary>' +
           '<span class="rec-head"><span class="rec-title" style="color:' + MUSCLE_COLOR[m] + '">' + m + '</span>' +
           '<span class="rec-count">' + arr.length + '개</span></span>' +
           cardSortHtml('catalog',m) + '<span class="rec-chev"></span>' +
         '</summary>' +
-        '<div class="rec-body">' +
-          '<details class="cat-add-panel"><summary>+ 종목 추가</summary><div class="cat-add-row">' +
-            '<input type="text" class="cat-add-name" data-muscle="' + m + '" placeholder="새 종목 이름" aria-label="' + m + ' 새 종목 이름">' +
-            '<div class="cat-add-specs">' +
-              '<label class="cat-add-field"><input type="number" class="in-sets cat-add-sets" min="1" max="20" step="1" data-muscle="' + m + '" placeholder="1" aria-label="세트"><span>세트</span></label>' +
-              '<label class="cat-add-field"><input type="text" class="in-reps cat-add-reps" data-muscle="' + m + '" placeholder="8~12" aria-label="반복수"><span>회</span></label>' +
-              '<label class="cat-add-field"><input type="text" class="in-rir cat-add-rir" data-muscle="' + m + '" placeholder="1~2" aria-label="RIR"><span>RIR</span></label>' +
-              '<button class="cat-add-btn" type="button" data-muscle="' + m + '">추가</button>' +
-            '</div>' +
-          '</div></details>' + itemsHtml +
+        '<div class="rec-body">' + itemsHtml +
+        '</div>' +
         '</div>' +
       '</details>';
     });
@@ -3349,32 +3399,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         var value=field==='s'?Number(input.value):input.value.trim();
         if(value===entry[field])return;
         var next=JSON.parse(JSON.stringify(catalog));next[m][idx][field]=value;
-        if(commitCatalog(next,input)){var summary=input.closest('.cat-item').querySelector('.cat-summary-spec'),c=catalog[m][idx];summary.textContent=c.s+'세트 · '+c.r+'회 · RIR '+c.rir;}
-      });
-    });
-
-    catalogListEl.querySelectorAll('.cat-add-btn').forEach(function (btn) {
-      var m = btn.getAttribute('data-muscle');
-      var nameInput = catalogListEl.querySelector('.cat-add-name[data-muscle="' + m + '"]');
-      var setsInput = catalogListEl.querySelector('.cat-add-sets[data-muscle="' + m + '"]');
-      var repsInput = catalogListEl.querySelector('.cat-add-reps[data-muscle="' + m + '"]');
-      var rirInput = catalogListEl.querySelector('.cat-add-rir[data-muscle="' + m + '"]');
-      setsInput.value = '1';
-      function doAdd() {
-        var v = nameInput.value.trim();
-        if (!v) return;
-        if (catalog[m].some(function (c) { return c.n === v; })) { nameInput.value = ''; return; }
-        var s = clampNumber(setsInput.value, 1, 20, 1);
-        var r = repsInput.value.trim();
-        var rir = rirInput.value.trim();
-        var next=readCatalogEdits();next[m].push({ n: v, s: s, r: r, rir: rir, addedAt: Date.now() });
-        if(!commitCatalog(next))return;
-        renderCatalog();
-        showToast('운동 종목 추가 완료');
-      }
-      btn.addEventListener('click', function (ev) { ev.preventDefault(); doAdd(); });
-      [nameInput, setsInput, repsInput, rirInput].forEach(function (el) {
-        el.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); doAdd(); } });
+        if(commitCatalog(next,input)){var summary=input.closest('.cat-item').querySelector('.cat-spec-values'),c=catalog[m][idx];summary.textContent=c.s+'세트 · '+c.r+'회 · RIR '+c.rir;}
       });
     });
 
@@ -3790,22 +3815,22 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   }
 
   function pinnedExercises(){var p=readJSON(keyFor('bulk-workout-pins-v1',activeProfile),[]);return Array.isArray(p)?p.filter(function(n){return typeof n==='string';}).slice(0,5):[];}
-  function pinnedStatsHtml(){
-    var pins=pinnedExercises(),all=buildStats(statsSource(),catalog,'all',todayStr(),null);
-    var choices=statsRecordedExerciseNames(pinMuscleQuery).map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');
-    return '<details class="stats-card stats-section" data-stats-panel="pins"><summary><span>관심 종목 · <small>'+pins.length+'/5</small></span></summary><p class="stats-note">전체 기간 기록</p><div class="muscle-search pin-search">'+muscleSelectHtml('pinMuscleSelect',pinMuscleQuery)+'<input type="search" id="pinExerciseInput" list="pinExerciseChoices" placeholder="종목 검색" aria-label="고정할 종목" style="min-width:0;flex:1;width:100%;font-size:16px"><datalist id="pinExerciseChoices">'+choices+'</datalist><button type="button" class="btn-reset" data-pin-add>추가</button></div><p class="stats-note" id="pinSearchCount" role="status"></p>'+pins.map(function(n){var g=all.exercises.find(function(e){return e.name===n;});var recent=g?g.latest:null;return '<details class="stats-exercise" data-stats-key="pin:'+statsEscape(n)+'"><summary><span class="stats-exercise-title">'+statsEscape(n)+'<small>'+(recent?statsEscape(recent.date+' · '+recent.w+'kg × '+recent.reps+'회'):'기록 없음')+'</small></span></summary><div class="stats-exercise-body">'+(g?statsExerciseMetricsHtml(g,true):'')+'<div class="pin-remove-row"><button class="btn-reset" type="button" data-pin-remove="'+statsEscape(n)+'">관심 해제</button></div></div></details>';}).join('')+(!pins.length?'<p class="stats-note">자주 보는 종목을 추가하세요.</p>':'')+'</details>';
+  function pinnedStatsHtml(all){
+    var pins=pinnedExercises();
+    return '<details class="stats-card stats-section" data-stats-panel="pins"><summary><span>관심 종목 · <small>'+pins.length+'/5</small></span></summary><p class="stats-note">전체 기간 기록</p><div class="muscle-search pin-search">'+muscleSelectHtml('pinMuscleSelect',pinMuscleQuery)+'<div class="stats-search-field"><input type="search" id="pinExerciseInput" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="pinExerciseChoices" aria-expanded="false" placeholder="종목명 검색" aria-label="고정할 종목"><div class="record-search-popup stats-search-popup" hidden><div id="pinExerciseChoices" role="listbox" aria-label="관심 종목 추천"></div><p class="sr-only" role="status" aria-live="polite"></p></div></div><button type="button" class="btn-reset" data-pin-add>추가</button></div><p class="stats-note" id="pinSearchCount" role="status"></p>'+pins.map(function(n){var g=all.exercises.find(function(e){return e.name===n;});var recent=g?g.latest:null;return '<details class="stats-exercise" data-stats-key="pin:'+statsEscape(n)+'"><summary><span class="stats-exercise-title">'+statsEscape(n)+'<small>'+(recent?muscleBadgeHtml(g.muscle)+' '+statsEscape(recent.date+' · '+recent.w+'kg × '+recent.reps+'회'):'기록 없음')+'</small></span></summary><div class="stats-exercise-body">'+(g?statsExerciseMetricsHtml(g,true):'')+'<div class="pin-remove-row"><button class="btn-reset" type="button" data-pin-remove="'+statsEscape(n)+'">관심 해제</button></div></div></details>';}).join('')+(!pins.length?'<p class="stats-note">자주 보는 종목을 추가하세요.</p>':'')+'</details>';
   }
-  function bindStatsExerciseSuggestions(input,exercises){
+  function bindExerciseSuggestions(input,settings){
     var field=input.closest('.stats-search-field'),popup=field.querySelector('.record-search-popup'),list=field.querySelector('[role=listbox]'),status=field.querySelector('[role=status]'),open=false,composing=false,active=-1,choices=[],viewport=window.visualViewport,previousHeight=viewport?viewport.height:innerHeight;
     function close(){open=false;active=-1;popup.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
-    function fit(){if(!open)return;if(!input.isConnected||mode!=='stats'||bodyStatsOpen){close();return;}var bottom=viewport?viewport.offsetTop+viewport.height:innerHeight,room=bottom-input.getBoundingClientRect().bottom-12;if(room<64){input.scrollIntoView({block:'start',behavior:'instant'});room=bottom-input.getBoundingClientRect().bottom-12;}if(room<48){close();return;}popup.style.maxHeight=Math.min(292,room)+'px';}
+    function fit(){if(!open)return;if(!input.isConnected||!settings.isActive()){close();return;}var bottom=viewport?viewport.offsetTop+viewport.height:innerHeight,room=bottom-input.getBoundingClientRect().bottom-12;if(room<64){input.scrollIntoView({block:'start',behavior:'instant'});room=bottom-input.getBoundingClientRect().bottom-12;}if(room<48){close();return;}popup.style.maxHeight=Math.min(292,room)+'px';}
     function refresh(){
-      if(composing||!input.isConnected||document.activeElement!==input||mode!=='stats'||bodyStatsOpen){close();return;}
+      if(composing||!input.isConnected||document.activeElement!==input||!settings.isActive()){close();return;}
       var q=input.value.trim().toLocaleLowerCase('ko-KR'),byName=new Map();
-      exercises.forEach(function(e){if(statsMuscleQuery&&e.muscle!==statsMuscleQuery)return;var key=e.name.toLocaleLowerCase('ko-KR');if(q&&!key.includes(q))return;if(!byName.has(key))byName.set(key,{name:e.name,key:key,muscles:[],date:e.latest?e.latest.date:''});var c=byName.get(key);if(!c.muscles.includes(e.muscle))c.muscles.push(e.muscle);if(e.latest&&e.latest.date>c.date)c.date=e.latest.date;});
+      var muscle=settings.muscle();
+      settings.exercises().forEach(function(e){if(muscle&&e.muscle!==muscle)return;var key=e.name.toLocaleLowerCase('ko-KR');if(q&&!key.includes(q))return;if(!byName.has(key))byName.set(key,{name:e.name,key:key,muscles:[],date:e.latest?e.latest.date:''});var c=byName.get(key);if(!c.muscles.includes(e.muscle))c.muscles.push(e.muscle);if(e.latest&&e.latest.date>c.date)c.date=e.latest.date;});
       choices=Array.from(byName.values()).sort(function(a,b){return (q?Number(b.key.startsWith(q))-Number(a.key.startsWith(q)):0)||b.date.localeCompare(a.date)||a.name.localeCompare(b.name,'ko');});list.replaceChildren();active=-1;input.removeAttribute('aria-activedescendant');
       if(!choices.length){close();return;}
-      choices.forEach(function(c,index){var option=document.createElement('div');option.className='record-search-option';option.id='stats-search-option-'+index;option.setAttribute('role','option');option.setAttribute('aria-selected','false');option.style.setProperty('--muscle-color',MUSCLE_COLOR[c.muscles[0]]||'var(--muted)');var name=document.createElement('strong'),meta=document.createElement('div');
+      choices.forEach(function(c,index){var option=document.createElement('div');option.className='record-search-option';option.id=list.id+'-option-'+index;option.setAttribute('role','option');option.setAttribute('aria-selected','false');option.style.setProperty('--muscle-color',MUSCLE_COLOR[c.muscles[0]]||'var(--muted)');var name=document.createElement('strong'),meta=document.createElement('div');
         name.textContent=c.name;
         c.muscles.forEach(function(muscle,index){
           if(index)meta.append(' · ');
@@ -3815,19 +3840,20 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
           meta.append(label);
         });
         option.append(name,meta);option.onmousedown=function(e){e.preventDefault();};option.onclick=function(){choose(index);};list.appendChild(option);});
-      status.textContent=(q?'일치하는 종목 ':'최근 기록한 종목 ')+choices.length+'개';open=true;popup.hidden=false;popup.scrollTop=0;input.setAttribute('aria-expanded','true');fit();
+      status.textContent=(q?'일치하는 종목 ':settings.idleLabel)+choices.length+'개';open=true;popup.hidden=false;popup.scrollTop=0;input.setAttribute('aria-expanded','true');fit();
     }
-    function choose(index){if(composing||!choices[index])return;input.value=choices[index].name;applyStatsExerciseSearch(input.value);input.focus({preventScroll:true});close();}
-    function apply(){if(composing)return;applyStatsExerciseSearch(input.value);refresh();}
-    input.addEventListener('focus',refresh);input.addEventListener('compositionstart',function(){composing=true;close();});input.addEventListener('compositionend',function(){composing=false;apply();});input.addEventListener('input',function(e){if(!e.isComposing)apply();});input.addEventListener('change',function(){if(!composing)applyStatsExerciseSearch(input.value);});
+    function choose(index){if(composing||!choices[index])return;input.value=choices[index].name;settings.onInput(input.value);input.focus({preventScroll:true});close();}
+    function apply(){if(composing)return;settings.onInput(input.value);refresh();}
+    input.addEventListener('focus',refresh);input.addEventListener('compositionstart',function(){composing=true;close();});input.addEventListener('compositionend',function(){composing=false;apply();});input.addEventListener('input',function(e){if(!e.isComposing)apply();});input.addEventListener('change',function(){if(!composing)settings.onInput(input.value);});
     input.addEventListener('keydown',function(e){if(composing||e.isComposing||e.keyCode===229)return;if(e.key==='Escape'){if(open){e.preventDefault();e.stopPropagation();close();}return;}if(e.key==='Tab'){close();return;}if(e.key==='Enter'){e.preventDefault();if(open&&active>=0)choose(active);else{close();input.blur();}return;}if(!['ArrowDown','ArrowUp'].includes(e.key))return;e.preventDefault();if(!open)refresh();if(!open)return;active=e.key==='ArrowDown'?(active+1)%choices.length:(active<0?choices.length-1:(active-1+choices.length)%choices.length);var options=list.querySelectorAll('[role=option]');options.forEach(function(o,i){o.setAttribute('aria-selected',String(i===active));});if(options[active]){input.setAttribute('aria-activedescendant',options[active].id);options[active].scrollIntoView({block:'nearest'});}});
     function outside(e){if(!field.contains(e.target))close();}function resize(){var height=viewport?viewport.height:innerHeight;if(height-previousHeight>100)close();else fit();previousHeight=height;}
     field.addEventListener('focusout',function(){setTimeout(function(){if(!field.contains(document.activeElement))close();},0);});document.addEventListener('pointerdown',outside,true);window.addEventListener('resize',resize);window.addEventListener('scroll',fit,{passive:true});window.addEventListener('popstate',close);if(viewport){viewport.addEventListener('resize',resize);viewport.addEventListener('scroll',fit);}
     function cleanup(){close();document.removeEventListener('pointerdown',outside,true);window.removeEventListener('resize',resize);window.removeEventListener('scroll',fit);window.removeEventListener('popstate',close);if(viewport){viewport.removeEventListener('resize',resize);viewport.removeEventListener('scroll',fit);}}cleanup.close=close;return cleanup;
   }
-  var bodyStatsOpen=viewPreferences.statsView==='body',statsSearchCleanup=null;
+  var bodyStatsOpen=viewPreferences.statsView==='body',statsSearchCleanup=null,pinSearchCleanup=null;
   function renderStats() {
     if(statsSearchCleanup){statsSearchCleanup();statsSearchCleanup=null;}
+    if(pinSearchCleanup){pinSearchCleanup();pinSearchCleanup=null;}
     var nav=document.getElementById('bodyStatsNav');
     if(!nav){nav=document.createElement('div');nav.id='bodyStatsNav';nav.className='body-stats-nav';statsViewEl.parentNode.insertBefore(nav,statsViewEl);}
     nav.setAttribute('role','tablist');nav.setAttribute('aria-label','통계 종류');
@@ -3892,7 +3918,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       var exercises=data.exercises.filter(function(g){return g.muscle===m;});if(!exercises.length)return '';
       var cards=exercises.map(function(g){
         var key='exercise:'+g.key;
-        return '<details class="stats-exercise" data-stats-key="'+statsEscape(key)+'" data-stats-exercise-name="'+statsEscape(g.name)+'"'+(opened.has(key)?' open':'')+'><summary><span class="stats-exercise-title">'+statsEscape(g.name)+'</span><span class="rec-count">기록 '+g.count+'세트</span></summary><div class="stats-exercise-body">'+
+        return '<details class="stats-exercise" data-stats-key="'+statsEscape(key)+'" data-stats-exercise-name="'+statsEscape(g.name)+'"'+(opened.has(key)?' open':'')+'><summary><span class="stats-exercise-title">'+statsEscape(g.name)+'<small>'+muscleBadgeHtml(g.muscle)+' '+g.count+'세트</small></span></summary><div class="stats-exercise-body">'+
           statsExerciseMetricsHtml(g)+'</div></details>';
       }).join('');
       return '<details class="rec-group stats-muscle-group" data-stats-key="'+statsEscape(muscleKey)+'"'+(opened.has(muscleKey)?' open':'')+'><summary><span class="rec-title" style="color:'+(MUSCLE_COLOR[m] || 'var(--muted)')+'">'+m+'</span><span class="rec-count">'+(exercises.length?exercises.length+'개 종목':'기록 없음')+'</span><span class="rec-chev"></span></summary><div class="rec-body">'+
@@ -3943,10 +3969,11 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       statsCalendarHtml(statsCalendarMonth,data.allDates,asOf,{from:data.from,to:data.to},statsRangeAnchor)+'</details></section>';
     rangeHtml=rangeHtml.replace('</h3>', '</h3><div class="stats-range-attendance"><span>기록한 날</span><strong>'+data.days+'<small>일</small></strong></div>');
     var muscleHtml='<section class="stats-card"><h3>부위별 운동량</h3><p class="stats-scope-label">직전 주·월과 비교</p>'+muscleBars+'<details class="muscle-vol-guide" data-stats-panel="musclevolguide"><summary>집계 기준</summary><p class="stats-note">괄호·회색 막대: 직전 기간 세트 수<br>볼륨: 무게 × 횟수의 합계 · 누락 세트 제외<br>같은 부위의 변화를 비교하세요. 주간은 월요일부터예요.<br>비교 기간: '+mcRange.prevFrom+' ~ '+mcRange.prevTo+'</p></details></section>';
+    var allTime=buildStats(statsSource(),catalog,'all',asOf,null);
     statsViewEl.innerHTML=scopeHtml+(statsScope==='all'?profileLogWarningsHtml():'')+
       muscleHtml+
       big3Html+
-      pinnedStatsHtml()+
+      pinnedStatsHtml(allTime)+
       rangeHtml+
       '<h3 class="stats-heading">종목별 변화</h3><p class="stats-note">선택 기간의 변화</p>'+searchHtml+groups;
     statsViewEl.querySelectorAll('[data-record-muscle]').forEach(function(button){button.onclick=function(){
@@ -4003,11 +4030,22 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       statsCalendarMonth=todayStr().slice(0,7);renderStats();var current=statsViewEl.querySelector('[data-calendar-current]');if(current)current.focus({preventScroll:true});
     });});
     document.getElementById('statsMuscleSelect').onchange=function(){if(statsSearchCleanup)statsSearchCleanup.close();statsMuscleQuery=this.value;applyStatsExerciseSearch(statsExerciseQuery);};
-    document.getElementById('pinMuscleSelect').onchange=function(){pinMuscleQuery=this.value;document.getElementById('pinExerciseInput').value='';document.getElementById('pinExerciseChoices').innerHTML=statsRecordedExerciseNames(pinMuscleQuery).map(function(n){return '<option value="'+statsEscape(n)+'"></option>';}).join('');updatePinSearchCount();};
+    document.getElementById('pinMuscleSelect').onchange=function(){pinMuscleQuery=this.value;document.getElementById('pinExerciseInput').value='';if(pinSearchCleanup)pinSearchCleanup.close();updatePinSearchCount();};
     function updatePinSearchCount(){var value=document.getElementById('pinExerciseInput').value.trim(),q=value.toLocaleLowerCase('ko-KR'),names=statsRecordedExerciseNames(pinMuscleQuery);document.getElementById('pinSearchCount').textContent=q?names.filter(function(n){return n.toLocaleLowerCase('ko-KR').includes(q);}).length+'개 종목':'';statsViewEl.querySelector('[data-pin-add]').disabled=!names.includes(value)||pinnedExercises().includes(value)||pinnedExercises().length>=5;}
-    document.getElementById('pinExerciseInput').addEventListener('input',updatePinSearchCount);updatePinSearchCount();
+    function statsSearchActive(){return mode==='stats'&&!bodyStatsOpen;}
+    var pinInput=document.getElementById('pinExerciseInput');
+    var pinExercises=allTime.exercises;
+    pinSearchCleanup=bindExerciseSuggestions(pinInput,{
+      exercises:function(){return pinExercises;},muscle:function(){return pinMuscleQuery;},
+      isActive:statsSearchActive,onInput:updatePinSearchCount,idleLabel:'최근 기록한 종목 '
+    });
+    updatePinSearchCount();
     var statsSearchInput=statsViewEl.querySelector('[data-stats-exercise-search]');
-    if(statsSearchInput){statsSearchCleanup=bindStatsExerciseSuggestions(statsSearchInput,data.exercises);applyStatsExerciseSearch(statsSearchInput.value);}
+    statsSearchCleanup=bindExerciseSuggestions(statsSearchInput,{
+      exercises:function(){return data.exercises;},muscle:function(){return statsMuscleQuery;},
+      isActive:statsSearchActive,onInput:applyStatsExerciseSearch,idleLabel:'최근 기록한 종목 '
+    });
+    applyStatsExerciseSearch(statsSearchInput.value);
     statsViewEl.querySelectorAll('[data-stats-metric]').forEach(function(button){button.addEventListener('click',function(){
       var body=button.closest('.stats-exercise-body');
       if(!body)return;
