@@ -3539,10 +3539,3 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .bulk-app .catalog-add-actions{display:flex;justify-content:flex-end;gap:8px}
 .bulk-app .catalog-add-actions button{min-height:44px;min-width:66px}
 .bulk-app .catalog-add-actions button[type=submit]{background:var(--primary);color:#fff;border-color:var(--primary)}
-/* Keep workout actions in their existing single row on narrow phones. */
-.bulk-app #dayView:not(.routine-editing) .routine-mode-bar{gap:5px}
-.bulk-app #dayView:not(.routine-editing) .routine-mode-bar>button{
-  flex:1 1 0;min-width:0;padding:4px 5px;font-size:12px;line-height:1.3;white-space:normal;
-}
-.bulk-app #dayView .routine-mode-bar [data-catalog-add]{color:var(--primary)}
-.bulk-app #dayView .routine-mode-bar [data-catalog-reset]{color:var(--muted)}
