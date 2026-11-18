@@ -3361,7 +3361,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       var n=editing?editing.name:name.value.trim();
       if(!MUSCLES.includes(m))return;
       if(!n){status.textContent='종목 이름을 입력해 주세요.';name.focus();return;}
-      var next=readCatalogEdits();
+      var next=structuredClone(catalog);
       var entry=next[m].find(function(item){return item.n===n;});
       if(editing && !entry){
         status.textContent='종목을 찾지 못했어요. 팝업을 닫고 다시 시도해 주세요.';

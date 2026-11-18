@@ -106,6 +106,8 @@ async function inspect(context,width,version){
   assert(await add.evaluate(node=>node===document.activeElement));
   assert.equal(await search.inputValue(),'검색 결과 없음 합성');
   const beforeEdit=JSON.parse(await page.evaluate(k=>localStorage.getItem(k),catalogKey));
+  // A value left in a different inline field must not be written by this dialog.
+  await page.locator('[data-catalog-muscle="등"] .cat-edit[data-field=s]').first().evaluate(field=>{field.value='17';});
   await add.click();
   await muscle.selectOption('가슴');
   await name.fill('딥스');
