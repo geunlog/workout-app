@@ -3455,16 +3455,16 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 
 /* v179: record search suggestions and compact filter polish. */
 .bulk-app #recordsView .record-filter-panel .record-exercise-search{margin-top:8px}
-.bulk-app :is(#recordsView,#statsView,#catalogView) .record-search-popup{position:absolute;z-index:45;left:0;right:0;top:calc(100% + 6px);box-sizing:border-box;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--line-strong);border-radius:14px;padding:5px;background:#fff;box-shadow:0 10px 28px #19233b1a;scroll-padding:5px}
-.bulk-app :is(#recordsView,#statsView,#catalogView) .record-search-option{display:flex;flex-direction:column;justify-content:center;gap:3px;min-height:52px;box-sizing:border-box;padding:9px 10px;margin:0 0 3px;border-radius:9px;cursor:pointer;text-align:left;touch-action:pan-y}
-.bulk-app :is(#recordsView,#statsView,#catalogView) .record-search-option:last-child{margin-bottom:0}
-.bulk-app :is(#recordsView,#statsView,#catalogView) .record-search-option strong{font-size:13px;line-height:1.5;font-weight:650;color:var(--ink);overflow-wrap:anywhere}
-.bulk-app :is(#recordsView,#statsView,#catalogView) .record-search-option span{font-size:11px;line-height:1.4;color:var(--muted)}
-.bulk-app :is(#recordsView,#statsView,#catalogView) .record-search-option span::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muscle-color,var(--muted));margin-right:5px}
-.bulk-app :is(#recordsView,#statsView,#catalogView) .record-search-option[aria-selected=true]{background:#edf2ff;outline:1px solid #c5d2f7;outline-offset:-1px}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-popup{position:absolute;z-index:45;left:0;right:0;top:calc(100% + 6px);box-sizing:border-box;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--line-strong);border-radius:14px;padding:5px;background:#fff;box-shadow:0 10px 28px #19233b1a;scroll-padding:5px}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option{display:flex;flex-direction:column;justify-content:center;gap:3px;min-height:52px;box-sizing:border-box;padding:9px 10px;margin:0 0 3px;border-radius:9px;cursor:pointer;text-align:left;touch-action:pan-y}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option:last-child{margin-bottom:0}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option strong{font-size:13px;line-height:1.5;font-weight:650;color:var(--ink);overflow-wrap:anywhere}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option span{font-size:11px;line-height:1.4;color:var(--muted)}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option span::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muscle-color,var(--muted));margin-right:5px}
+.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option[aria-selected=true]{background:#edf2ff;outline:1px solid #c5d2f7;outline-offset:-1px}
 .bulk-app #recordSuggestionStatus:not(.record-suggestion-empty){position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .bulk-app #recordSuggestionStatus.record-suggestion-empty{margin:0;padding:10px 6px;color:var(--muted);font-size:12px;line-height:1.6}
-@media(hover:hover){.bulk-app :is(#recordsView,#statsView,#catalogView) .record-search-option:hover{background:#f3f6fc}}
+@media(hover:hover){.bulk-app :is(#recordsView,#statsView,#catalogView,#catalogAddDialog) .record-search-option:hover{background:#f3f6fc}}
 
 /* v180: statistics suggestions and exercise chooser. */
 .bulk-app #statsView .stats-search-field{position:relative;min-width:0;flex:1}
@@ -3527,6 +3527,12 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
   border-radius:10px;background:var(--raised,#fff);color:var(--ink);font-size:16px;
 }
 .bulk-app .catalog-add-dialog :is(input,select,button):focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.bulk-app .catalog-dialog-search{align-items:flex-start}
+.bulk-app .catalog-dialog-search select{width:88px;flex:0 0 88px}
+.bulk-app .catalog-dialog-search .record-search-popup{
+  position:static;margin-top:5px;box-shadow:none;
+}
+.bulk-app .catalog-add-dialog .record-search-popup[hidden]{display:none}
 .bulk-app .catalog-add-specs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .bulk-app .catalog-add-status{font-size:13px;margin:0;color:#a63249}
 .bulk-app .catalog-add-status:empty{display:none}

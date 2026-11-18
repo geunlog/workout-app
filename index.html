@@ -194,15 +194,23 @@
     </div>
     <dialog id="catalogAddDialog" class="catalog-add-dialog" aria-labelledby="catalogAddTitle">
       <form>
-        <h2 id="catalogAddTitle">운동 종목 추가</h2>
-        <label>부위<select name="muscle" required></select></label>
-        <label>종목 이름<input name="name" type="text" required maxlength="200" autocomplete="off"></label>
+        <h2 id="catalogAddTitle" tabindex="-1" autofocus>운동 종목 추가</h2>
+        <div class="muscle-search catalog-dialog-search">
+          <select name="muscle" aria-label="부위" required></select>
+          <div class="stats-search-field">
+            <input name="name" type="search" placeholder="종목명 검색 또는 입력" aria-label="종목 이름" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="catalogDialogSuggestions" aria-expanded="false" required maxlength="200" autocomplete="off">
+            <div class="record-search-popup" hidden>
+              <div id="catalogDialogSuggestions" role="listbox" aria-label="편집할 기존 종목"></div>
+              <p class="sr-only" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
         <div class="catalog-add-specs">
           <label>세트<input name="sets" type="number" min="1" max="20" step="1" value="1" required></label>
           <label>반복수<input name="reps" type="text" placeholder="8~12" maxlength="100"></label>
           <label>RIR<input name="rir" type="text" placeholder="1~2" maxlength="100"></label>
         </div>
-        <p class="catalog-add-status" role="status"></p>
+        <p class="catalog-add-status" data-catalog-dialog-status role="status"></p>
         <div class="catalog-add-actions">
           <button type="button" class="btn-reset" data-catalog-cancel>취소</button>
           <button type="submit" class="btn-reset">등록</button>

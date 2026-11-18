@@ -3288,12 +3288,13 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   document.getElementById('catalogSearchMuscle').innerHTML=makeMuscleSelect().innerHTML;
   var catalogSearchInput=document.getElementById('catalogSearchName');
   var catalogSearchMuscle=document.getElementById('catalogSearchMuscle');
+  function catalogSearchExercises(){
+    return MUSCLES.flatMap(function(m){
+      return catalog[m].map(function(e){return {name:e.n,muscle:m};});
+    });
+  }
   var catalogSearch=bindExerciseSuggestions(catalogSearchInput,{
-    exercises:function(){
-      return MUSCLES.flatMap(function(m){
-        return catalog[m].map(function(e){return {name:e.n,muscle:m};});
-      });
-    },
+    exercises:catalogSearchExercises,
     muscle:function(){return catalogSearchMuscle.value;},
     isActive:function(){return mode==='catalog';},
     onInput:applyCatalogSearch,
@@ -3310,31 +3311,71 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
     var dialog=document.getElementById('catalogAddDialog');
     var form=dialog.querySelector('form');
     var muscle=form.elements.muscle,name=form.elements.name;
-    var status=dialog.querySelector('[role=status]');
+    var status=dialog.querySelector('[data-catalog-dialog-status]');
+    var title=dialog.querySelector('h2'),submit=form.querySelector('[type=submit]');
+    var selected=mode==='catalog'?catalogSearchMuscle.value:'';
+    var editing=null;
     form.reset();
+    title.textContent='운동 종목 추가';
+    submit.textContent='등록';
+    muscle.disabled=false;
+    name.readOnly=false;
     muscle.replaceChildren(new Option('부위 선택',''));
     MUSCLES.forEach(function(m){muscle.add(new Option(m,m));});
-    muscle.value=mode==='catalog'?catalogSearchMuscle.value:'';
+    muscle.value=selected;
     status.textContent='';
     catalogSearch.close();
+    var suggestions=bindExerciseSuggestions(name,{
+      exercises:catalogSearchExercises,
+      muscle:function(){return muscle.value;},
+      isActive:function(){return dialog.open&&!editing;},
+      maxHeight:148,
+      distinguishByMuscle:true,
+      idleLabel:'등록된 종목 ',
+      onChoose:function(choice){
+        var m=choice.muscles[0];
+        var entry=catalog[m].find(function(item){return item.n===choice.name;});
+        if(!entry)return;
+        editing={name:entry.n,muscle:m};
+        title.textContent='운동 종목 편집';
+        submit.textContent='저장';
+        muscle.value=m;
+        muscle.disabled=true;
+        name.value=entry.n;
+        name.readOnly=true;
+        form.elements.sets.value=entry.s;
+        form.elements.reps.value=entry.r;
+        form.elements.rir.value=entry.rir;
+        status.textContent='';
+        form.elements.sets.focus();
+      }
+    });
+    muscle.onchange=function(){suggestions.close();};
     dialog.showModal();
-    (muscle.value?name:muscle).focus();
     dialog.querySelector('[data-catalog-cancel]').onclick=function(){dialog.close();};
-    dialog.onclose=function(){if(trigger.isConnected)trigger.focus({preventScroll:true});};
+    dialog.onclose=function(){suggestions();if(trigger.isConnected)trigger.focus({preventScroll:true});};
     form.oninput=function(){status.textContent='';};
     form.onsubmit=function(event){
       event.preventDefault();
-      var m=muscle.value,n=name.value.trim();
+      var m=editing?editing.muscle:muscle.value;
+      var n=editing?editing.name:name.value.trim();
       if(!MUSCLES.includes(m))return;
       if(!n){status.textContent='종목 이름을 입력해 주세요.';name.focus();return;}
-      if(catalog[m].some(function(entry){return entry.n===n;})){
+      var next=readCatalogEdits();
+      var entry=next[m].find(function(item){return item.n===n;});
+      if(editing && !entry){
+        status.textContent='종목을 찾지 못했어요. 팝업을 닫고 다시 시도해 주세요.';
+        return;
+      }
+      if(!editing && entry){
         status.textContent='이 부위에 같은 이름의 종목이 있어요.';
         name.focus();
         return;
       }
-      var next=readCatalogEdits();
-      next[m].push({n:n,s:Number(form.elements.sets.value),r:form.elements.reps.value.trim(),
-        rir:form.elements.rir.value.trim(),addedAt:Date.now()});
+      var values={s:Number(form.elements.sets.value),r:form.elements.reps.value.trim(),
+        rir:form.elements.rir.value.trim()};
+      if(editing)Object.assign(entry,values);
+      else next[m].push(Object.assign({n:n,addedAt:Date.now()},values));
       if(!commitCatalog(next)){
         status.textContent='저장하지 못했어요. 다시 시도해 주세요.';
         return;
@@ -3344,7 +3385,7 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
       renderCatalog();
       catalogListEl.querySelector('[data-catalog-muscle="'+m+'"]').open=true;
       dialog.close();
-      showToast('운동 종목 추가 완료');
+      showToast(editing?'운동 종목 수정 완료':'운동 종목 추가 완료');
     };
   }
   function renderCatalog() {
@@ -3823,13 +3864,14 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
   }
   function bindExerciseSuggestions(input,settings){
     var field=input.closest('.stats-search-field'),popup=field.querySelector('.record-search-popup'),list=field.querySelector('[role=listbox]'),status=field.querySelector('[role=status]'),open=false,composing=false,active=-1,choices=[],viewport=window.visualViewport,previousHeight=viewport?viewport.height:innerHeight;
+    var listeners=new AbortController(),listen={signal:listeners.signal};
     function close(){open=false;active=-1;popup.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
-    function fit(){if(!open)return;if(!input.isConnected||!settings.isActive()){close();return;}var bottom=viewport?viewport.offsetTop+viewport.height:innerHeight,room=bottom-input.getBoundingClientRect().bottom-12;if(room<64){input.scrollIntoView({block:'start',behavior:'instant'});room=bottom-input.getBoundingClientRect().bottom-12;}if(room<48){close();return;}popup.style.maxHeight=Math.min(292,room)+'px';}
+    function fit(){if(!open)return;if(!input.isConnected||!settings.isActive()){close();return;}var bottom=viewport?viewport.offsetTop+viewport.height:innerHeight,room=bottom-input.getBoundingClientRect().bottom-12;if(room<64){input.scrollIntoView({block:'start',behavior:'instant'});room=bottom-input.getBoundingClientRect().bottom-12;}if(room<48){close();return;}popup.style.maxHeight=Math.min(settings.maxHeight||292,room)+'px';}
     function refresh(){
       if(composing||!input.isConnected||document.activeElement!==input||!settings.isActive()){close();return;}
       var q=input.value.trim().toLocaleLowerCase('ko-KR'),byName=new Map();
       var muscle=settings.muscle();
-      settings.exercises().forEach(function(e){if(muscle&&e.muscle!==muscle)return;var key=e.name.toLocaleLowerCase('ko-KR');if(q&&!key.includes(q))return;if(!byName.has(key))byName.set(key,{name:e.name,key:key,muscles:[],date:e.latest?e.latest.date:''});var c=byName.get(key);if(!c.muscles.includes(e.muscle))c.muscles.push(e.muscle);if(e.latest&&e.latest.date>c.date)c.date=e.latest.date;});
+      settings.exercises().forEach(function(e){if(muscle&&e.muscle!==muscle)return;var key=e.name.toLocaleLowerCase('ko-KR');if(q&&!key.includes(q))return;var group=settings.distinguishByMuscle?e.muscle+'\0'+key:key;if(!byName.has(group))byName.set(group,{name:e.name,key:key,muscles:[],date:e.latest?e.latest.date:''});var c=byName.get(group);if(!c.muscles.includes(e.muscle))c.muscles.push(e.muscle);if(e.latest&&e.latest.date>c.date)c.date=e.latest.date;});
       choices=Array.from(byName.values()).sort(function(a,b){return (q?Number(b.key.startsWith(q))-Number(a.key.startsWith(q)):0)||b.date.localeCompare(a.date)||a.name.localeCompare(b.name,'ko');});list.replaceChildren();active=-1;input.removeAttribute('aria-activedescendant');
       if(!choices.length){close();return;}
       choices.forEach(function(c,index){var option=document.createElement('div');option.className='record-search-option';option.id=list.id+'-option-'+index;option.setAttribute('role','option');option.setAttribute('aria-selected','false');option.style.setProperty('--muscle-color',MUSCLE_COLOR[c.muscles[0]]||'var(--muted)');var name=document.createElement('strong'),meta=document.createElement('div');
@@ -3844,13 +3886,13 @@ return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,hi
         option.append(name,meta);option.onmousedown=function(e){e.preventDefault();};option.onclick=function(){choose(index);};list.appendChild(option);});
       status.textContent=(q?'일치하는 종목 ':settings.idleLabel)+choices.length+'개';open=true;popup.hidden=false;popup.scrollTop=0;input.setAttribute('aria-expanded','true');fit();
     }
-    function choose(index){if(composing||!choices[index])return;input.value=choices[index].name;settings.onInput(input.value);input.focus({preventScroll:true});close();}
-    function apply(){if(composing)return;settings.onInput(input.value);refresh();}
-    input.addEventListener('focus',refresh);input.addEventListener('compositionstart',function(){composing=true;close();});input.addEventListener('compositionend',function(){composing=false;apply();});input.addEventListener('input',function(e){if(!e.isComposing)apply();});input.addEventListener('change',function(){if(!composing)settings.onInput(input.value);});
-    input.addEventListener('keydown',function(e){if(composing||e.isComposing||e.keyCode===229)return;if(e.key==='Escape'){if(open){e.preventDefault();e.stopPropagation();close();}return;}if(e.key==='Tab'){close();return;}if(e.key==='Enter'){e.preventDefault();if(open&&active>=0)choose(active);else{close();input.blur();}return;}if(!['ArrowDown','ArrowUp'].includes(e.key))return;e.preventDefault();if(!open)refresh();if(!open)return;active=e.key==='ArrowDown'?(active+1)%choices.length:(active<0?choices.length-1:(active-1+choices.length)%choices.length);var options=list.querySelectorAll('[role=option]');options.forEach(function(o,i){o.setAttribute('aria-selected',String(i===active));});if(options[active]){input.setAttribute('aria-activedescendant',options[active].id);options[active].scrollIntoView({block:'nearest'});}});
+    function choose(index){if(composing||!choices[index])return;if(settings.onChoose){var choice=choices[index];close();settings.onChoose(choice);return;}input.value=choices[index].name;settings.onInput(input.value);input.focus({preventScroll:true});close();}
+    function apply(){if(composing)return;if(settings.onInput)settings.onInput(input.value);refresh();}
+    input.addEventListener('focus',refresh,listen);input.addEventListener('compositionstart',function(){composing=true;close();},listen);input.addEventListener('compositionend',function(){composing=false;apply();},listen);input.addEventListener('input',function(e){if(!e.isComposing)apply();},listen);input.addEventListener('change',function(){if(!composing&&settings.onInput)settings.onInput(input.value);},listen);
+    input.addEventListener('keydown',function(e){if(composing||e.isComposing||e.keyCode===229)return;if(e.key==='Escape'){if(open){e.preventDefault();e.stopPropagation();close();}return;}if(e.key==='Tab'){close();return;}if(e.key==='Enter'){e.preventDefault();if(open&&active>=0)choose(active);else{close();input.blur();}return;}if(!['ArrowDown','ArrowUp'].includes(e.key))return;e.preventDefault();if(!open)refresh();if(!open)return;active=e.key==='ArrowDown'?(active+1)%choices.length:(active<0?choices.length-1:(active-1+choices.length)%choices.length);var options=list.querySelectorAll('[role=option]');options.forEach(function(o,i){o.setAttribute('aria-selected',String(i===active));});if(options[active]){input.setAttribute('aria-activedescendant',options[active].id);options[active].scrollIntoView({block:'nearest'});}},listen);
     function outside(e){if(!field.contains(e.target))close();}function resize(){var height=viewport?viewport.height:innerHeight;if(height-previousHeight>100)close();else fit();previousHeight=height;}
-    field.addEventListener('focusout',function(){setTimeout(function(){if(!field.contains(document.activeElement))close();},0);});document.addEventListener('pointerdown',outside,true);window.addEventListener('resize',resize);window.addEventListener('scroll',fit,{passive:true});window.addEventListener('popstate',close);if(viewport){viewport.addEventListener('resize',resize);viewport.addEventListener('scroll',fit);}
-    function cleanup(){close();document.removeEventListener('pointerdown',outside,true);window.removeEventListener('resize',resize);window.removeEventListener('scroll',fit);window.removeEventListener('popstate',close);if(viewport){viewport.removeEventListener('resize',resize);viewport.removeEventListener('scroll',fit);}}cleanup.close=close;return cleanup;
+    field.addEventListener('focusout',function(){setTimeout(function(){if(!listeners.signal.aborted&&!field.contains(document.activeElement))close();},0);},listen);document.addEventListener('pointerdown',outside,true);window.addEventListener('resize',resize);window.addEventListener('scroll',fit,{passive:true});window.addEventListener('popstate',close);if(viewport){viewport.addEventListener('resize',resize);viewport.addEventListener('scroll',fit);}
+    function cleanup(){listeners.abort();close();document.removeEventListener('pointerdown',outside,true);window.removeEventListener('resize',resize);window.removeEventListener('scroll',fit);window.removeEventListener('popstate',close);if(viewport){viewport.removeEventListener('resize',resize);viewport.removeEventListener('scroll',fit);}}cleanup.close=close;return cleanup;
   }
   var bodyStatsOpen=viewPreferences.statsView==='body',statsSearchCleanup=null,pinSearchCleanup=null;
   function renderStats() {
