@@ -34,12 +34,14 @@ if(arm==='B'&&state==='recorded'){assert(await p.locator('.record-compare-hint')
    if(arm==='B'){
     const a=results.samples.find(s=>s.width===width&&s.state===state&&s.arm==='A');
     assert(sample.geometry.edit.firstY<a.geometry.edit.firstY,'first edit card moves upward');
-    const controls=await p.locator('#btnAiMenu,.routine-advanced-options>summary').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return {w:r.width,h:r.height,y:r.y}}));
-    assert(controls.every(r=>r.w>=44&&r.h>=44));assert(Math.abs(controls[0].y-controls[1].y)<2);
-    await p.locator('.routine-advanced-options>summary').click();assert(await p.locator('#btnClearDay').isVisible());assert(await p.locator('#btnReset').isVisible());await measure('advanced');await p.locator('.routine-advanced-options>summary').click();
+    const toolbar=p.locator('#dayView .exercise-edit-tools button');
+    assert.equal(await toolbar.count(),1);
+    assert.match(await toolbar.innerText(),/^루틴 관리/);
+    assert((await toolbar.boundingBox()).height>=44);
+    assert.equal(await p.locator('#dayView #btnClearDay,#dayView #btnReset').count(),0);
    }
 assert(sample.geometry.edit.cards.every(c=>c.height<=184),'preserve three-row edit cards');
-   await p.locator('#btnAiMenu').click();await measure('ai');assert.equal(await p.locator('#aiQuickMenu .ai-day-actions button').count(),4);const touch=await p.locator('#aiQuickMenu button').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return[r.width,r.height]}));assert(touch.every(([w,h])=>w>=44&&h>=44));await p.locator('[data-ai-menu-close]').click();await p.locator('#btnRoutineEdit').click();
+   await p.locator('#btnAiMenu').click();await measure('ai');assert.equal(await p.locator('#aiQuickMenu .ai-day-actions button:visible').count(),4);const touch=await p.locator('#aiQuickMenu button:visible').evaluateAll(es=>es.map(e=>{const r=e.getBoundingClientRect();return[r.width,r.height]}));assert(touch.every(([w,h])=>w>=44&&h>=44));await p.locator('[data-ai-menu-close]').click();await p.locator('#btnRoutineEdit').click();
    const protectedBefore=splitStorage(await raw()).protected;
    await p.locator('#btnDirectRecord').click();const modal=p.locator('.direct-record-modal'),search=modal.locator('input[type=search]'),muscle=modal.locator('select');
    await measure('direct');await muscle.selectOption('');await search.fill('프레스');
