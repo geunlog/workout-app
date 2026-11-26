@@ -127,6 +127,25 @@ function merge(incoming){
 function value(r,k){if(r[k]!=null)return r[k];if(k==='fatMass'&&r.weight!=null&&r.fatPercent!=null)return r.weight*r.fatPercent/100;return null;}
 function fmt(v,k){if(v==null)return '미측정';return k==='waist'?v.toFixed(1)+' cm · '+(v/2.54).toFixed(2)+' inch':v.toFixed(1)+' '+fields[k][1];}
 function delta(v,k){return (v>0?'+':'')+v.toFixed(1)+(k==='fatPercent'?' %p':' '+fields[k][1])+(k==='waist'?' / '+(v>0?'+':'')+(v/2.54).toFixed(2)+' inch':'');}
+async function importBodyFile(root,imported){
+ const backup=validateBackup(imported),before=read();
+ const last=new Map(before.overlay.changes.map(c=>[c.id,c]));
+ const deleted=backup.records.filter(r=>last.get(r.id)?.value===null);
+ if(!await confirmBodyDelete('백업을 현재 기록에 합칠까요?\n같은 기록은 최근 수정본을 유지해요.',{title:'체형 기록 불러오기',accept:'불러오기',danger:false}))return;
+ const restore=[];
+ for(const r of deleted){
+  const details=r.at.replace('T',' ')+' · '+Object.keys(fields).filter(k=>r[k]!=null).map(k=>fmt(r[k],k)).join(' · ');
+  if(await confirmBodyDelete(details+'\n삭제한 측정을 백업 값으로 복구할까요?',{title:'삭제한 측정 복구',accept:'이 측정 복구',cancel:'삭제 유지',danger:false}))restore.push(r);
+ }
+ await navigator.locks.request(OVERLAY,()=>{
+  const current=read();
+  if(before.overlay.revision!==current.overlay.revision||!same(before.legacySnapshot,current.legacySnapshot))throw Error('다른 화면에서 변경했어요. 백업을 다시 열어주세요.');
+  const overlay=merge(imported);
+  for(const r of restore)overlay.changes.push({id:r.id,base:current.legacySnapshot.records.find(x=>x.id===r.id)||null,value:r,updatedAt:new Date().toISOString()});
+  localStorage.setItem(OVERLAY,JSON.stringify(validateOverlay(overlay)));
+ });
+ mount(root,'체형 기록을 가져왔어요.');
+}
 function download(){const blob=new Blob([JSON.stringify({format:'geunlog-body',...read()},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='체형기록_'+localNow().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function sameMeasurement(a,b){return a.at===b.at&&a.device===b.device&&a.note===b.note&&Object.keys(fields).every(k=>a[k]==null?b[k]==null:b[k]!=null&&Math.abs(a[k]-b[k])<0.0001);}
 // Local calendar dates stay as YYYY-MM-DD; no UTC conversion of user input.
@@ -361,7 +380,7 @@ function mount(root,notice=''){
    const chosen=range?(day===rangeStart||day===rangeEnd):day===selectedDay,between=range&&rangeStart&&rangeEnd&&day>rangeStart&&day<rangeEnd;
    const m=data.previousDayMeals[day],shade=m?.kcalAbs==null?0:m.kcalAbs<200?1:m.kcalAbs<500?2:3;
    return '<button data-has-note="'+rows.some(r=>r.note.trim())+'" data-meal="'+(m?.status||'')+'" data-shade="'+shade+'" type="button" data-calendar-day="'+day+'" aria-pressed="'+chosen+'"'+(between?' data-in-range':'')+' aria-label="'+day+' 전날 식사 '+mealText(m)+' 체중 '+(weight==null?'미측정':weight.toFixed(1)+' kg')+' 허리 '+(waist==null?'미측정':waist.toFixed(1)+' cm')+'"><b>'+String(i+1)+'</b><span class="body-month-panel-weight">'+(weight==null?(rows.length?'—':'&nbsp;'):weight.toFixed(1))+'</span><span class="body-month-panel-waist">'+(waist==null?(rows.length?'—':'&nbsp;'):waist.toFixed(1))+'</span></button>';
-  }).join('')+'</div>'+(range?'<div class="body-month-panel-range"><p aria-live="polite">'+(rangeStart?rangeStart+' → '+(rangeEnd||'종료일 선택'):'시작일과 종료일을 차례로 선택하세요.')+'</p><button type="button" data-range-apply '+(!rangeStart||!rangeEnd?'disabled':'')+'>그래프에 적용</button><button type="button" data-range-cancel>취소</button></div>':'<p class="body-meal-legend">칸 색은 표시 날짜의 전날 식사예요. 빨강은 적게, 파랑은 많이 먹은 날이며 진할수록 차이가 커요.</p>');
+  }).join('')+'</div>'+(range?'<div class="body-month-panel-range"><p aria-live="polite">'+(rangeStart?rangeStart+' → '+(rangeEnd||'종료일 선택'):'시작일과 종료일을 차례로 선택하세요.')+'</p><button type="button" data-range-apply '+(!rangeStart||!rangeEnd?'disabled':'')+'>그래프에 적용</button><button type="button" data-range-cancel>취소</button></div>':'<p class="body-meal-legend">칸 색은 표시 날짜의 전날 식사예요. 빨강은 목표 초과(+), 파랑은 미달(−)이며 진할수록 차이가 커요.</p>');
   for(const [name,offset] of [['prev',-1],['next',1]])host.querySelector('[data-month-'+name+']').onclick=()=>{const d=new Date(year,month-1+offset,1);calendarMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');paintCalendar('[data-month-'+name+']');};
   host.querySelectorAll('[data-calendar-mode]').forEach(b=>b.onclick=()=>{calendarMode=b.dataset.calendarMode;if(calendarMode==='range'){rangeStart='';rangeEnd='';}paintCalendar('[data-calendar-mode="'+calendarMode+'"]');});
   host.querySelectorAll('[data-calendar-day]').forEach(b=>b.onclick=()=>{
@@ -424,7 +443,7 @@ detail.querySelectorAll('[data-graph-edit]').forEach(button=>button.onclick=()=>
  for(const [name,set] of [['device',v=>{device=v;historySelected.clear();historyLimit=10;}],['compare',v=>comparison=v],['metric',v=>{if(saveGraphMetrics([v])){metric=v;graphMetrics=[v];}else bodyNotice('그래프 설정을 저장하지 못했어요. 다시 시도해주세요.');}],['period',v=>{period=v;calendarMode=v==='custom'?'range':'day';rangeStart=from;rangeEnd=to;}],['from',v=>from=v],['to',v=>to=v]]){const e=root.querySelector('[data-'+name+']');if(e)e.onchange=()=>{set(e.value);mount(root);};}
  root.querySelector('[data-export]').onclick=()=>{try{download();}catch(e){bodyNotice(e.message);}};
  root.querySelector('[data-import-open]').onclick=()=>root.querySelector('[data-import]').click();
- root.querySelector('[data-import]').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10000000)throw Error('10MB 이하 파일을 선택해주세요.');const imported=JSON.parse(await file.text());if(imported.format!=='geunlog-body')throw Error('체형 기록 백업 파일을 선택해주세요.');validateBackup(imported);if(!await confirmBodyDelete('백업을 현재 기록에 합칠까요?\n같은 기록은 최근 수정본을 유지해요.',{title:'체형 기록 불러오기',accept:'불러오기',danger:false}))return;await navigator.locks.request(OVERLAY,()=>localStorage.setItem(OVERLAY,JSON.stringify(merge(imported))));mount(root,'체형 기록을 가져왔어요.');}catch(err){bodyNotice(err.message);}};
+ root.querySelector('[data-import]').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10000000)throw Error('10MB 이하 파일을 선택해주세요.');const imported=JSON.parse(await file.text());if(imported.format!=='geunlog-body')throw Error('체형 기록 백업 파일을 선택해주세요.');await importBodyFile(root,imported);}catch(err){bodyNotice(err.message);}};
 }
 return {key:OVERLAY,read,validate:validateBackup,merge,mount,fmt,value,sameMeasurement,monthDays,historyMatches,validTime};
 })();

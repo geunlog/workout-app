@@ -3589,13 +3589,13 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .ai-routine-hub .routine-management-section + .routine-management-section{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .bulk-app .ai-routine-hub #btnClearDay strong{color:var(--drop)}
 
-.body-month-panel-grid [data-calendar-day][data-meal=over]{background:#e5efff}
-.body-month-panel-grid [data-calendar-day][data-meal=over][data-shade="2"]{background:#adceff}
-.body-month-panel-grid [data-calendar-day][data-meal=over][data-shade="3"]{background:#88b5f9}
-.body-month-panel-grid [data-calendar-day][data-meal=under]{background:#ffe9ea}
-.body-month-panel-grid [data-calendar-day][data-meal=under][data-shade="2"]{background:#ffc7cc}
-.body-month-panel-grid [data-calendar-day][data-meal=under][data-shade="3"]{background:#f69da5}
-.body-month-panel-grid [data-calendar-day]:is([data-meal=under],[data-meal=over])[data-shade="0"]{border-style:dashed}
+.body-month-panel-grid [data-calendar-day][data-meal=under]{background:#e5efff}
+.body-month-panel-grid [data-calendar-day][data-meal=under][data-shade="2"]{background:#adceff}
+.body-month-panel-grid [data-calendar-day][data-meal=under][data-shade="3"]{background:#88b5f9}
+.body-month-panel-grid [data-calendar-day][data-meal=over]{background:#ffe9ea}
+.body-month-panel-grid [data-calendar-day][data-meal=over][data-shade="2"]{background:#ffc7cc}
+.body-month-panel-grid [data-calendar-day][data-meal=over][data-shade="3"]{background:#f69da5}
+.body-month-panel-grid [data-calendar-day]:is([data-meal=over],[data-meal=under])[data-shade="0"]{border-style:dashed}
 .body-month-panel-grid [data-calendar-day][data-meal=within]{background:#e2eee6}
 .body-month-panel-grid [data-calendar-day][data-meal=unknown]{background:#e9e9ef}
 .body-month-panel-grid [data-calendar-day][aria-pressed=true]{outline:2px solid #243d85;outline-offset:-2px}

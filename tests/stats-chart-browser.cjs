@@ -93,27 +93,28 @@ const server = http.createServer((req,res) => {
      assert.equal(await snapshot(),before,'edit cancel preserves source');
      await page.locator('[data-graph-edit]').last().click();
      await page.locator('.body-dialog [name=weight]').fill('83.8');
-     await page.evaluate(()=>{window.savedSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='geunlog-body-v1')throw Error('synthetic quota');return window.savedSetItem.call(this,key,value);};});
+     await page.evaluate(()=>{window.savedSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key===BodyTracker.key)throw Error('synthetic quota');return window.savedSetItem.call(this,key,value);};});
      await page.locator('.body-dialog button[type=submit]').click();
-     assert((await page.locator('.body-dialog [data-error]').innerText()).includes('quota'));
+     await page.waitForFunction(()=>document.querySelector('.body-dialog [data-error]')?.textContent.includes('quota'));
      assert.equal(await snapshot(),before,'failed save preserves source');
      await page.evaluate(()=>Storage.prototype.setItem=window.savedSetItem);
      await page.locator('.body-dialog button[type=submit]').click();
      await page.locator('.body-dialog').waitFor({state:'detached'});
-     const edited=await snapshot();assert.equal(JSON.parse(edited).records.find(r=>r.id==='synthetic-37').weight,83.8);
+     assert.equal(await snapshot(),before,'legacy bytes preserved');const edited=await page.evaluate(()=>JSON.stringify(BodyTracker.read()));assert.equal(JSON.parse(edited).records.find(r=>r.id==='synthetic-37').weight,83.8);
      await enlarge();
      await page.locator('[data-graph-delete]').last().click();
      await page.locator('.body-confirm [data-cancel]').click();
-     assert.equal(await snapshot(),edited,'delete cancel preserves source');
+     assert.equal(await page.evaluate(()=>JSON.stringify(BodyTracker.read())),edited,'delete cancel preserves source');
      await page.locator('[data-graph-delete]').last().click();
      await page.locator('.body-confirm [data-confirm]').click();
-     await page.waitForFunction(()=>JSON.parse(localStorage.getItem('geunlog-body-v1')).records.length===37);
+     await page.waitForFunction(()=>BodyTracker.read().records.length===37);
      await page.locator('[data-import]').setInputFiles({name:'synthetic.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({format:'geunlog-body',...JSON.parse(edited)}))});
      await page.locator('.body-confirm [data-confirm]').click();
-     await page.waitForFunction(()=>JSON.parse(localStorage.getItem('geunlog-body-v1')).records.length===38);
-     const restored=JSON.parse(await snapshot());assert.deepEqual(restored,JSON.parse(edited));
+     await page.getByRole('button',{name:'이 측정 복구'}).click();
+     await page.waitForFunction(()=>BodyTracker.read().records.length===38);
+     const restored=await page.evaluate(()=>BodyTracker.read());assert.deepEqual(restored.records,JSON.parse(edited).records);assert.equal(await snapshot(),before);
      // Return the fixture to its initial bytes only after the end-to-end assertions.
-     await page.evaluate(raw=>{localStorage.setItem('geunlog-body-v1',raw);BodyTracker.mount(document.querySelector('main'));},before);
+     await page.evaluate(raw=>{localStorage.removeItem(BodyTracker.key);localStorage.setItem('geunlog-body-v1',raw);BodyTracker.mount(document.querySelector('main'));},before);
      console.log('PASS expanded edit/cancel/quota/delete/cancel/restore '+width);
     }
     for(const metric of ['weight','muscle','fatPercent','fatMass','waist']) {
