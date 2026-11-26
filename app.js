@@ -46,6 +46,7 @@ function overlayRead(){
 }
 function validateOverlay(d){
  if(d.version!==1||!Number.isSafeInteger(d.revision)||!Array.isArray(d.changes)||!d.previousDayMeals||Array.isArray(d.previousDayMeals)||typeof d.previousDayMeals!=='object')throw Error('체형 변경 기록을 확인해주세요.');
+ if(d.snapshots!==undefined){if(!Array.isArray(d.snapshots))throw Error('원본 스냅샷 형식을 확인해주세요.');d.snapshots.forEach(validate);}
  for(const entry of d.changes){
   if(!entry||!/^[-a-zA-Z0-9_]+$/.test(entry.id)||!Number.isFinite(Date.parse(entry.updatedAt)))throw Error('측정 변경 이력이 올바르지 않아요.');
   for(const record of [entry.base,entry.value])if(record!==null){
@@ -63,7 +64,7 @@ function read(){
   if(change.value===null)records.delete(change.id);else records.set(change.id,change.value);
  }
  const baseline=overlay.baseline===undefined?legacy.baseline:overlay.baseline;
- const data={version:2,records:[...records.values()],baseline:records.has(baseline)?baseline:null,previousDayMeals:structuredClone(overlay.previousDayMeals),overlay};
+ const data={version:2,legacySnapshot:structuredClone(legacy),records:[...records.values()],baseline:records.has(baseline)?baseline:null,previousDayMeals:structuredClone(overlay.previousDayMeals),overlay};
  views.set(data,{legacy,overlay:structuredClone(overlay),records:new Map(records),baseline:data.baseline});
  return data;
 }
@@ -91,7 +92,8 @@ function validateBackup(input){
  if(input?.version!==2)return validate(input);
  const records=validate({...input,version:1}),overlay=validateOverlay(input.overlay);
  if(!same(input.previousDayMeals,overlay.previousDayMeals))throw Error('식사 백업 내용이 일치하지 않아요.');
- return {...records,version:2,overlay,previousDayMeals:overlay.previousDayMeals};
+ const legacySnapshot=validate(input.legacySnapshot);
+ return {...records,version:2,overlay,legacySnapshot,previousDayMeals:overlay.previousDayMeals};
 }
 function merge(incoming){
  const backup=validateBackup(incoming),current=read(),legacy=views.get(current).legacy;
@@ -99,6 +101,12 @@ function merge(incoming){
  const history=new Set(overlay.changes.map(c=>JSON.stringify(c)));
  const append=c=>{const key=JSON.stringify(c);if(!history.has(key)){overlay.changes.push(c);history.add(key);}};
  const imported=backup.overlay?.changes||[],touched=new Set(imported.map(c=>c.id));
+ const snapshots=[...(backup.overlay?.snapshots||[]),...(backup.legacySnapshot?[backup.legacySnapshot]:[])];
+ overlay.snapshots=overlay.snapshots||[];
+ for(const snapshot of snapshots){
+  const checked=validate(snapshot);
+  if(!overlay.snapshots.some(item=>same(item,checked)))overlay.snapshots.push(checked);
+ }
  const originals=new Map(legacy.records.map(r=>[r.id,r]));
  for(const r of backup.records){
   const original=originals.get(r.id);if(original&&Date.parse(original.updatedAt)>Date.parse(r.updatedAt))continue;
