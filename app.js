@@ -408,7 +408,51 @@ return {key:OVERLAY,read,validate:validateBackup,merge,mount,fmt,value,sameMeasu
 
 // ==== 원본 script 블록 1/2 (메인 앱 로직) ====
 
-(function () {
+(async function () {
+  const restoreJournalKey='geunlog-body-restore-journal-v1';
+  function recoverBodyRestore(){
+    const raw=localStorage.getItem(restoreJournalKey);
+    if(raw===null)return;
+    const journal=JSON.parse(raw);
+    if(journal.version!==1||!Array.isArray(journal.entries))throw Error('복원 기록을 확인해주세요.');
+    for(const entry of journal.entries){
+      if(!entry||typeof entry.key!=='string'||!(/^(?:bulk-|geunlog-)/.test(entry.key))||
+         entry.key===restoreJournalKey||entry.key==='geunlog-body-v1'||
+         ![entry.before,entry.after].every(value=>value===null||typeof value==='string'))throw Error('복원 기록을 확인해주세요.');
+      const value=localStorage.getItem(entry.key);
+      if(value!==entry.before&&value!==entry.after)throw Error('복원 중 다른 화면에서 변경한 기록이 있어요. 원본을 보존했어요.');
+    }
+    for(const entry of journal.entries.slice().reverse()){
+      if(localStorage.getItem(entry.key)===entry.before)continue;
+      if(entry.before===null)localStorage.removeItem(entry.key);
+      else localStorage.setItem(entry.key,entry.before);
+    }
+    localStorage.removeItem(restoreJournalKey);
+  }
+  function storeFullRestore(operations){
+    recoverBodyRestore();
+    const entries=new Map();
+    for(const op of operations){
+      const before=entries.has(op.key)?entries.get(op.key).before:localStorage.getItem(op.key);
+      entries.set(op.key,{key:op.key,before,after:op.remove?null:JSON.stringify(op.value)});
+    }
+    localStorage.setItem(restoreJournalKey,JSON.stringify({version:1,entries:[...entries.values()]}));
+    try{
+      for(const entry of entries.values()){
+        if(localStorage.getItem(entry.key)!==entry.before)throw Error('다른 화면에서 기록이 변경됐어요.');
+        if(entry.after===null)localStorage.removeItem(entry.key);else localStorage.setItem(entry.key,entry.after);
+      }
+      localStorage.removeItem(restoreJournalKey);
+    }catch(error){recoverBodyRestore();throw error;}
+    scheduleWeeklySummary();
+    return true;
+  }
+  try{
+    if(localStorage.getItem(restoreJournalKey)!==null)await navigator.locks.request(BodyTracker.key,recoverBodyRestore);
+  }catch(error){
+    document.body.textContent='복원 상태를 확인할 수 없어 저장을 중지했어요. '+error.message;
+    return;
+  }
   var MUSCLES = ['가슴', '등', '어깨', '하체', '삼두', '이두', '복근'];
   // 4번: 3대 운동. 운동관리 배지와 통계 섹션이 이 한 곳만 참조한다.
   var BIG3 = [
@@ -6782,7 +6826,7 @@ function estimateSession(day) {
     var shared=readJSON(CATALOG_KEY,catalog);data.profiles.forEach(function(p){shared=mergeSharedCatalog(shared,p.catalog);});
     operations.push({key:CATALOG_KEY,value:shared});
     operations.push({key:PROFILES_KEY,value:next});
-    if(!storageTransaction(operations))throw new Error('가져오기를 저장하지 못했어요. 저장 공간을 확인해주세요.');
+    if(!storeFullRestore(operations))throw new Error('가져오기를 저장하지 못했어요. 저장 공간을 확인해주세요.');
     catalog=shared;profiles=next;return added;
   }
   function importTransfer(data) {
