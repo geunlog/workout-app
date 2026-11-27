@@ -24,12 +24,128 @@ function validate(data){
  });
  return {version:1,records,baseline:ids.has(data.baseline)?data.baseline:null};
 }
-function read(){const raw=localStorage.getItem(KEY);return raw?validate(JSON.parse(raw)):{version:1,records:[],baseline:null};}
-function write(d){localStorage.setItem(KEY,JSON.stringify(validate(d)));}
-function merge(incoming){const next=validate(incoming),current=read(),map=new Map(current.records.map(r=>[r.id,r]));for(const r of next.records){const old=map.get(r.id);if(!old||Date.parse(r.updatedAt)>Date.parse(old.updatedAt))map.set(r.id,r);}return validate({version:1,records:[...map.values()],baseline:current.baseline||next.baseline});}
+const OVERLAY='geunlog-body-overlay-v1';
+const views=new WeakMap();
+const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+function legacyRead(){
+ const raw=localStorage.getItem(KEY);
+ return raw===null?{version:1,records:[],baseline:null}:validate(JSON.parse(raw));
+}
+function validMeal(day,meal){
+ const date=new Date(day+'T00:00:00Z');
+ if(!/^\d{4}-\d\d-\d\d$/.test(day)||!Number.isFinite(+date)||date.toISOString().slice(0,10)!==day||
+ !meal||!['under','over','within','unknown','cleared'].includes(meal.status)||
+ !Number.isFinite(Date.parse(meal.updatedAt))||
+ !(meal.kcalAbs===null||(['over','under'].includes(meal.status)&&Number.isSafeInteger(meal.kcalAbs)&&meal.kcalAbs>0)))
+ throw Error('전날 식사 기록을 확인해주세요.');
+}
+function overlayRead(){
+ const raw=localStorage.getItem(OVERLAY);
+ if(raw===null)return {version:1,revision:0,changes:[],previousDayMeals:{},baseline:undefined};
+ return validateOverlay(JSON.parse(raw));
+}
+function validateOverlay(d){
+ if(d.version!==1||!Number.isSafeInteger(d.revision)||!Array.isArray(d.changes)||!d.previousDayMeals||Array.isArray(d.previousDayMeals)||typeof d.previousDayMeals!=='object')throw Error('체형 변경 기록을 확인해주세요.');
+ if(d.snapshots!==undefined){if(!Array.isArray(d.snapshots))throw Error('원본 스냅샷 형식을 확인해주세요.');d.snapshots.forEach(validate);}
+ for(const entry of d.changes){
+  if(!entry||!/^[-a-zA-Z0-9_]+$/.test(entry.id)||!Number.isFinite(Date.parse(entry.updatedAt)))throw Error('측정 변경 이력이 올바르지 않아요.');
+  for(const record of [entry.base,entry.value])if(record!==null){
+   if(record.id!==entry.id)throw Error('측정 ID가 일치하지 않아요.');
+   validate({version:1,records:[record]});
+  }
+ }
+ Object.entries(d.previousDayMeals).forEach(([day,m])=>validMeal(day,m));
+ return d;
+}
+function read(){
+ const legacy=legacyRead(),overlay=overlayRead();
+ const records=new Map(legacy.records.map(r=>[r.id,r]));
+ for(const change of overlay.changes){
+  if(change.value===null)records.delete(change.id);else records.set(change.id,change.value);
+ }
+ const baseline=overlay.baseline===undefined?legacy.baseline:overlay.baseline;
+ const data={version:2,legacySnapshot:structuredClone(legacy),records:[...records.values()],baseline:records.has(baseline)?baseline:null,previousDayMeals:structuredClone(overlay.previousDayMeals),overlay};
+ views.set(data,{legacy,overlay:structuredClone(overlay),records:new Map(records),baseline:data.baseline});
+ return data;
+}
+async function write(data){
+ const before=views.get(data);
+ if(!before)throw Error('체형 기록을 다시 열어주세요.');
+ const clean=validate({version:1,records:data.records,baseline:data.baseline});
+ await navigator.locks.request(OVERLAY,async()=>{
+  const latest=read(),now=views.get(latest),overlay=now.overlay;
+  if(before.overlay.revision!==overlay.revision||!same(now.legacy,before.legacy))throw Error('다른 화면에서 변경했어요. 다시 열어주세요.');
+  const next=new Map(clean.records.map(r=>[r.id,r]));
+  const origin=new Map(now.legacy.records.map(r=>[r.id,r]));
+  for(const id of new Set([...before.records.keys(),...next.keys()])){
+   const old=before.records.get(id),value=next.get(id);
+   if(!same(old,value))overlay.changes.push({id,base:origin.get(id)||null,value:value||null,updatedAt:new Date().toISOString()});
+  }
+  for(const [day,m] of Object.entries(data.previousDayMeals))validMeal(day,m);
+  overlay.previousDayMeals=data.previousDayMeals;
+  if(before.baseline!==clean.baseline)overlay.baseline=clean.baseline;
+  overlay.revision++;
+  localStorage.setItem(OVERLAY,JSON.stringify(overlay));
+ });
+}
+function validateBackup(input){
+ if(input?.version!==2)return validate(input);
+ const records=validate({...input,version:1}),overlay=validateOverlay(input.overlay);
+ if(!same(input.previousDayMeals,overlay.previousDayMeals))throw Error('식사 백업 내용이 일치하지 않아요.');
+ const legacySnapshot=validate(input.legacySnapshot);
+ return {...records,version:2,overlay,legacySnapshot,previousDayMeals:overlay.previousDayMeals};
+}
+function merge(incoming){
+ const backup=validateBackup(incoming),current=read(),legacy=views.get(current).legacy;
+ const overlay=structuredClone(current.overlay);
+ const history=new Set(overlay.changes.map(c=>JSON.stringify(c)));
+ const append=c=>{const key=JSON.stringify(c);if(!history.has(key)){overlay.changes.push(c);history.add(key);}};
+ const imported=backup.overlay?.changes||[],touched=new Set(imported.map(c=>c.id));
+ const snapshots=[...(backup.overlay?.snapshots||[]),...(backup.legacySnapshot?[backup.legacySnapshot]:[])];
+ overlay.snapshots=overlay.snapshots||[];
+ for(const snapshot of snapshots){
+  const checked=validate(snapshot);
+  if(!overlay.snapshots.some(item=>same(item,checked)))overlay.snapshots.push(checked);
+ }
+ const originals=new Map(legacy.records.map(r=>[r.id,r]));
+ for(const r of backup.records){
+  const original=originals.get(r.id);if(original&&Date.parse(original.updatedAt)>Date.parse(r.updatedAt))continue;
+  if(touched.has(r.id)||same(originals.get(r.id),r))continue;
+  append({id:r.id,base:originals.get(r.id)||null,value:r,updatedAt:r.updatedAt});
+ }
+ for(const c of imported)append(c);
+ overlay.changes.sort((a,b)=>Date.parse(a.updatedAt)-Date.parse(b.updatedAt));
+ for(const [day,m] of Object.entries(backup.previousDayMeals||{})){
+  const old=overlay.previousDayMeals[day];
+  if(!old||Date.parse(m.updatedAt)>Date.parse(old.updatedAt))overlay.previousDayMeals[day]=m;
+  else if(Date.parse(m.updatedAt)===Date.parse(old.updatedAt)&&!same(old,m))throw Error('같은 시각의 식사 기록이 충돌해요. 원본 백업을 확인해주세요.');
+ }
+ if(!current.baseline&&backup.baseline)overlay.baseline=backup.baseline;
+ overlay.revision++;
+ return validateOverlay(overlay);
+}
 function value(r,k){if(r[k]!=null)return r[k];if(k==='fatMass'&&r.weight!=null&&r.fatPercent!=null)return r.weight*r.fatPercent/100;return null;}
 function fmt(v,k){if(v==null)return '미측정';return k==='waist'?v.toFixed(1)+' cm · '+(v/2.54).toFixed(2)+' inch':v.toFixed(1)+' '+fields[k][1];}
 function delta(v,k){return (v>0?'+':'')+v.toFixed(1)+(k==='fatPercent'?' %p':' '+fields[k][1])+(k==='waist'?' / '+(v>0?'+':'')+(v/2.54).toFixed(2)+' inch':'');}
+async function importBodyFile(root,imported){
+ const backup=validateBackup(imported),before=read();
+ const last=new Map(before.overlay.changes.map(c=>[c.id,c]));
+ const deleted=backup.records.filter(r=>last.get(r.id)?.value===null);
+ if(!await confirmBodyDelete('백업을 현재 기록에 합칠까요?\n같은 기록은 최근 수정본을 유지해요.',{title:'체형 기록 불러오기',accept:'불러오기',danger:false}))return;
+ const restore=[];
+ for(const r of deleted){
+  const details=r.at.replace('T',' ')+' · '+Object.keys(fields).filter(k=>r[k]!=null).map(k=>fmt(r[k],k)).join(' · ');
+  if(await confirmBodyDelete(details+'\n삭제한 측정을 백업 값으로 복구할까요?',{title:'삭제한 측정 복구',accept:'이 측정 복구',cancel:'삭제 유지',danger:false}))restore.push(r);
+ }
+ await navigator.locks.request(OVERLAY,()=>{
+  const current=read();
+  if(before.overlay.revision!==current.overlay.revision||!same(before.legacySnapshot,current.legacySnapshot))throw Error('다른 화면에서 변경했어요. 백업을 다시 열어주세요.');
+  const overlay=merge(imported);
+  for(const r of restore)overlay.changes.push({id:r.id,base:current.legacySnapshot.records.find(x=>x.id===r.id)||null,value:r,updatedAt:new Date().toISOString()});
+  localStorage.setItem(OVERLAY,JSON.stringify(validateOverlay(overlay)));
+ });
+ mount(root,'체형 기록을 가져왔어요.');
+}
 function download(){const blob=new Blob([JSON.stringify({format:'geunlog-body',...read()},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='체형기록_'+localNow().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function sameMeasurement(a,b){return a.at===b.at&&a.device===b.device&&a.note===b.note&&Object.keys(fields).every(k=>a[k]==null?b[k]==null:b[k]!=null&&Math.abs(a[k]-b[k])<0.0001);}
 // Local calendar dates stay as YYYY-MM-DD; no UTC conversion of user input.
@@ -72,10 +188,10 @@ function historyView(root,data){
  host.querySelector('[data-reset]').onclick=()=>{historyQuery=historyFrom=historyTo='';historyLimit=10;historySelected.clear();rerender();};
  dateControls(host);
  host.querySelectorAll('[data-select]').forEach(b=>b.onchange=()=>{b.checked?historySelected.add(b.dataset.select):historySelected.delete(b.dataset.select);host.querySelector('[data-selection-summary]').textContent='검색 결과 '+matches.length+'건 중 '+shown.length+'건 표시 · '+historySelected.size+'건 선택';const remove=host.querySelector('[data-remove]');remove.disabled=!historySelected.size;remove.textContent='선택 삭제 ('+historySelected.size+')';});
- if(historyManage){host.querySelector('[data-select-page]').onclick=()=>{shown.forEach(r=>historySelected.add(r.id));rerender();};host.querySelector('[data-clear]').onclick=()=>{historySelected.clear();rerender();};host.querySelector('[data-backup]').onclick=download;host.querySelector('[data-remove]').onclick=async()=>{if(!historySelected.size||!await confirmBodyDelete('선택한 '+historySelected.size+'건을 삭제할까요?\n복원하려면 삭제 전 백업 파일이 필요해요.'+(historySelected.has(data.baseline)?' 비교 기준도 해제돼요.':'')))return;try{const d=read();d.records=d.records.filter(r=>!historySelected.has(r.id));if(historySelected.has(d.baseline))d.baseline=null;write(d);historySelected.clear();mount(root,'선택한 기록을 삭제했어요.');}catch(e){bodyNotice('삭제 실패: '+e.message);}};}
+ if(historyManage){host.querySelector('[data-select-page]').onclick=()=>{shown.forEach(r=>historySelected.add(r.id));rerender();};host.querySelector('[data-clear]').onclick=()=>{historySelected.clear();rerender();};host.querySelector('[data-backup]').onclick=download;host.querySelector('[data-remove]').onclick=async()=>{if(!historySelected.size||!await confirmBodyDelete('선택한 '+historySelected.size+'건을 삭제할까요?\n복원하려면 삭제 전 백업 파일이 필요해요.'+(historySelected.has(data.baseline)?' 비교 기준도 해제돼요.':'')))return;try{const d=read();d.records=d.records.filter(r=>!historySelected.has(r.id));if(historySelected.has(d.baseline))d.baseline=null;await write(d);historySelected.clear();mount(root,'선택한 기록을 삭제했어요.');}catch(e){bodyNotice('삭제 실패: '+e.message);}};}
  const more=host.querySelector('[data-more]');if(more)more.onclick=()=>{historyLimit+=10;rerender();};
  host.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editor(root,records.find(r=>r.id===b.dataset.edit)));
- host.querySelectorAll('[data-base]').forEach(b=>b.onclick=()=>{try{const d=read();d.baseline=d.baseline===b.dataset.base?null:b.dataset.base;write(d);comparison='baseline';mount(root,'비교 기준을 변경했어요.');}catch(e){bodyNotice(e.message);}});
+ host.querySelectorAll('[data-base]').forEach(b=>b.onclick=async()=>{try{const d=read();d.baseline=d.baseline===b.dataset.base?null:b.dataset.base;await write(d);comparison='baseline';mount(root,'비교 기준을 변경했어요.');}catch(e){bodyNotice(e.message);}});
 }
 
 function bodyNotice(message){return confirmBodyDelete(message,{title:'안내',accept:'확인',cancel:'',danger:false});}
@@ -93,10 +209,42 @@ function rapidChanges(r,records){
  return Object.keys(fields).flatMap(k=>{if(r[k]==null)return [];const prev=records.filter(x=>x.id!==r.id&&x.at<r.at&&x.device===r.device&&x[k]!=null).sort((a,b)=>b.at.localeCompare(a.at))[0];if(!prev)return [];const change=r[k]-prev[k],limit=k==='fatPercent'?5:Math.max(k==='weight'?5:k==='waist'?5:3,prev[k]*.1);return Math.abs(change)>=limit?[fields[k][0]+' '+fmt(prev[k],k)+' → '+fmt(r[k],k)]:[];});
 }
 function savedToast(message){const old=document.querySelector('.body-save-toast');if(old)old.remove();const toast=document.createElement('div');toast.className='body-save-toast';toast.setAttribute('role','status');toast.textContent=message;document.body.append(toast);setTimeout(()=>toast.remove(),3500);}
+function mealInput(data,dayField){
+ const meal=document.createElement('fieldset');
+ meal.innerHTML='<legend>전날 식사</legend><label>섭취 목표 대비<select name="meal"><option value="" disabled>미입력</option><option value="under">목표보다 적게</option><option value="within">목표 범위</option><option value="over">목표보다 많이</option><option value="unknown">판단 불가</option><option value="cleared">입력 지우기</option></select></label><label>차이 (kcal · 선택)<input name="kcal" inputmode="numeric"></label>';
+
+ const status=meal.querySelector('select'),kcal=meal.querySelector('input');
+ const updateKcal=()=>{kcal.parentElement.hidden=!['under','over'].includes(status.value);};
+ const loadMeal=()=>{const m=data.previousDayMeals[dayField.value];status.value=m?.status||'';kcal.value=m?.kcalAbs??'';updateKcal();};
+ dayField.addEventListener('change',loadMeal);status.onchange=updateKcal;loadMeal();
+ return {meal,apply(target){
+  if(!status.value)return;
+  const day=dayField.value,old=target.previousDayMeals[day];
+  const m={status:status.value,kcalAbs:kcal.parentElement.hidden||!kcal.value.trim()?null:Number(kcal.value),updatedAt:new Date().toISOString()};
+  validMeal(day,m);
+  if(!old||old.status!==m.status||old.kcalAbs!==m.kcalAbs)target.previousDayMeals[day]=m;
+ }};
+}
+function editDayMeal(root,day){
+ const data=read(),dialog=document.createElement('dialog');
+ dialog.className='body-dialog';
+ dialog.innerHTML='<form><header><h2>전날 식사 수정</h2></header><div class="body-form-scroll"><p></p><input type="hidden" name="day"><p data-error role="alert"></p></div><footer><button type="button">취소</button><button class="body-primary">저장</button></footer></form>';
+ dialog.setAttribute('aria-label','전날 식사 수정');
+ const field=dialog.querySelector('input');field.value=day;
+ dialog.querySelector('p').textContent=previousDate(day)+' 식사 · '+day+' 측정 기준';
+ const control=mealInput(data,field);field.after(control.meal);
+ dialog.querySelector('[type=button]').onclick=()=>dialog.close();
+ dialog.querySelector('form').onsubmit=async e=>{e.preventDefault();try{control.apply(data);await write(data);dialog.close();mount(root);}catch(err){dialog.querySelector('[data-error]').textContent=err.message;}};
+ dialog.onclose=()=>dialog.remove();document.body.append(dialog);dialog.showModal();
+}
 function editor(root,record){
  const data=read(),dialog=document.createElement('dialog');dialog.className='body-dialog';dialog.setAttribute('aria-label',record?'측정 기록 수정':'측정 기록 추가');const trigger=document.activeElement,existing=record||{};
- dialog.innerHTML='<form novalidate><header><h2>'+(record?'측정 기록 수정':'측정 기록 추가')+'</h2><button type="button" data-close aria-label="닫기">×</button></header><div class="body-form-scroll"><div class="body-datetime"><label>측정 날짜<input name="date" type="date" required value="'+esc((existing.at||localNow()).slice(0,10))+'"></label><label>시간 · 24시간제<input name="time" type="text" inputmode="numeric" placeholder="09:30" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" required value="'+esc((existing.at||localNow()).slice(11,16))+'" aria-describedby="body-time-error"></label><span id="body-time-error" class="body-field-error" role="alert" hidden></span></div><p class="body-form-hint">측정한 항목만 입력하세요.</p><div class="body-decimal-tools"><label><input type="checkbox" data-auto-decimal> 자동 소수점</label><button type="button" data-decimal-help aria-expanded="false" aria-controls="body-decimal-help">도움말</button></div><p id="body-decimal-help" class="body-decimal-help" hidden>모든 측정 항목에 적용돼요.<br>3자리 이상 숫자: 407 → 40.7, 183 → 18.3<br>입력칸을 나가면 변환돼요. 123kg는 123.0으로 입력하세요.</p><div class="body-inputs">'+Object.entries(fields).map(([k,f])=>'<div class="body-measure-row"><label for="body-measure-'+k+'">'+f[0]+'</label><input id="body-measure-'+k+'" type="number" step="any" inputmode="decimal" name="'+k+'" placeholder="미입력" value="'+(existing[k]==null?'':k==='waist'?waistInput(existing[k],existing.waistUnit):existing[k])+'">'+(k==='waist'?'<select name="waistUnit" aria-label="허리둘레 입력 단위"><option value="cm">cm</option><option value="inch">inch</option></select>':'<span class="body-measure-unit">'+f[1]+'</span>')+'</div>').join('')+'</div><p data-waist-preview></p><details><summary>기기·메모 <span class="body-optional">선택</span></summary><label>장소·기기<input name="device" maxlength="100" list="body-devices" placeholder="예: 집 체중계, A헬스장 인바디" value="'+esc(existing.device||'')+'"></label><datalist id="body-devices">'+[...new Set(data.records.map(r=>r.device).filter(Boolean))].map(d=>'<option value="'+esc(d)+'">').join('')+'</datalist><label>측정 조건·메모<textarea name="note" maxlength="500" placeholder="예: 아침 공복 / 허리 배꼽 높이">'+esc(existing.note||'')+'</textarea></label></details><p role="alert" data-error></p></div><footer><button type="button" data-close>취소</button><button class="body-primary" type="submit">저장</button></footer></form>';
+ dialog.innerHTML='<form novalidate><header><h2>'+(record?'측정 기록 수정':'측정 기록 추가')+'</h2><button type="button" data-close aria-label="닫기">×</button></header><div class="body-form-scroll"><div class="body-datetime"><label>측정 날짜<input name="date" type="date" required value="'+esc((existing.at||localNow()).slice(0,10))+'"></label><label>시간 · 24시간제<input name="time" type="text" inputmode="numeric" placeholder="09:30" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" required value="'+esc((existing.at||localNow()).slice(11,16))+'" aria-describedby="body-time-error"></label><span id="body-time-error" class="body-field-error" role="alert" hidden></span></div><p class="body-form-hint">측정한 항목만 입력하세요.</p><div class="body-decimal-tools"><label><input type="checkbox" data-auto-decimal> 자동 소수점</label><button type="button" data-decimal-help aria-expanded="false" aria-controls="body-decimal-help">도움말</button></div><p id="body-decimal-help" class="body-decimal-help" hidden>모든 측정 항목에 적용돼요.<br>3자리 이상 숫자: 407 → 40.7, 183 → 18.3<br>입력칸을 나가면 변환돼요. 123kg는 123.0으로 입력하세요.</p><div class="body-inputs">'+['weight','waist','muscle','fatPercent','fatMass'].map(k=>{const f=fields[k];return '<div class="body-measure-row"><label for="body-measure-'+k+'">'+f[0]+'</label><input id="body-measure-'+k+'" type="number" step="any" inputmode="decimal" name="'+k+'" placeholder="미입력" value="'+(existing[k]==null?'':k==='waist'?waistInput(existing[k],existing.waistUnit):existing[k])+'">'+(k==='waist'?'<select name="waistUnit" aria-label="허리둘레 입력 단위"><option value="cm">cm</option><option value="inch">inch</option></select>':'<span class="body-measure-unit">'+f[1]+'</span>')+'</div>';}).join('')+'</div><p data-waist-preview></p><details><summary>기기·메모 <span class="body-optional">선택</span></summary><label>장소·기기<input name="device" maxlength="100" list="body-devices" placeholder="예: 집 체중계, A헬스장 인바디" value="'+esc(existing.device||'')+'"></label><datalist id="body-devices">'+[...new Set(data.records.map(r=>r.device).filter(Boolean))].map(d=>'<option value="'+esc(d)+'">').join('')+'</datalist><label>측정 조건·메모<textarea name="note" maxlength="500" placeholder="예: 아침 공복 / 허리 배꼽 높이">'+esc(existing.note||'')+'</textarea></label></details><p role="alert" data-error></p></div><footer><button type="button" data-close>취소</button><button class="body-primary" type="submit">저장</button></footer></form>';
 
+ const note=dialog.querySelector('[name=note]').closest('label'),options=dialog.querySelector('details');
+ options.before(note);
+ options.querySelector('summary').textContent='측정 기기 (선택)';
+ const mealControl=mealInput(data,dialog.querySelector('[name=date]'));note.before(mealControl.meal);
  const viewport=window.visualViewport,previousOverflow=document.body.style.overflow;
  const fitViewport=()=>{const height=viewport?viewport.height:window.innerHeight,offset=viewport?viewport.offsetTop:0;dialog.style.setProperty('--body-dialog-height',Math.max(120,height-24)+'px');dialog.style.setProperty('--body-dialog-center',(offset+height/2)+'px');};
  fitViewport();document.body.style.overflow='hidden';if(viewport){viewport.addEventListener('resize',fitViewport);viewport.addEventListener('scroll',fitViewport);}window.addEventListener('resize',fitViewport);
@@ -122,7 +270,7 @@ function editor(root,record){
  dialog.oncancel=e=>{e.preventDefault();requestClose();};
  dialog.querySelectorAll('[data-close]').forEach(b=>b.onclick=requestClose);dialog.onclose=()=>{if(viewport){viewport.removeEventListener('resize',fitViewport);viewport.removeEventListener('scroll',fitViewport);}window.removeEventListener('resize',fitViewport);document.body.style.overflow=previousOverflow;dialog.remove();if(trigger&&trigger.isConnected)trigger.focus({preventScroll:true});};
  let saving=false;
- form.onsubmit=async e=>{e.preventDefault();if(saving)return;Object.keys(fields).forEach(commitInput);clearMetricErrors();const time=form.elements.time,timeError=dialog.querySelector('#body-time-error');time.removeAttribute('aria-invalid');timeError.hidden=true;dialog.querySelector('[data-error]').textContent='';if(!validTime(time.value)){time.setAttribute('aria-invalid','true');timeError.textContent='시간은 00:00~23:59로 입력해주세요. 예: 09:30';timeError.hidden=false;time.focus();time.scrollIntoView({block:'center'});return;}try{for(const input of form.querySelectorAll('input[type="number"]')){if(!input.closest('[hidden]')&&input.validity.badInput)throw Error('측정값을 숫자로 입력해주세요.');}const now=new Date().toISOString(),r={id:existing.id||crypto.randomUUID(),at:form.elements.date.value+'T'+form.elements.time.value,device:form.elements.device.value.trim(),note:form.elements.note.value.trim(),waistUnit:unit.value,createdAt:existing.createdAt||now,updatedAt:now};for(const k of Object.keys(fields))r[k]=form.elements[k].value===''?null:Number(form.elements[k].value);r.waist=waistCm;const issue=measurementIssue(r);if(issue){const input=form.elements[issue.field],error=document.createElement('small');error.dataset.metricError='';error.className='body-metric-error';error.id='body-error-'+issue.field;error.textContent=issue.message;input.parentElement.appendChild(error);input.setAttribute('aria-invalid','true');input.setAttribute('aria-describedby',error.id);input.focus();input.scrollIntoView({block:'center'});return;}if(r.at>localNow())throw Error('미래 측정은 저장할 수 없어요.');const current=read();if(current.records.some(x=>x.id!==r.id&&sameMeasurement(x,r)))throw Error('같은 날짜·시간과 측정값의 기록이 이미 있어요. 기존 기록을 수정해주세요.');validate({version:1,records:[r],baseline:null});const changes=rapidChanges(r,current.records);if(changes.length){saving=true;let proceed;try{proceed=await confirmBodyDelete(changes.join('\n')+'\n이전 측정과 차이가 커요. 입력값이 맞나요?',{title:'측정값 확인',accept:'그대로 저장',cancel:'다시 확인',danger:false});}finally{saving=false;}if(!proceed)return;}const fresh=read();fresh.records=fresh.records.filter(x=>x.id!==r.id).concat(r);write(fresh);graphSelectedId=r.id;selectedDay=r.at.slice(0,10);calendarMonth=selectedDay.slice(0,7);dialog.close();savedToast(record?'측정 기록을 수정했어요.':'측정 기록을 저장했어요.');mount(root,Object.keys(fields).filter(k=>r[k]!=null).map(k=>fields[k][0]+' '+fmt(r[k],k)).join(' · ')+' 저장했어요.');}catch(err){const error=dialog.querySelector('[data-error]');error.textContent=err.message;error.tabIndex=-1;error.focus();error.scrollIntoView({block:'nearest'});}};
+ form.onsubmit=async e=>{e.preventDefault();if(saving)return;Object.keys(fields).forEach(commitInput);clearMetricErrors();const time=form.elements.time,timeError=dialog.querySelector('#body-time-error');time.removeAttribute('aria-invalid');timeError.hidden=true;dialog.querySelector('[data-error]').textContent='';if(!validTime(time.value)){time.setAttribute('aria-invalid','true');timeError.textContent='시간은 00:00~23:59로 입력해주세요. 예: 09:30';timeError.hidden=false;time.focus();time.scrollIntoView({block:'center'});return;}try{for(const input of form.querySelectorAll('input[type="number"]')){if(!input.closest('[hidden]')&&input.validity.badInput)throw Error('측정값을 숫자로 입력해주세요.');}const now=new Date().toISOString(),r={id:existing.id||crypto.randomUUID(),at:form.elements.date.value+'T'+form.elements.time.value,device:form.elements.device.value.trim(),note:form.elements.note.value.trim(),waistUnit:unit.value,createdAt:existing.createdAt||now,updatedAt:now};for(const k of Object.keys(fields))r[k]=form.elements[k].value===''?null:Number(form.elements[k].value);r.waist=waistCm;const issue=measurementIssue(r);if(issue){const input=form.elements[issue.field],error=document.createElement('small');error.dataset.metricError='';error.className='body-metric-error';error.id='body-error-'+issue.field;error.textContent=issue.message;input.parentElement.appendChild(error);input.setAttribute('aria-invalid','true');input.setAttribute('aria-describedby',error.id);input.focus();input.scrollIntoView({block:'center'});return;}if(r.at>localNow())throw Error('미래 측정은 저장할 수 없어요.');const current=read();if(current.records.some(x=>x.id!==r.id&&sameMeasurement(x,r)))throw Error('같은 날짜·시간과 측정값의 기록이 이미 있어요. 기존 기록을 수정해주세요.');validate({version:1,records:[r],baseline:null});const changes=rapidChanges(r,current.records);if(changes.length){saving=true;let proceed;try{proceed=await confirmBodyDelete(changes.join('\n')+'\n이전 측정과 차이가 커요. 입력값이 맞나요?',{title:'측정값 확인',accept:'그대로 저장',cancel:'다시 확인',danger:false});}finally{saving=false;}if(!proceed)return;}const fresh=structuredClone(data);views.set(fresh,views.get(data));fresh.records=fresh.records.filter(x=>x.id!==r.id).concat(r);mealControl.apply(fresh);await write(fresh);graphSelectedId=r.id;selectedDay=r.at.slice(0,10);calendarMonth=selectedDay.slice(0,7);dialog.close();savedToast(record?'측정 기록을 수정했어요.':'측정 기록을 저장했어요.');mount(root,Object.keys(fields).filter(k=>r[k]!=null).map(k=>fields[k][0]+' '+fmt(r[k],k)).join(' · ')+' 저장했어요.');}catch(err){const error=dialog.querySelector('[data-error]');error.textContent=err.message;error.tabIndex=-1;error.focus();error.scrollIntoView({block:'nearest'});}};
  dateControls(dialog,localNow().slice(0,10));document.body.append(dialog);dialog.showModal();
 }
 function measurementIssue(r){
@@ -141,6 +289,15 @@ function missingSummary(r){const missing=Object.keys(fields).filter(k=>value(r,k
 function autoDecimal(v){return /^\d{3,}$/.test(v)?(Number(v)/10).toFixed(1):v;}
 function waistInput(cm,unit){return cm==null?'':String(Number((unit==='inch'?cm/2.54:cm).toFixed(2)));}
 function dayRecords(records,at){return records.filter(r=>r.at.slice(0,10)===at.slice(0,10)).sort((a,b)=>a.at.localeCompare(b.at)||a.id.localeCompare(b.id));}
+function mealText(m){
+ if(!m||m.status==='cleared')return '미입력';
+ if(m.status==='within')return '목표 범위';
+ if(m.status==='unknown')return '판단 불가';
+ return (m.status==='over'?'목표보다 많이':'목표보다 적게')+(m.kcalAbs===null?' · 수량 미상':' · '+(m.status==='over'?'+':'−')+m.kcalAbs+' kcal');
+}
+function previousDate(day){
+ const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10);
+}
 function dayDetail(records,selected,baseline){
  const rows=dayRecords(records,selected.at);
  return '<div class="body-day-heading"><strong>'+esc(selected.at.slice(0,10).replaceAll('-','.'))+'</strong><span>'+rows.length+'건'+(device?' · 선택 기기':'')+' · — 미측정</span></div>'+rows.map(r=>'<section class="body-day-record" data-record-select="'+esc(r.id)+'" '+(r.id===selected.id?'data-selected':'')+'><header><div><button type="button" data-day-select="'+esc(r.id)+'" aria-pressed="'+(r.id===selected.id)+'" aria-label="'+esc(r.at.replace('T',' '))+' 측정 선택">'+esc(r.at.slice(11,16))+'</button>'+(r.device?'<span>'+esc(r.device)+'</span>':'')+(rows.length>1&&r.id===selected.id?'<small>선택 기록</small>':'')+'</div><div class="body-day-actions"><button type="button" data-graph-edit="'+esc(r.id)+'" aria-label="'+esc(r.at.replace('T',' '))+' 기록 수정">수정</button><button type="button" data-graph-delete="'+esc(r.id)+'" aria-label="'+esc(r.at.replace('T',' '))+' 기록 삭제">삭제</button></div></header><dl>'+Object.keys(fields).map(k=>'<div'+(k==='waist'?' class="body-day-waist"':'')+'><dt>'+fields[k][0]+(k==='fatMass'&&r.fatMass==null&&value(r,k)!=null?' · 계산값':'')+'</dt><dd '+(value(r,k)==null?'class="body-unmeasured" aria-label="미측정"':'')+'>'+ (k==='waist'&&r[k]!=null?r[k].toFixed(1)+' cm<small>'+(r[k]/2.54).toFixed(2)+' inch</small>':value(r,k)==null?'—':fmt(value(r,k),k))+(()=>{const ref=comparison==='baseline'?baseline:records.slice(0,records.findIndex(x=>x.id===r.id)).filter(x=>value(x,k)!=null).at(-1);return '<small class="body-day-comparison">'+(value(r,k)==null?'':ref&&value(ref,k)!=null&&ref.id!==r.id?esc(delta(value(r,k)-value(ref,k),k))+' · '+ref.at.slice(0,10)+' 대비':comparison==='baseline'?(ref?.id===r.id?'현재 기록이 비교 기준이에요':'비교 기준값 없음'):'이전 측정값 없음')+'</small>';})()+'</dd></div>').join('')+'</dl>'+(r.note?'<p>'+esc(r.note)+'</p>':'')+'</section>').join('');
@@ -185,6 +342,29 @@ function mount(root,notice=''){
  const all=data.records.slice().sort((a,b)=>a.at.localeCompare(b.at)||a.id.localeCompare(b.id));const filtered=all.filter(r=>!device||r.device===device);const baseline=filtered.find(r=>r.id===data.baseline);
  root.innerHTML='<section class="body-tracker"><div class="body-heading"><div><h2>체형 변화</h2><p>플랜 공통 기록</p></div><button class="body-primary" data-add>+ 기록 추가</button></div><p role="status">'+esc(notice)+'</p><div class="body-filters"><label>측정 기기<select data-device><option value="">전체 기기</option>'+[...new Set(all.map(r=>r.device).filter(Boolean))].map(d=>'<option '+(device===d?'selected':'')+' value="'+esc(d)+'">'+esc(d)+'</option>').join('')+'</select></label><label>비교 기준<select data-compare><option value="previous">이전 측정</option><option value="baseline" '+(comparison==='baseline'?'selected':'')+'>설정한 기준 기록</option></select></label></div><section class="body-month-panel"><div class="body-overview-controls"><div class="body-filters"><label>지표<select data-metric>'+Object.entries(fields).map(([k,f])=>'<option value="'+k+'" '+(metric===k?'selected':'')+'>'+f[0]+'</option>').join('')+'</select></label><label>기간<select data-period>'+[['30','1개월'],['90','3개월'],['180','6개월'],['all','전체'],['custom','직접 설정']].map(([k,l])=>'<option value="'+k+'" '+(period===k?'selected':'')+'>'+l+'</option>').join('')+'</select></label></div><div data-body-month-panel></div></div><section class="body-chart"><div data-graph></div></section><div data-graph-detail class="body-graph-detail" aria-live="polite"></div></section><div data-history-host></div><details><summary>체형 기록 백업</summary><p>이 기기에 저장돼요. 전체 플랜 백업에도 포함되며, 아래에서 체형 기록만 내보낼 수 있어요.</p><div class="body-actions"><button data-export>백업 파일 저장</button><button data-import-open>백업 불러오기</button></div><input type="file" data-import hidden accept="application/json,.json"></details></section>';
 
+ const saved=views.get(data),originals=new Map(saved.legacy.records.map(r=>[r.id,r]));
+ const lastChange=new Map(data.overlay.changes.map(c=>[c.id,c]));
+ for(const [id,c] of lastChange){
+  const legacy=originals.get(id)||null;
+  if(same(legacy,c.base)||same(legacy,c.value))continue;
+  const box=document.createElement('details'),summary=document.createElement('summary');
+  summary.textContent='구버전 변경 확인 · '+(c.value||legacy||c.base).at.replace('T',' ');
+  box.append(summary);
+  for(const [label,record] of [['신버전',c.value],['구버전',legacy],['보관한 원본',c.base]]){
+   const line=document.createElement('p');
+   line.textContent=label+' · '+(record?[record.at,record.device,...Object.keys(fields).filter(k=>record[k]!=null).map(k=>fmt(record[k],k)),record.note].filter(Boolean).join(' · '):'삭제됨');
+   box.append(line);
+   const choose=document.createElement('button');choose.textContent=label+' 상태 사용';
+   choose.onclick=async()=>{try{await navigator.locks.request(OVERLAY,()=>{
+    const current=read(),snapshot=views.get(current);
+    if(!same(snapshot.legacy,saved.legacy)||current.overlay.revision!==saved.overlay.revision)throw Error('다른 화면에서 변경했어요. 다시 열어주세요.');
+    current.overlay.changes.push({id,base:legacy,value:record,updatedAt:new Date().toISOString()});
+    current.overlay.revision++;localStorage.setItem(OVERLAY,JSON.stringify(current.overlay));
+   });mount(root);}catch(error){bodyNotice(error.message);}};
+   box.append(choose);
+  }
+  root.querySelector('.body-heading').after(box);
+ }
  let selectRecord;
  const initial=filtered.find(r=>r.id===graphSelectedId)||filtered.at(-1);
  if(initial&&!selectedDay)selectedDay=initial.at.slice(0,10);
@@ -198,8 +378,9 @@ function mount(root,notice=''){
    const day=calendarMonth+'-'+String(i+1).padStart(2,'0'),rows=grouped.get(day)||[];
    const weight=rows.filter(r=>r.weight!=null).at(-1)?.weight,waist=rows.filter(r=>r.waist!=null).at(-1)?.waist;
    const chosen=range?(day===rangeStart||day===rangeEnd):day===selectedDay,between=range&&rangeStart&&rangeEnd&&day>rangeStart&&day<rangeEnd;
-   return '<button type="button" data-calendar-day="'+day+'" aria-pressed="'+chosen+'"'+(between?' data-in-range':'')+' aria-label="'+day+' 체중 '+(weight==null?'미측정':weight.toFixed(1)+' kg')+' 허리 '+(waist==null?'미측정':waist.toFixed(1)+' cm')+'"><b>'+String(i+1)+'</b><span class="body-month-panel-weight">'+(weight==null?(rows.length?'—':'&nbsp;'):weight.toFixed(1))+'</span><span class="body-month-panel-waist">'+(waist==null?(rows.length?'—':'&nbsp;'):waist.toFixed(1))+'</span></button>';
-  }).join('')+'</div>'+(range?'<div class="body-month-panel-range"><p aria-live="polite">'+(rangeStart?rangeStart+' → '+(rangeEnd||'종료일 선택'):'시작일과 종료일을 차례로 선택하세요.')+'</p><button type="button" data-range-apply '+(!rangeStart||!rangeEnd?'disabled':'')+'>그래프에 적용</button><button type="button" data-range-cancel>취소</button></div>':'<p class="body-muted">날짜를 누르면 시간별 측정 내역을 확인해요.</p>');
+   const m=data.previousDayMeals[day],shade=m?.kcalAbs==null?0:m.kcalAbs<200?1:m.kcalAbs<500?2:3;
+   return '<button data-has-note="'+rows.some(r=>r.note.trim())+'" data-meal="'+(m?.status||'')+'" data-shade="'+shade+'" type="button" data-calendar-day="'+day+'" aria-pressed="'+chosen+'"'+(between?' data-in-range':'')+' aria-label="'+day+' 전날 식사 '+mealText(m)+' 체중 '+(weight==null?'미측정':weight.toFixed(1)+' kg')+' 허리 '+(waist==null?'미측정':waist.toFixed(1)+' cm')+'"><b>'+String(i+1)+'</b><span class="body-month-panel-weight">'+(weight==null?(rows.length?'—':'&nbsp;'):weight.toFixed(1))+'</span><span class="body-month-panel-waist">'+(waist==null?(rows.length?'—':'&nbsp;'):waist.toFixed(1))+'</span></button>';
+  }).join('')+'</div>'+(range?'<div class="body-month-panel-range"><p aria-live="polite">'+(rangeStart?rangeStart+' → '+(rangeEnd||'종료일 선택'):'시작일과 종료일을 차례로 선택하세요.')+'</p><button type="button" data-range-apply '+(!rangeStart||!rangeEnd?'disabled':'')+'>그래프에 적용</button><button type="button" data-range-cancel>취소</button></div>':'<p class="body-meal-legend">칸 색은 표시 날짜의 전날 식사예요. 빨강은 목표 초과(+), 파랑은 미달(−)이며 진할수록 차이가 커요.</p>');
   for(const [name,offset] of [['prev',-1],['next',1]])host.querySelector('[data-month-'+name+']').onclick=()=>{const d=new Date(year,month-1+offset,1);calendarMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');paintCalendar('[data-month-'+name+']');};
   host.querySelectorAll('[data-calendar-mode]').forEach(b=>b.onclick=()=>{calendarMode=b.dataset.calendarMode;if(calendarMode==='range'){rangeStart='';rangeEnd='';}paintCalendar('[data-calendar-mode="'+calendarMode+'"]');});
   host.querySelectorAll('[data-calendar-day]').forEach(b=>b.onclick=()=>{
@@ -215,13 +396,21 @@ function mount(root,notice=''){
  const draw=()=>{let cutoff='';if(period!=='all'&&period!=='custom'){const d=new Date();d.setDate(d.getDate()-Number(period));cutoff=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}const points=filtered.filter(r=>graphMetrics.some(k=>value(r,k)!=null)&&(period==='custom'?(!from||r.at.slice(0,10)>=from)&&(!to||r.at.slice(0,10)<=to):!cutoff||r.at.slice(0,10)>=cutoff));root.querySelector('[data-graph]').innerHTML=from&&to&&period==='custom'&&from>to?'<p>시작일이 종료일보다 늦어요.</p>':graph(points);const openPoint=id=>{const r=filtered.find(r=>r.id===id),detail=root.querySelector('[data-graph-detail]');graphSelectedId=r?.id||'';
  if(r){selectedDay=r.at.slice(0,10);calendarMonth=selectedDay.slice(0,7);}
  detail.innerHTML=r?dayDetail(filtered,r,baseline):'<div class="body-empty"><strong>'+esc(selectedDay||'선택한 날짜')+'</strong><p>이 날짜에 측정 기록이 없어요.</p></div>';
+ if(selectedDay)detail.insertAdjacentHTML('afterbegin','<p>'+previousDate(selectedDay)+' 전날 식사 · '+mealText(data.previousDayMeals[selectedDay])+'</p>');
+ if(!r&&selectedDay){const button=document.createElement('button');button.textContent='전날 식사 수정';button.onclick=()=>editDayMeal(root,selectedDay);detail.append(button);}
  const summary=root.querySelector('.body-graph-summary');if(summary){summary.querySelector('strong').innerHTML=graphMetrics.length>1?graphMetrics.map(k=>'<span style="color:'+graphColors[k]+'">'+fields[k][0]+' '+graphValue(r?value(r,k):null,k)+'</span>').join(''):graphValue(r?value(r,metric):null,metric);summary.querySelector('small').textContent=r?r.at.replace('T',' '):(selectedDay||'날짜를 선택하세요');}
  paintCalendar();
-detail.querySelectorAll('[data-graph-edit]').forEach(button=>button.onclick=()=>editor(root,all.find(item=>item.id===button.dataset.graphEdit)));detail.querySelectorAll('[data-graph-delete]').forEach(button=>button.onclick=async()=>{const id=button.dataset.graphDelete;try{const current=read(),target=current.records.find(item=>item.id===id);if(!target)return;if(!await confirmBodyDelete(target.at.replace('T',' ')+' 측정 기록을 삭제할까요?'+(current.baseline===id?' 비교 기준도 해제돼요.':'')+'\n복원하려면 삭제 전 백업 파일이 필요해요.'))return;current.records=current.records.filter(item=>item.id!==id);if(current.baseline===id)current.baseline=null;write(current);historySelected.delete(id);if(graphSelectedId===id){const next=dayRecords(current.records.filter(item=>(!device||item.device===device)&&value(item,metric)!=null),target.at);graphSelectedId=next.length?next[0].id:null;}mount(root,'측정 기록을 삭제했어요.');}catch(error){bodyNotice('삭제 실패: '+error.message);}});root.querySelectorAll('[data-point]').forEach(dot=>{dot.setAttribute('r',dot.dataset.point===id?'4.5':'3.5');dot.setAttribute('fill',dot.dataset.series?graphColors[dot.dataset.series]:dot.dataset.point===id?'#142e86':'#315bea');dot.setAttribute('aria-pressed',String(dot.dataset.point===id)); });const index=points.findIndex(item=>item.id===id),position=root.querySelector('[data-point-position]');if(position){position.textContent=index<0?'선택한 기록은 현재 그래프에 포함되지 않아요.':(index+1)+' / '+points.length+' · '+r.at.replace('T',' ');root.querySelector('[data-point-prev]').disabled=index<=0;root.querySelector('[data-point-next]').disabled=index<0||index===points.length-1;}
+detail.querySelectorAll('[data-graph-edit]').forEach(button=>button.onclick=()=>editor(root,all.find(item=>item.id===button.dataset.graphEdit)));detail.querySelectorAll('[data-graph-delete]').forEach(button=>button.onclick=async()=>{const id=button.dataset.graphDelete;try{const current=read(),target=current.records.find(item=>item.id===id);if(!target)return;if(!await confirmBodyDelete(target.at.replace('T',' ')+' 측정 기록을 삭제할까요?'+(current.baseline===id?' 비교 기준도 해제돼요.':'')+'\n복원하려면 삭제 전 백업 파일이 필요해요.'))return;current.records=current.records.filter(item=>item.id!==id);if(current.baseline===id)current.baseline=null;await write(current);historySelected.delete(id);if(graphSelectedId===id){const next=dayRecords(current.records.filter(item=>(!device||item.device===device)&&value(item,metric)!=null),target.at);graphSelectedId=next.length?next[0].id:null;}mount(root,'측정 기록을 삭제했어요.');}catch(error){bodyNotice('삭제 실패: '+error.message);}});root.querySelectorAll('[data-point]').forEach(dot=>{dot.setAttribute('r',dot.dataset.point===id?'4.5':'3.5');dot.setAttribute('fill',dot.dataset.series?graphColors[dot.dataset.series]:dot.dataset.point===id?'#142e86':'#315bea');dot.setAttribute('aria-pressed',String(dot.dataset.point===id)); });const index=points.findIndex(item=>item.id===id),position=root.querySelector('[data-point-position]');if(position){position.textContent=index<0?'선택한 기록은 현재 그래프에 포함되지 않아요.':(index+1)+' / '+points.length+' · '+r.at.replace('T',' ');root.querySelector('[data-point-prev]').disabled=index<=0;root.querySelector('[data-point-next]').disabled=index<0||index===points.length-1;}
  detail.querySelectorAll('[data-record-select]').forEach(row=>row.onclick=e=>{if(e.target.closest('button'))return;openPoint(row.dataset.recordSelect);});
  detail.querySelectorAll('[data-day-select]').forEach(b=>b.onclick=()=>{openPoint(b.dataset.daySelect);root.querySelector('[data-day-select="'+b.dataset.daySelect+'"]')?.focus({preventScroll:true});});
  };
  selectRecord=openPoint;
+ const notes=filtered.filter(r=>r.note&&(period==='custom'?(!from||r.at.slice(0,10)>=from)&&(!to||r.at.slice(0,10)<=to):!cutoff||r.at.slice(0,10)>=cutoff));
+ if(notes.length){
+  const list=document.createElement('details');list.innerHTML='<summary>기간 내 메모 ('+notes.length+')</summary>';
+  for(const r of notes){const b=document.createElement('button');b.textContent=r.at.replace('T',' ')+' · '+r.note;b.onclick=()=>openPoint(r.id);list.append(b);}
+  root.querySelector('[data-graph]').after(list);
+ }
  const openGraphPoint=id=>{const chart=root.querySelector('.body-graph-scroll'),before=chart?.getBoundingClientRect().top;openPoint(id);if(chart&&before!=null)window.scrollBy(0,chart.getBoundingClientRect().top-before);};
  const dots=[...root.querySelectorAll('[data-point]')];
  for(const dot of dots){
@@ -254,14 +443,58 @@ detail.querySelectorAll('[data-graph-edit]').forEach(button=>button.onclick=()=>
  for(const [name,set] of [['device',v=>{device=v;historySelected.clear();historyLimit=10;}],['compare',v=>comparison=v],['metric',v=>{if(saveGraphMetrics([v])){metric=v;graphMetrics=[v];}else bodyNotice('그래프 설정을 저장하지 못했어요. 다시 시도해주세요.');}],['period',v=>{period=v;calendarMode=v==='custom'?'range':'day';rangeStart=from;rangeEnd=to;}],['from',v=>from=v],['to',v=>to=v]]){const e=root.querySelector('[data-'+name+']');if(e)e.onchange=()=>{set(e.value);mount(root);};}
  root.querySelector('[data-export]').onclick=()=>{try{download();}catch(e){bodyNotice(e.message);}};
  root.querySelector('[data-import-open]').onclick=()=>root.querySelector('[data-import]').click();
- root.querySelector('[data-import]').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10000000)throw Error('10MB 이하 파일을 선택해주세요.');const imported=JSON.parse(await file.text());if(imported.format!=='geunlog-body')throw Error('체형 기록 백업 파일을 선택해주세요.');validate(imported);if(!await confirmBodyDelete('백업을 현재 기록에 합칠까요?\n같은 기록은 최근 수정본을 유지해요.',{title:'체형 기록 불러오기',accept:'불러오기',danger:false}))return;write(merge(imported));mount(root,'체형 기록을 가져왔어요.');}catch(err){bodyNotice(err.message);}};
+ root.querySelector('[data-import]').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>10000000)throw Error('10MB 이하 파일을 선택해주세요.');const imported=JSON.parse(await file.text());if(imported.format!=='geunlog-body')throw Error('체형 기록 백업 파일을 선택해주세요.');await importBodyFile(root,imported);}catch(err){bodyNotice(err.message);}};
 }
-return {key:KEY,read,validate,merge,mount,fmt,value,sameMeasurement,monthDays,historyMatches,validTime};
+return {key:OVERLAY,read,validate:validateBackup,merge,mount,fmt,value,sameMeasurement,monthDays,historyMatches,validTime};
 })();
 
 // ==== 원본 script 블록 1/2 (메인 앱 로직) ====
 
-(function () {
+(async function () {
+  const restoreJournalKey='geunlog-body-restore-journal-v1';
+  function recoverBodyRestore(){
+    const raw=localStorage.getItem(restoreJournalKey);
+    if(raw===null)return;
+    const journal=JSON.parse(raw);
+    if(journal.version!==1||!Array.isArray(journal.entries))throw Error('복원 기록을 확인해주세요.');
+    for(const entry of journal.entries){
+      if(!entry||typeof entry.key!=='string'||!(/^(?:bulk-|geunlog-)/.test(entry.key))||
+         entry.key===restoreJournalKey||entry.key==='geunlog-body-v1'||
+         ![entry.before,entry.after].every(value=>value===null||typeof value==='string'))throw Error('복원 기록을 확인해주세요.');
+      const value=localStorage.getItem(entry.key);
+      if(value!==entry.before&&value!==entry.after)throw Error('복원 중 다른 화면에서 변경한 기록이 있어요. 원본을 보존했어요.');
+    }
+    for(const entry of journal.entries.slice().reverse()){
+      if(localStorage.getItem(entry.key)===entry.before)continue;
+      if(entry.before===null)localStorage.removeItem(entry.key);
+      else localStorage.setItem(entry.key,entry.before);
+    }
+    localStorage.removeItem(restoreJournalKey);
+  }
+  function storeFullRestore(operations){
+    recoverBodyRestore();
+    const entries=new Map();
+    for(const op of operations){
+      const before=entries.has(op.key)?entries.get(op.key).before:localStorage.getItem(op.key);
+      entries.set(op.key,{key:op.key,before,after:op.remove?null:JSON.stringify(op.value)});
+    }
+    localStorage.setItem(restoreJournalKey,JSON.stringify({version:1,entries:[...entries.values()]}));
+    try{
+      for(const entry of entries.values()){
+        if(localStorage.getItem(entry.key)!==entry.before)throw Error('다른 화면에서 기록이 변경됐어요.');
+        if(entry.after===null)localStorage.removeItem(entry.key);else localStorage.setItem(entry.key,entry.after);
+      }
+      localStorage.removeItem(restoreJournalKey);
+    }catch(error){recoverBodyRestore();throw error;}
+    scheduleWeeklySummary();
+    return true;
+  }
+  try{
+    if(localStorage.getItem(restoreJournalKey)!==null)await navigator.locks.request(BodyTracker.key,recoverBodyRestore);
+  }catch(error){
+    document.body.textContent='복원 상태를 확인할 수 없어 저장을 중지했어요. '+error.message;
+    return;
+  }
   var MUSCLES = ['가슴', '등', '어깨', '하체', '삼두', '이두', '복근'];
   // 4번: 3대 운동. 운동관리 배지와 통계 섹션이 이 한 곳만 참조한다.
   var BIG3 = [
@@ -6635,12 +6868,12 @@ function estimateSession(day) {
     var shared=readJSON(CATALOG_KEY,catalog);data.profiles.forEach(function(p){shared=mergeSharedCatalog(shared,p.catalog);});
     operations.push({key:CATALOG_KEY,value:shared});
     operations.push({key:PROFILES_KEY,value:next});
-    if(!storageTransaction(operations))throw new Error('가져오기를 저장하지 못했어요. 저장 공간을 확인해주세요.');
+    if(!storeFullRestore(operations))throw new Error('가져오기를 저장하지 못했어요. 저장 공간을 확인해주세요.');
     catalog=shared;profiles=next;return added;
   }
   function importTransfer(data) {
     validateTransfer(data);
-    if(data.version===2)return importAllProfiles(data);
+    if(data.version===2)return navigator.locks.request(BodyTracker.key,()=>importAllProfiles(data));
     var p=data.profile,name=p.name+' (가져옴)',suffix=2;
     while(profiles.includes(name)){name=p.name+' (가져옴 '+suffix+')';suffix++;}
     var operations=[
@@ -6760,10 +6993,10 @@ function estimateSession(day) {
       }
     });
 
-    dialog.querySelector('.import-choice-new').addEventListener('click', function() {
+    dialog.querySelector('.import-choice-new').addEventListener('click', async function() {
       close(false);
       try {
-        var result = importTransfer(importCandidate);
+        var result = await importTransfer(importCandidate);
         importCandidate = null;
         var names = Array.isArray(result) ? result : [result];
         switchProfile(names[0]);
@@ -6994,10 +7227,10 @@ function estimateSession(day) {
     }
   });
 
-  document.getElementById('btnImportConfirm').addEventListener('click',function(){
+  document.getElementById('btnImportConfirm').addEventListener('click',async function(){
     if(!importCandidate)return;
     try{
-      var result=importTransfer(importCandidate);importCandidate=null;document.getElementById('dataImportPreview').hidden=true;
+      var result=await importTransfer(importCandidate);importCandidate=null;document.getElementById('dataImportPreview').hidden=true;
       var names=Array.isArray(result)?result:[result];
       switchProfile(names[0]);renderProfileList();
       document.getElementById('dataTransferHint').textContent=(names.length>1?names.length+'개 플랜을 가져왔어요.':names[0]+' 플랜으로 가져왔어요.')+' 기존 플랜은 그대로 유지됩니다.';

@@ -3588,3 +3588,23 @@ dialog.body-dialog{inset:auto 0!important;top:var(--body-dialog-center,50%)!impo
 .ai-routine-hub .routine-management-section h3{margin:2px 2px 8px;font-size:14px;color:var(--muted)}
 .ai-routine-hub .routine-management-section + .routine-management-section{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .bulk-app .ai-routine-hub #btnClearDay strong{color:var(--drop)}
+
+.body-month-panel-grid [data-calendar-day][data-meal=under]{background:#e5efff}
+.body-month-panel-grid [data-calendar-day][data-meal=under][data-shade="2"]{background:#adceff}
+.body-month-panel-grid [data-calendar-day][data-meal=under][data-shade="3"]{background:#88b5f9}
+.body-month-panel-grid [data-calendar-day][data-meal=over]{background:#ffe9ea}
+.body-month-panel-grid [data-calendar-day][data-meal=over][data-shade="2"]{background:#ffc7cc}
+.body-month-panel-grid [data-calendar-day][data-meal=over][data-shade="3"]{background:#f69da5}
+.body-month-panel-grid [data-calendar-day]:is([data-meal=over],[data-meal=under])[data-shade="0"]{border-style:dashed}
+.body-month-panel-grid [data-calendar-day][data-meal=within]{background:#e2eee6}
+.body-month-panel-grid [data-calendar-day][data-meal=unknown]{background:#e9e9ef}
+.body-month-panel-grid [data-calendar-day][aria-pressed=true]{outline:2px solid #243d85;outline-offset:-2px}
+
+.body-month-panel-grid button[aria-pressed=true]:is([data-meal]) b,
+.body-month-panel-grid button[aria-pressed=true]:is([data-meal]) span{color:#182843}
+.body-month-panel-grid button[aria-pressed=true]:is([data-meal=""],[data-meal=cleared]){background:#f4f6fa}
+.body-month-panel-grid button[data-has-note=true]:is([data-meal=""],[data-meal=cleared]) b{text-decoration:underline}
+.body-meal-legend{margin:8px 0;color:#526079;font-size:12px;line-height:1.5}
+.body-dialog fieldset{min-width:0;margin:12px 0;padding:12px;border:1px solid #d4dae5;border-radius:12px}
+.body-dialog fieldset legend{padding:0 4px;font-weight:600}
+.body-dialog fieldset [hidden]{display:none}
